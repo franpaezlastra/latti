@@ -1,0 +1,117 @@
+/* @import url('../assets/fonts/fonts.css'); */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    font-family: 'TransformaSans', sans-serif;
+  }
+  
+  body {
+    font-family: 'TransformaSans', sans-serif;
+    font-weight: 400;
+    background-color: #f6f2ec;
+    color: #101010;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  #root {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Aplicar fuentes a todos los elementos */
+  * {
+    font-family: 'TransformaSans', sans-serif;
+  }
+  
+  /* Configurar fuentes específicas para diferentes elementos */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'TransformaSans', sans-serif;
+    font-weight: 700;
+  }
+  
+  /* Para títulos especiales usar Maderon */
+  .title-maderon {
+    font-family: 'Maderon', sans-serif;
+  }
+  
+  /* Para elementos decorativos usar TransformaScript */
+  .decorative {
+    font-family: 'TransformaScript', sans-serif;
+  }
+  
+  /* Scrollbar personalizada */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #a0a0a0;
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    font-family: 'TransformaSans', sans-serif;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    font-family: 'TransformaSans', sans-serif;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    font-family: 'TransformaSans', sans-serif;
+  }
+  
+  .badge-success {
+    @apply bg-success-50 text-success-700;
+  }
+  
+  .badge-warning {
+    @apply bg-warning-50 text-warning-700;
+  }
+  
+  .badge-danger {
+    @apply bg-danger-50 text-danger-700;
+  }
+  
+  .badge-info {
+    @apply bg-primary-50 text-primary-700;
+  }
+} 

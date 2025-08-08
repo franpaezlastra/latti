@@ -1,0 +1,74 @@
+/* Maderon Regular */
+@font-face {
+  font-family: 'Maderon';
+  src: url('./Maderon-Regular.woff2') format('woff2'),
+       url('./Maderon-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Maderon Italic */
+@font-face {
+  font-family: 'Maderon';
+  src: url('./Maderon-Italic.woff2') format('woff2'),
+       url('./Maderon-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Transforma Script Medium */
+@font-face {
+  font-family: 'TransformaScript';
+  src: url('./TransformaScript-Medium.woff2') format('woff2'),
+       url('./TransformaScript-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Transforma Sans Light */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* Transforma Sans Regular */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-Light.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Transforma Sans Medium */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Transforma Sans Bold */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Transforma Sans ExtraBold */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* Transforma Sans ExtraBlack */
+@font-face {
+  font-family: 'TransformaSans';
+  src: url('./TransformaSans_Trial-ExtraBlack.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+}
