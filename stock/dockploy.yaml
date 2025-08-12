@@ -1,6 +1,7 @@
 version: 1
 
 build:
+  context: stock
   dockerfile: Dockerfile
 
 deploy:
