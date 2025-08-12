@@ -11,7 +11,11 @@ public class Insumo {
     private Long id;
 
     private String nombre;
-    private String unidadMedida;
+    
+    // ✅ CAMBIADO: Usar ENUM en lugar de String
+    @Enumerated(EnumType.STRING)
+    private UnidadMedida unidadMedida;
+    
     private double stockActual = 0;
     private double precioDeCompra = 0;
 
@@ -23,17 +27,19 @@ public class Insumo {
 
     public Insumo() {}
 
-    public Insumo(String nombre, String unidadMedida) {
+    public Insumo(String nombre, UnidadMedida unidadMedida) {
         this.nombre = nombre;
         this.unidadMedida = unidadMedida;
-
     }
 
     public Long getId() { return id; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
-    public String getUnidadMedida() { return unidadMedida; }
-    public void setUnidadMedida(String unidadMedida) { this.unidadMedida = unidadMedida; }
+    
+    // ✅ GETTERS Y SETTERS PARA ENUM
+    public UnidadMedida getUnidadMedida() { return unidadMedida; }
+    public void setUnidadMedida(UnidadMedida unidadMedida) { this.unidadMedida = unidadMedida; }
+    
     public double getStockActual() { return stockActual; }
     public void setStockActual(double stockActual) { this.stockActual = stockActual; }
     public List<InsumoReceta> getDetalles() { return detalles; }

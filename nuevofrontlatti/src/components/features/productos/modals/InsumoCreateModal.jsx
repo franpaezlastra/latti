@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
+import { getUnidadesMedidaOptions } from '../../../../constants/unidadesMedida';
 
 const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,9 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
   const [error, setError] = useState(false);
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Obtener opciones de unidades de medida
+  const unidadesMedidaOptions = getUnidadesMedidaOptions();
 
   // Debug: ver cuando cambia error
   useEffect(() => {
@@ -115,14 +119,29 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
         disabled={isSubmitting}
       />
 
-      <Input
-        label="Unidad de Medida"
-        placeholder="Ej: kg, litros, unidades, etc."
-        value={formData.unidadMedida}
-        onChange={(e) => handleInputChange('unidadMedida', e.target.value)}
-        required
-        disabled={isSubmitting}
-      />
+      {/* ✅ CAMBIADO: Select estandarizado para unidades de medida */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Unidad de Medida *
+        </label>
+        <select
+          value={formData.unidadMedida}
+          onChange={(e) => handleInputChange('unidadMedida', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+          required
+          disabled={isSubmitting}
+        >
+          <option value="">Seleccione una unidad</option>
+          {unidadesMedidaOptions.map((unidad) => (
+            <option key={unidad.value} value={unidad.value}>
+              {unidad.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-500">
+          Seleccione la unidad de medida estandarizada para este insumo
+        </p>
+      </div>
     </FormModal>
   );
 };

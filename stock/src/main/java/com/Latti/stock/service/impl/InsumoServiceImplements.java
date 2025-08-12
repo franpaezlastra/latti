@@ -5,6 +5,7 @@ import com.Latti.stock.dtos.InsumoResponseDTO;
 import com.Latti.stock.dtos.InsumoListadoDTO;
 import com.Latti.stock.modules.Insumo;
 import com.Latti.stock.modules.DetalleMovimientoInsumo;
+import com.Latti.stock.modules.UnidadMedida;
 import com.Latti.stock.repositories.InsumoRepository;
 import com.Latti.stock.service.InsumoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +26,15 @@ public class InsumoServiceImplements implements InsumoService {
         validarCrearInsumoDTO(dto);
 
         String nombre = dto.nombre().trim();
-        String unidad = dto.unidadMedida().trim();
+        UnidadMedida unidad = dto.unidadMedida(); // ✅ ENUM, no necesita trim()
 
         // Validación de nombre único (ignorando mayúsculas/minúsculas)
         if (insumoRepository.existsByNombreIgnoreCase(nombre)) {
             throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
         }
-        // Validación de unidad no vacía ni solo espacios
-        if (unidad.isEmpty()) {
-            throw new IllegalArgumentException("La unidad de medida no puede estar vacía ni ser solo espacios.");
+        // ✅ Validación de unidad: solo verificar que no sea null
+        if (unidad == null) {
+            throw new IllegalArgumentException("La unidad de medida es obligatoria.");
         }
 
         Insumo nuevoInsumo = new Insumo(nombre, unidad);
@@ -90,8 +91,9 @@ public class InsumoServiceImplements implements InsumoService {
         if (dto.nombre() == null || dto.nombre().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del insumo no puede estar vacío ni ser solo espacios.");
         }
-        if (dto.unidadMedida() == null || dto.unidadMedida().trim().isEmpty()) {
-            throw new IllegalArgumentException("La unidad de medida no puede estar vacía ni ser solo espacios.");
+        // ✅ Validación de unidad: solo verificar que no sea null
+        if (dto.unidadMedida() == null) {
+            throw new IllegalArgumentException("La unidad de medida es obligatoria.");
         }
     }
 }

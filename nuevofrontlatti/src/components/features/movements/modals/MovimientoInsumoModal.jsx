@@ -284,7 +284,23 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       </div>
 
       {/* Información adicional para entradas */}
-
+      {formData.tipoMovimiento === "ENTRADA" && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-6 border border-green-200">
+          <div className="flex items-center gap-3">
+            <FaDollarSign className="text-green-600 text-lg" />
+            <div>
+              <h4 className="text-green-800 font-medium">Movimiento de Entrada</h4>
+              <p className="text-sm text-green-700">
+                Ingresa el <strong>precio total</strong> que pagaste por toda la cantidad. 
+                El sistema calculará automáticamente el precio por unidad.
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                💡 Ejemplo: Si compraste 10 kg de harina por $80, ingresa $80 (no $8 por kg)
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Información adicional para salidas */}
       {formData.tipoMovimiento === "SALIDA" && (
@@ -392,8 +408,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                   {formData.tipoMovimiento === "ENTRADA" && (
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-gray-600 block">
-                        Precio de Compra por Unidad *
-                        <span className="text-blue-600 ml-1">(se multiplicará por la cantidad)</span>
+                        Precio Total
                       </label>
                       <NumberInput
                         placeholder="0,00"
@@ -404,7 +419,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                         className="w-full px-3 py-2 text-sm"
                       />
                       <p className="text-xs text-gray-500">
-                        Ej: $8,00 por kg, $3,50 por unidad
+                        Ej: $80,00 por 10 kg, $35,00 por 10 unidades
                       </p>
                     </div>
                   )}
