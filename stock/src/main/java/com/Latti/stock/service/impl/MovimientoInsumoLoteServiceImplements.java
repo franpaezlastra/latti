@@ -102,7 +102,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     // 1. No hay precio previo (primera compra)
                     // 2. El nuevo precio es mayor (peor) que el anterior
                     if (precioActual == 0 || precioPorUnidad > precioActual) {
-                        insumo.setPrecioDeCompra(precioPorUnidad);
+                    insumo.setPrecioDeCompra(precioPorUnidad);
                         System.out.println("🔄 Precio actualizado para " + insumo.getNombre() + 
                                          ": $" + precioActual + " → $" + precioPorUnidad + " por " + insumo.getUnidadMedida());
                     } else {

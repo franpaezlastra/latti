@@ -1,58 +1,63 @@
-# Multi-stage build para optimizar el tamaño de la imagen
+# Multi-stage build para optimizar el tamaño final
 FROM eclipse-temurin:24-jdk-alpine AS builder
 
 # Instalar dependencias del sistema
-RUN apk add --no-cache curl
+RUN apk add --no-cache \
+    curl \
+    unzip \
+    && rm -rf /var/cache/apk/*
 
-# Establecer directorio de trabajo
+# Crear directorio de trabajo
 WORKDIR /app
 
 # Copiar archivos de configuración de Gradle
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
+COPY gradlew ./
+COPY gradle/ gradle/
+COPY build.gradle ./
+COPY settings.gradle ./
 
-# Descargar dependencias de Gradle
-RUN chmod +x ./gradlew && \
-    ./gradlew dependencies --no-daemon
+# Dar permisos de ejecución al wrapper de Gradle
+RUN chmod +x ./gradlew
+
+# Descargar dependencias de Gradle (capa separada para mejor cache)
+RUN ./gradlew dependencies --no-daemon
 
 # Copiar código fuente
-COPY src src
+COPY src/ src/
 
-# Construir la aplicación
+# Construir la aplicación (excluyendo tests para producción)
 RUN ./gradlew build -x test --no-daemon
 
-# Imagen de producción
+# Runtime stage
 FROM eclipse-temurin:24-jre-alpine
 
-# Instalar dependencias del sistema
-RUN apk add --no-cache curl
+# Instalar dependencias del sistema para runtime
+RUN apk add --no-cache \
+    curl \
+    && rm -rf /var/cache/apk/*
 
-# Crear usuario no-root
-RUN addgroup -g 1001 -S spring && \
-    adduser -u 1001 -S spring -G spring
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
-# Establecer directorio de trabajo
+# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar JAR construido desde la etapa anterior
+# Copiar JAR desde el stage de build
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Cambiar propietario del archivo
-RUN chown spring:spring app.jar
+# Cambiar ownership al usuario no-root
+RUN chown -R appuser:appgroup /app
 
 # Cambiar al usuario no-root
-USER spring
+USER appuser
 
 # Exponer puerto
 EXPOSE 8080
 
-# Variables de entorno para la base de datos
+# Variables de entorno por defecto
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-ENV SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
-ENV SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+ENV SERVER_PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
