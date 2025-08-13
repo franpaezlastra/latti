@@ -24,11 +24,12 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	
-	// Base de datos
-	runtimeOnly 'com.h2database:h2' // Para desarrollo local
-	runtimeOnly 'org.postgresql:postgresql' // Para producción
+	// ✅ Driver de PostgreSQL
+	runtimeOnly 'org.postgresql:postgresql'
+	
+	// ✅ H2 solo para tests (evita confusiones con Postgres)
+	testRuntimeOnly 'com.h2database:h2'
 	
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -36,9 +37,4 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-
-// Configuración para diferentes perfiles
-springBoot {
-	buildInfo()
 }
