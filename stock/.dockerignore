@@ -1,45 +1,8 @@
-# Gradle
-.gradle/
-build/
-gradle/
-gradlew
-gradlew.bat
-
-# IDE
-.idea/
-.vscode/
-*.iml
-*.ipr
-*.iws
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Git
-.git/
-.gitignore
-.gitattributes
-
-# Logs
-*.log
-logs/
-
-# Temporary files
-*.tmp
-*.temp
-*.swp
-*.swo
-
-# Test files
-src/test/
-
-# Documentation
-*.md
-docs/
-
-# SQL scripts (no necesarios en producción)
-*.sql
-
-# Otros
-test-workflow.md
+.git
+.gradle
+build
+out
+node_modules
+**/*.iml
+**/.idea
+**/.vscode
