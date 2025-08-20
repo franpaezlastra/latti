@@ -1,16 +1,13 @@
-FROM gradle:8.13-jdk17-alpine
-
-WORKDIR /app
-COPY . .
-
-# Carpeta para subidas
-RUN mkdir -p /app/uploads
-
-# Construir (sin tests para acelerar)
-RUN gradle clean bootJar -x test --no-daemon
-
-EXPOSE 8080
-VOLUME ["/app/uploads"]
-
-# 👇 Ejecuta CUALQUIER jar que se haya generado
-ENTRYPOINT ["sh", "-c", "java -jar build/libs/*.jar"]
+# --- Build stage ---
+    FROM gradle:8.13-jdk17-alpine AS build
+    WORKDIR /app
+    COPY . .
+    RUN gradle clean bootJar -x test --no-daemon
+    
+    # --- Runtime stage ---
+    FROM eclipse-temurin:17-jre
+    WORKDIR /app
+    COPY --from=build /app/build/libs/*.jar app.jar
+    EXPOSE 8080
+    ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app/app.jar"]
+    
