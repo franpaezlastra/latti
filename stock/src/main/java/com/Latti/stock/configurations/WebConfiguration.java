@@ -29,7 +29,8 @@ public class WebConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
         httpSecurity
-                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Configura CORS usando la fuente de configuración.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Configura CORS usando la fuente de
+                                                                                 // configuración.
                 .csrf(AbstractHttpConfigurer::disable) // Desactiva la protección CSRF.
                 .httpBasic(AbstractHttpConfigurer::disable) // Desactiva la autenticación básica HTTP.
                 .formLogin(AbstractHttpConfigurer::disable) // Desactiva el formulario de inicio de sesión.
@@ -37,11 +38,26 @@ public class WebConfiguration {
                         HeadersConfigurer.FrameOptionsConfig::disable)) // Desactiva la protección contra marcos.
 
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // 🔓 Permitir todas las peticiones sin autenticación
-                )
+                        // CORS preflight
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
-                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class) // Añade el filtro JWT antes del filtro de autenticación por nombre de usuario y contraseña.
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // Configura la sesión como sin estado.
+                        // Público: login & register
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Todo lo demás requiere rol ADMIN
+                        .anyRequest().hasRole("ADMIN"))
+
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class) // Añade el filtro JWT
+                                                                                               // antes del filtro de
+                                                                                               // autenticación por
+                                                                                               // nombre de usuario y
+                                                                                               // contraseña.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)); // Configura
+                                                                                                               // la
+                                                                                                               // sesión
+                                                                                                               // como
+                                                                                                               // sin
+                                                                                                               // estado.
 
         return httpSecurity.build();
     }
@@ -52,8 +68,9 @@ public class WebConfiguration {
     }
 
     @Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager(); // Configura el AuthenticationManager usando la configuración de autenticación.
+    AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager(); // Configura el AuthenticationManager usando la
+                                                                       // configuración de autenticación.
     }
 }
-
