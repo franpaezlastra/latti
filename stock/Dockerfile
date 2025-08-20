@@ -1,22 +1,16 @@
 FROM gradle:8.13-jdk17-alpine
 
-# Crear carpeta de trabajo
 WORKDIR /app
-
-# Copiar todo al contenedor
 COPY . .
 
-# Crear la carpeta uploads dentro del contenedor
+# Carpeta para subidas
 RUN mkdir -p /app/uploads
 
-# Construir la aplicación (sin tests para acelerar; quita -x test si quieres)
-RUN gradle clean build -x test --no-daemon
+# Construir (sin tests para acelerar)
+RUN gradle clean bootJar -x test --no-daemon
 
-# Exponer el puerto de Spring Boot
 EXPOSE 8080
-
-# Declarar carpeta como volumen (opcional, pero buena práctica)
 VOLUME ["/app/uploads"]
 
-# Ejecutar la app
-ENTRYPOINT ["java", "-jar", "build/libs/empresas-0.0.1-SNAPSHOT.jar"]
+# 👇 Ejecuta CUALQUIER jar que se haya generado
+ENTRYPOINT ["sh", "-c", "java -jar build/libs/*.jar"]
