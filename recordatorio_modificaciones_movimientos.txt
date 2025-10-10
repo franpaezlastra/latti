@@ -1,0 +1,152 @@
+# Recordatorio de Modificaciones para el Sistema de Movimientos
+
+## 1. Backend: Implementación de Edición Condicional de Movimientos
+
+**Objetivo:** Permitir la edición de movimientos de insumos solo bajo condiciones seguras para mantener la integridad de los datos.
+
+**Reglas para permitir la edición (a implementar en el backend):**
+
+*   **Condición 1: No hay movimientos posteriores del mismo insumo.**
+    *   Si el insumo en el movimiento a editar no ha sido afectado por ninguna otra entrada o salida posterior.
+*   **Condición 2: El insumo NO se ha usado en producción de productos.**
+    *   Verificar que el lote o la cantidad de este insumo específico no haya sido consumido en la creación de ningún producto.
+*   **Condición 3: No hay movimientos de salida posteriores.**
+    *   Asegurarse de que no se hayan registrado salidas (consumos, ventas, etc.) que dependan de la cantidad de este movimiento.
+*   **Condición 4: No afecta el cálculo de precios de inversión de productos.**
+    *   Si el movimiento a editar es una entrada de insumo que contribuyó al costo de un producto, y ese producto ya fue producido, la edición podría alterar retroactivamente los costos. Se debe evitar esto.
+
+**Alternativa para casos NO seguros (a considerar):**
+
+*   **Movimientos de Ajuste:** En lugar de editar un movimiento antiguo, crear un nuevo "movimiento de ajuste" (positivo o negativo) para corregir el stock actual sin alterar el historial. Esto mantiene la trazabilidad.
+
+## 2. Frontend: Visualización de la Unidad del Insumo
+
+**Objetivo:** Mejorar la claridad en el formulario de "Agregar Movimiento de Insumo" mostrando la unidad de medida del insumo.
+
+**Modificación sugerida (en el formulario de la imagen):**
+
+*   **Ubicación:** Al lado del campo "Cantidad *" para cada insumo agregado.
+*   **Ejemplo:** Si el insumo es "Azúcar" y su unidad es "kg", el campo se vería como:
+    `Cantidad * [ 10,00 ] kg`
+*   **Consideraciones:**
+    *   La unidad debe ser dinámica y obtenerse de la información del insumo seleccionado.
+    *   Esto aplica tanto al formulario de "Agregar Movimiento de Insumo" como a cualquier futura interfaz de edición o visualización de movimientos.
+*   **Implementación sugerida:**
+    *   Al seleccionar un insumo, obtener su unidad desde la base de datos
+    *   Mostrar la unidad como texto estático al lado del campo
+    *   Ejemplo: `Cantidad * [____] kg` o `Cantidad * [____] litros`
+    *   Esto haría el formulario más claro y evitaría errores de unidad
+
+## 3. Frontend: Scroll en Lista de Insumos
+
+**Objetivo:** Mejorar la usabilidad cuando hay muchos insumos en el formulario de "Agregar Movimiento de Insumo".
+
+**Modificación sugerida:**
+
+*   **Ubicación:** En la sección donde se listan los insumos agregados al movimiento.
+*   **Implementación:** Agregar un contenedor con scroll cuando la lista de insumos supere una altura específica.
+*   **Ejemplo de CSS:**
+    ```
+    .insumos-lista {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    ```
+*   **Consideraciones:**
+    *   Establecer una altura máxima (ej: 300px) para la lista de insumos
+    *   Mostrar scroll vertical cuando se supere esa altura
+    *   Mantener el header visible (títulos de columnas: "Insumo", "Cantidad", "Precio", etc.)
+    *   Aplicar estilos consistentes con el diseño actual del sistema
+
+## 4. Frontend: Solución de Error 404 en Refresh (F5)
+
+**Problema:** Al hacer F5 (refresh) en rutas como `/admin/dashboard`, aparece error 404 "Not Found".
+
+**Causa:** Las Single Page Applications (SPA) como React necesitan que el servidor redirija todas las rutas al archivo `index.html`.
+
+**Soluciones a implementar:**
+
+*   **Opción 1: Archivo .htaccess (Apache)**
+    ```
+    Options -MultiViews
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.html [QR,L]
+    ```
+*   **Opción 2: Configuración Nginx**
+    ```
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    ```
+*   **Opción 3: Vite config (desarrollo)**
+    ```javascript
+    export default defineConfig({
+      server: {
+        historyApiFallback: true
+      }
+    })
+    ```
+
+**Consideraciones:**
+*   Verificar qué servidor web se está usando (Apache, Nginx, etc.)
+*   Determinar si es hosting compartido o VPS
+*   Aplicar la configuración correspondiente al entorno (desarrollo/producción)
+
+## 5. Frontend: Implementación de Responsive Design
+
+**Objetivo:** Hacer que la aplicación sea completamente responsive, especialmente la barra de navegación en dispositivos móviles.
+
+**Área a implementar:**
+
+*   **Barra de navegación responsive:**
+    *   Implementar menú hamburguesa para dispositivos móviles
+    *   Ocultar elementos de navegación en pantallas pequeñas
+    *   Mostrar menú desplegable al hacer clic en el ícono hamburguesa
+    *   Asegurar que los enlaces sean accesibles en móvil
+
+**Implementación sugerida:**
+
+*   **CSS Media Queries:**
+    ```css
+    /* Para tablets y móviles */
+    @media (max-width: 768px) {
+        .navbar-desktop {
+            display: none;
+        }
+        .navbar-mobile {
+            display: flex;
+        }
+        .hamburger-menu {
+            display: block;
+        }
+    }
+    
+    /* Para desktop */
+    @media (min-width: 769px) {
+        .navbar-desktop {
+            display: flex;
+        }
+        .navbar-mobile {
+            display: none;
+        }
+        .hamburger-menu {
+            display: none;
+        }
+    }
+    ```
+
+*   **Componente de menú hamburguesa:**
+    *   Ícono de 3 líneas (hamburguesa)
+    *   Menú desplegable con overlay o slide-in
+    *   Botón de cerrar (X) en el menú móvil
+    *   Animaciones suaves para abrir/cerrar
+
+**Consideraciones:**
+*   Implementar breakpoints estándar (768px, 1024px)
+*   Probar en diferentes tamaños de pantalla
+*   Asegurar que todos los elementos sean táctiles en móvil
+*   Mantener la funcionalidad completa en todos los dispositivos
