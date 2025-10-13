@@ -232,14 +232,23 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                   </select>
                 </div>
                 <div className="w-24">
-                  <NumberInput
-                    placeholder="Cantidad"
-                    value={insumo.cantidad}
-                    onChange={(value) => updateInsumo(index, 'cantidad', value)}
-                    required
-                    disabled={isSubmitting}
-                    className="w-full px-2 py-1.5 text-sm"
-                  />
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-600 block">
+                      Cantidad
+                      {insumo.insumoId && (() => {
+                        const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
+                        return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
+                      })()}
+                    </label>
+                    <NumberInput
+                      placeholder="Cantidad"
+                      value={insumo.cantidad}
+                      onChange={(value) => updateInsumo(index, 'cantidad', value)}
+                      required
+                      disabled={isSubmitting}
+                      className="w-full px-2 py-1.5 text-sm"
+                    />
+                  </div>
                 </div>
                 <button
                   type="button"

@@ -408,18 +408,28 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
     @Transactional
     public MovimientoInsumoLote editarMovimientoInsumo(EditarMovimientoDeInsumoDTO dto) {
         try {
+            System.out.println("🔍 === SERVICIO: INICIO DE EDICIÓN ===");
+            System.out.println("📦 ID del movimiento: " + dto.id());
+            System.out.println("📋 Detalles a editar: " + dto.detalles());
+            
             // Primero validar que se puede editar
             ValidacionEdicionDTO validacion = validarEdicionMovimiento(dto.id());
             if (!validacion.puedeEditar()) {
+                System.err.println("❌ No se puede editar: " + validacion.razon());
                 throw new IllegalArgumentException("No se puede editar el movimiento: " + validacion.razon());
             }
 
             MovimientoInsumoLote movimiento = movimientoRepository.findById(dto.id())
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
+            System.out.println("📦 Movimiento encontrado: " + movimiento.getId());
+            System.out.println("📋 Detalles actuales: " + movimiento.getDetalles().size());
+
             // Revertir el movimiento original
+            System.out.println("🔄 Revirtiendo movimiento original...");
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
+                System.out.println("  - Revirtiendo insumo: " + insumo.getNombre() + " cantidad: " + detalle.getCantidad());
                 
                 if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() - detalle.getCantidad());
@@ -429,20 +439,42 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 insumoRepository.save(insumo);
             }
 
-            // Limpiar detalles existentes
+            // Limpiar detalles existentes - ESTRATEGIA MEJORADA
+            System.out.println("🗑️ Limpiando detalles existentes...");
+            System.out.println("📋 Detalles antes de limpiar: " + movimiento.getDetalles().size());
+            
+            // Crear una nueva lista vacía para reemplazar la existente
+            List<DetalleMovimientoInsumo> detallesExistentes = new ArrayList<>(movimiento.getDetalles());
+            System.out.println("📋 Detalles copiados: " + detallesExistentes.size());
+            
+            // Eliminar cada detalle individualmente de la base de datos
+            for (DetalleMovimientoInsumo detalle : detallesExistentes) {
+                System.out.println("🗑️ Eliminando detalle: " + detalle.getId() + " - " + detalle.getInsumo().getNombre());
+                detalleMovimientoInsumoRepository.delete(detalle);
+            }
+            
+            // Limpiar la lista del movimiento
             movimiento.getDetalles().clear();
+            System.out.println("✅ Detalles limpiados correctamente");
 
             // Actualizar datos básicos del movimiento
+            System.out.println("📝 Actualizando datos básicos del movimiento...");
             movimiento.setFecha(dto.fecha());
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
             // Aplicar los nuevos detalles
+            System.out.println("➕ Aplicando nuevos detalles...");
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
+                System.out.println("  - Procesando detalle: insumoId=" + detalleDto.insumoId() + 
+                                 ", cantidad=" + detalleDto.cantidad() + ", precio=" + detalleDto.precio());
+                
                 Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
                         .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + detalleDto.insumoId()));
+
+                System.out.println("    - Insumo encontrado: " + insumo.getNombre());
 
                 // Validaciones básicas
                 if (detalleDto.cantidad() <= 0) {
@@ -456,34 +488,44 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
 
                 // Aplicar cambios al stock
+                System.out.println("    - Aplicando cambios al stock...");
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() + detalleDto.cantidad());
                     double precioPorUnidad = detalleDto.precio() / detalleDto.cantidad();
                     insumo.setPrecioDeCompra(precioPorUnidad);
                     insumosParaRecalcular.add(insumo.getId());
+                    System.out.println("      - Stock actualizado: " + insumo.getStockActual());
                 } else {
                     insumo.setStockActual(insumo.getStockActual() - detalleDto.cantidad());
+                    System.out.println("      - Stock actualizado: " + insumo.getStockActual());
                 }
 
                 insumoRepository.save(insumo);
 
                 // Crear nuevo detalle
+                System.out.println("    - Creando nuevo detalle...");
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
                 movimiento.addDetalle(nuevoDetalle);
+                System.out.println("      - Detalle agregado al movimiento");
             }
 
             // Guardar el movimiento actualizado
+            System.out.println("💾 Guardando movimiento actualizado...");
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.save(movimiento);
+            System.out.println("✅ Movimiento guardado con ID: " + movimientoActualizado.getId());
+            System.out.println("📋 Detalles finales: " + movimientoActualizado.getDetalles().size());
 
             // Recalcular precios de inversión de productos
+            System.out.println("🔄 Recalculando precios de inversión...");
             for (Long insumoId : insumosParaRecalcular) {
                 recalcularPrecioInversionProductos(insumoId);
             }
 
+            System.out.println("🎉 Edición completada exitosamente");
             return movimientoActualizado;
 
         } catch (Exception e) {

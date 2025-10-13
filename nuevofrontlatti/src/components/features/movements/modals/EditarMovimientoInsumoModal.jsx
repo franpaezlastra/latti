@@ -14,6 +14,7 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
   const [validando, setValidando] = useState(false);
   const [validacion, setValidacion] = useState(null);
   const [error, setError] = useState("");
+  const [cargandoInsumos, setCargandoInsumos] = useState(false);
 
   // Estados del formulario
   const [fecha, setFecha] = useState("");
@@ -29,12 +30,19 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       setTipoMovimiento(movimiento.tipoMovimiento);
       
       // Convertir detalles del movimiento a formato del formulario
-      const detallesFormateados = movimiento.detalles.map(detalle => ({
-        insumoId: detalle.insumoId || detalle.id,
+      // Los detalles vienen como 'detalles' en el movimiento unificado
+      console.log('🔍 Movimiento recibido:', movimiento);
+      console.log('📦 Detalles del movimiento:', movimiento.detalles);
+      
+      const detallesDelMovimiento = movimiento.detalles || [];
+      const detallesFormateados = detallesDelMovimiento.map(detalle => ({
+        insumoId: detalle.id || detalle.insumoId,
         cantidad: detalle.cantidad,
         precio: detalle.precioTotal || 0,
-        nombreInsumo: detalle.nombreInsumo || detalle.nombre
+        nombreInsumo: detalle.nombre || detalle.nombreInsumo
       }));
+      
+      console.log('✅ Detalles formateados:', detallesFormateados);
       setDetalles(detallesFormateados);
       
       // Validar si se puede editar
@@ -45,7 +53,14 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
   // Cargar insumos al abrir el modal
   useEffect(() => {
     if (isOpen) {
-      dispatch(loadInsumos());
+      // Cargar insumos si están vacíos
+      if (!insumos || insumos.length === 0) {
+        console.log('Cargando insumos...');
+        setCargandoInsumos(true);
+        dispatch(loadInsumos()).finally(() => {
+          setCargandoInsumos(false);
+        });
+      }
     }
   }, [isOpen, dispatch]);
 
@@ -54,15 +69,32 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
     
     setValidando(true);
     try {
-      const response = await fetch(`https://api.lattituc.site/api/movimiento-insumo/${movimiento.id}/validar-edicion`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://api.lattituc.site/api/movimiento-insumo/${movimiento.id}/validar-edicion`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 403) {
+          throw new Error('No tienes permisos para editar este movimiento');
+        } else if (response.status === 401) {
+          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente');
+        } else {
+          throw new Error(`Error del servidor: ${response.status}`);
+        }
+      }
+      
       const data = await response.json();
       setValidacion(data);
     } catch (error) {
       console.error("Error al validar edición:", error);
       setValidacion({
         puedeEditar: false,
-        razon: "Error al validar edición",
-        detallesValidacion: ["Error de conexión"]
+        razon: error.message || "Error al validar edición",
+        detallesValidacion: [error.message || "Error de conexión"]
       });
     } finally {
       setValidando(false);
@@ -104,6 +136,15 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
     setError("");
 
     try {
+      // Logs detallados para depuración
+      console.log('🔍 === INICIO DE EDICIÓN ===');
+      console.log('📦 Movimiento original:', movimiento);
+      console.log('📝 Datos del formulario:');
+      console.log('  - Fecha:', fecha);
+      console.log('  - Descripción:', descripcion);
+      console.log('  - Tipo:', tipoMovimiento);
+      console.log('  - Detalles:', detalles);
+
       const movimientoData = {
         id: movimiento.id,
         fecha,
@@ -116,26 +157,41 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
         }))
       };
 
+      console.log('📤 Objeto que se envía al backend:', movimientoData);
+      console.log('🔢 Detalles mapeados:', movimientoData.detalles);
+
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token de autenticación:', token ? 'Presente' : 'Ausente');
+      
       const response = await fetch(`https://api.lattituc.site/api/movimiento-insumo/${movimiento.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(movimientoData)
       });
 
+      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
         throw new Error(errorData.error || 'Error al editar el movimiento');
       }
 
+      const responseData = await response.json();
+      console.log('✅ Respuesta exitosa:', responseData);
+
       // Recargar movimientos
+      console.log('🔄 Recargando movimientos...');
       await dispatch(loadMovimientosInsumo());
       
+      console.log('🎉 Edición completada exitosamente');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error al editar movimiento:", error);
+      console.error("💥 Error al editar movimiento:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -166,6 +222,16 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
             <div className="flex items-center space-x-2">
               <LoadingSpinner size="sm" />
               <span className="text-blue-700">Validando si se puede editar...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Carga de insumos */}
+        {cargandoInsumos && (
+          <div className="p-4 bg-yellow-50 border-b">
+            <div className="flex items-center space-x-2">
+              <LoadingSpinner size="sm" />
+              <span className="text-yellow-700">Cargando insumos...</span>
             </div>
           </div>
         )}
@@ -292,20 +358,34 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
                           onChange={(e) => handleDetalleChange(index, "insumoId", e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
-                          disabled={!validacion?.puedeEditar}
+                          disabled={!validacion?.puedeEditar || cargandoInsumos}
                         >
-                          <option value="">Seleccionar insumo</option>
-                          {insumos.map((insumo) => (
-                            <option key={insumo.id} value={insumo.id}>
-                              {insumo.nombre} ({insumo.unidadMedida})
-                            </option>
-                          ))}
+                          <option value="">
+                            {cargandoInsumos ? "Cargando insumos..." : "Seleccionar insumo"}
+                          </option>
+                          {insumos && insumos.length > 0 ? (
+                            insumos.map((insumo) => (
+                              <option key={insumo.id} value={insumo.id}>
+                                {insumo.nombre} ({insumo.unidadMedida})
+                              </option>
+                            ))
+                          ) : (
+                            !cargandoInsumos && (
+                              <option value="" disabled>
+                                No hay insumos disponibles
+                              </option>
+                            )
+                          )}
                         </select>
                       </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Cantidad *
+                          {detalle.insumoId && (() => {
+                            const insumoSeleccionado = insumos.find(i => i.id === parseInt(detalle.insumoId));
+                            return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
+                          })()}
                         </label>
                         <Input
                           type="number"

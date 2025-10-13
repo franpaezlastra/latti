@@ -393,6 +393,10 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                     <div className="space-y-2">
                       <label className="text-xs font-medium text-gray-600 block">
                         Cantidad *
+                        {insumo.insumoId && (() => {
+                          const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
+                          return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
+                        })()}
                       </label>
                       <NumberInput
                         placeholder="0,00"

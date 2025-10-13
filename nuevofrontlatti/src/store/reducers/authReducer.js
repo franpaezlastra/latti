@@ -9,7 +9,11 @@ import {
 const getStoredUser = () => {
   try {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    // Verificar que no sea null, undefined o la cadena "undefined"
+    if (user && user !== 'null' && user !== 'undefined') {
+      return JSON.parse(user);
+    }
+    return null;
   } catch (error) {
     console.error('Error parsing user from localStorage:', error);
     localStorage.removeItem('user');

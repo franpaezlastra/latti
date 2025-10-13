@@ -71,19 +71,36 @@ public class MovimientoInsumoController {
     @PutMapping("/{id}")
     public ResponseEntity<?> editarMovimiento(@PathVariable Long id, @RequestBody EditarMovimientoDeInsumoDTO dto) {
         try {
+            // Logs detallados para depuración
+            System.out.println("🔍 === BACKEND: INICIO DE EDICIÓN ===");
+            System.out.println("📦 ID del movimiento: " + id);
+            System.out.println("📝 DTO recibido: " + dto);
+            System.out.println("📅 Fecha: " + dto.fecha());
+            System.out.println("📄 Descripción: " + dto.descripcion());
+            System.out.println("🔄 Tipo: " + dto.tipoMovimiento());
+            System.out.println("📋 Detalles: " + dto.detalles());
+            
             // Asegurar que el ID del path coincida con el del DTO
             EditarMovimientoDeInsumoDTO dtoConId = new EditarMovimientoDeInsumoDTO(
                 id, dto.fecha(), dto.descripcion(), dto.tipoMovimiento(), dto.detalles()
             );
             
+            System.out.println("✅ DTO con ID corregido: " + dtoConId);
+            
             MovimientoInsumoLote movimiento = movimientoInsumoLoteService.editarMovimientoInsumo(dtoConId);
+            
+            System.out.println("🎉 Movimiento editado exitosamente: " + movimiento.getId());
+            
             return ResponseEntity.ok(Map.of(
                     "mensaje", "Movimiento de insumo editado correctamente",
                     "id", movimiento.getId()
             ));
         } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            System.err.println("💥 Error inesperado: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al editar el movimiento de insumo"));
         }
     }
