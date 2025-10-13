@@ -439,23 +439,13 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 insumoRepository.save(insumo);
             }
 
-            // Limpiar detalles existentes - ESTRATEGIA MEJORADA
-            System.out.println("🗑️ Limpiando detalles existentes...");
-            System.out.println("📋 Detalles antes de limpiar: " + movimiento.getDetalles().size());
-            
-            // Crear una nueva lista vacía para reemplazar la existente
-            List<DetalleMovimientoInsumo> detallesExistentes = new ArrayList<>(movimiento.getDetalles());
-            System.out.println("📋 Detalles copiados: " + detallesExistentes.size());
-            
-            // Eliminar cada detalle individualmente de la base de datos
-            for (DetalleMovimientoInsumo detalle : detallesExistentes) {
-                System.out.println("🗑️ Eliminando detalle: " + detalle.getId() + " - " + detalle.getInsumo().getNombre());
-                detalleMovimientoInsumoRepository.delete(detalle);
+            // ELIMINAR COMPLETAMENTE los detalles existentes de la base de datos
+            System.out.println("🗑️ Eliminando detalles existentes de la base de datos...");
+            for (DetalleMovimientoInsumo detalleExistente : movimiento.getDetalles()) {
+                System.out.println("  - Eliminando detalle: " + detalleExistente.getId());
+                detalleMovimientoInsumoRepository.delete(detalleExistente);
             }
-            
-            // Limpiar la lista del movimiento
             movimiento.getDetalles().clear();
-            System.out.println("✅ Detalles limpiados correctamente");
 
             // Actualizar datos básicos del movimiento
             System.out.println("📝 Actualizando datos básicos del movimiento...");
@@ -463,12 +453,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // Aplicar los nuevos detalles
-            System.out.println("➕ Aplicando nuevos detalles...");
+            // CREAR NUEVOS detalles (reemplazo completo)
+            System.out.println("➕ Creando nuevos detalles (reemplazo completo)...");
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
-                System.out.println("  - Procesando detalle: insumoId=" + detalleDto.insumoId() + 
+                System.out.println("  - Creando detalle: insumoId=" + detalleDto.insumoId() + 
                                  ", cantidad=" + detalleDto.cantidad() + ", precio=" + detalleDto.precio());
                 
                 Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
@@ -502,15 +492,19 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
                 insumoRepository.save(insumo);
 
-                // Crear nuevo detalle
-                System.out.println("    - Creando nuevo detalle...");
+                // Crear NUEVO detalle y guardarlo en la base de datos
+                System.out.println("    - Creando y guardando nuevo detalle...");
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
+                nuevoDetalle.setMovimiento(movimiento); // Asociar al movimiento
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
-                movimiento.addDetalle(nuevoDetalle);
-                System.out.println("      - Detalle agregado al movimiento");
+                
+                // Guardar el detalle en la base de datos
+                DetalleMovimientoInsumo detalleGuardado = detalleMovimientoInsumoRepository.save(nuevoDetalle);
+                movimiento.addDetalle(detalleGuardado);
+                System.out.println("      - Detalle guardado con ID: " + detalleGuardado.getId());
             }
 
             // Guardar el movimiento actualizado
