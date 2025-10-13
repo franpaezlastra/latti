@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaEye, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEye, FaTrash, FaEdit } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loadMovimientosInsumo, deleteMovimientoInsumo } from "../../store/actions/movimientoInsumoActions";
 import { loadMovimientosProducto, deleteMovimientoProducto } from "../../store/actions/movimientoProductoActions";
@@ -17,6 +17,7 @@ import MovimientoSeleccionModal from "../../components/features/movements/modals
 import MovimientoInsumoModal from "../../components/features/movements/modals/MovimientoInsumoModal";
 import MovimientoProductoModal from "../../components/features/movements/modals/MovimientoProductoModal";
 import MovimientoDetallesModal from "../../components/features/movements/modals/MovimientoDetallesModal";
+import EditarMovimientoInsumoModal from "../../components/features/movements/modals/EditarMovimientoInsumoModal";
 
 const Movements = () => {
   const dispatch = useDispatch();
@@ -27,10 +28,12 @@ const Movements = () => {
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   // Estados de datos
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
+  const [movimientoAEditar, setMovimientoAEditar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
 
   // Estados de filtros
@@ -158,6 +161,14 @@ const Movements = () => {
     setShowDeleteModal(true);
   };
 
+  const handleEditarMovimiento = (movimiento) => {
+    // Solo permitir editar movimientos de insumos por ahora
+    if (movimiento.tipo === "Insumo") {
+      setMovimientoAEditar(movimiento);
+      setShowEditModal(true);
+    }
+  };
+
     const handleConfirmarEliminacion = async () => {
     if (!movimientoAEliminar) return;
 
@@ -227,6 +238,14 @@ const Movements = () => {
       className: "text-blue-600 hover:text-blue-800 hover:bg-blue-50",
     },
     {
+      label: "Editar",
+      icon: <FaEdit size={12} />,
+      onClick: (mov) => handleEditarMovimiento(mov),
+      className: "text-green-600 hover:text-green-800 hover:bg-green-50",
+      // Solo mostrar para movimientos de insumos
+      show: (mov) => mov.tipo === "Insumo",
+    },
+    {
       label: "Eliminar",
       icon: <FaTrash size={12} />,
       onClick: (mov) => handleEliminarMovimiento(mov),
@@ -285,6 +304,18 @@ const Movements = () => {
         title="Eliminar Movimiento"
         message={`¿Estás seguro de que quieres eliminar este movimiento de ${movimientoAEliminar?.tipo?.toLowerCase()}? Esta acción revertirá todos los cambios de stock y no se puede deshacer.`}
         loading={eliminando}
+      />
+
+      <EditarMovimientoInsumoModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setMovimientoAEditar(null);
+        }}
+        movimiento={movimientoAEditar}
+        onSuccess={() => {
+          // Los datos se actualizan automáticamente en el modal
+        }}
       />
 
       {/* Contenido principal */}

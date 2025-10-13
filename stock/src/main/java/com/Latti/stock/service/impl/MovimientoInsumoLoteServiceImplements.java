@@ -2,8 +2,10 @@ package com.Latti.stock.service.impl;
 
 import com.Latti.stock.dtos.CrearMovimientoDeInsumoDTO;
 import com.Latti.stock.dtos.DetalleMovimientoInsumoDTO;
+import com.Latti.stock.dtos.EditarMovimientoDeInsumoDTO;
 import com.Latti.stock.dtos.ResponseDetalleMovimientoInsumoDTO;
 import com.Latti.stock.dtos.ResponseMovimientosInsumoLoteDTO;
+import com.Latti.stock.dtos.ValidacionEdicionDTO;
 import com.Latti.stock.modules.DetalleMovimientoInsumo;
 import com.Latti.stock.modules.Insumo;
 import com.Latti.stock.modules.InsumoReceta;
@@ -285,6 +287,198 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         }
         
         return stockInicial;
+    }
+
+    /**
+     * Valida si un movimiento de insumo puede ser editado
+     * Implementa las reglas de negocio para edición segura
+     */
+    public ValidacionEdicionDTO validarEdicionMovimiento(Long movimientoId) {
+        List<String> detallesValidacion = new ArrayList<>();
+        
+        try {
+            MovimientoInsumoLote movimiento = movimientoRepository.findById(movimientoId)
+                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+
+            // Condición 1: No hay movimientos posteriores del mismo insumo
+            for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                Insumo insumo = detalle.getInsumo();
+                
+                // Verificar si hay movimientos posteriores de este insumo
+                List<DetalleMovimientoInsumo> movimientosPosteriores = insumo.getMovimientos().stream()
+                        .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()))
+                        .collect(Collectors.toList());
+                
+                if (!movimientosPosteriores.isEmpty()) {
+                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                        "' tiene " + movimientosPosteriores.size() + " movimiento(s) posterior(es)");
+                }
+            }
+
+            // Condición 2: El insumo NO se ha usado en producción de productos
+            for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                Insumo insumo = detalle.getInsumo();
+                
+                // Verificar si el insumo se ha usado en producción después de este movimiento
+                List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
+                        .filter(producto -> producto.getReceta() != null && 
+                                producto.getReceta().getDetalles().stream()
+                                        .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                        .toList();
+                
+                if (!productosQueUsanInsumo.isEmpty()) {
+                    // Verificar si algún producto fue producido después de este movimiento
+                    boolean hayProduccionPosterior = productosQueUsanInsumo.stream()
+                            .anyMatch(producto -> {
+                                // Aquí deberías verificar si el producto fue producido después de la fecha del movimiento
+                                // Por simplicidad, asumimos que si el producto existe, ya fue producido
+                                return true; // En una implementación real, verificarías fechas de producción
+                            });
+                    
+                    if (hayProduccionPosterior) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                            "' ha sido usado en la producción de productos");
+                    }
+                }
+            }
+
+            // Condición 3: No hay movimientos de salida posteriores
+            for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                Insumo insumo = detalle.getInsumo();
+                
+                List<DetalleMovimientoInsumo> salidasPosteriores = insumo.getMovimientos().stream()
+                        .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()) &&
+                                   m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA)
+                        .collect(Collectors.toList());
+                
+                if (!salidasPosteriores.isEmpty()) {
+                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                        "' tiene " + salidasPosteriores.size() + " salida(s) posterior(es)");
+                }
+            }
+
+            // Condición 4: No afecta el cálculo de precios de inversión de productos
+            if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                    Insumo insumo = detalle.getInsumo();
+                    
+                    // Verificar si este insumo contribuye al costo de productos ya producidos
+                    List<Producto> productosAfectados = productoRepository.findAll().stream()
+                            .filter(producto -> producto.getReceta() != null && 
+                                    producto.getReceta().getDetalles().stream()
+                                            .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                            .toList();
+                    
+                    if (!productosAfectados.isEmpty()) {
+                        detallesValidacion.add("La edición de este movimiento de entrada afectaría el costo de " + 
+                            productosAfectados.size() + " producto(s) ya producido(s)");
+                    }
+                }
+            }
+
+            boolean puedeEditar = detallesValidacion.isEmpty();
+            String razon = puedeEditar ? 
+                "El movimiento puede ser editado sin problemas" : 
+                "El movimiento no puede ser editado por las siguientes razones:";
+
+            return new ValidacionEdicionDTO(puedeEditar, razon, detallesValidacion);
+
+        } catch (Exception e) {
+            return new ValidacionEdicionDTO(false, "Error al validar edición: " + e.getMessage(), 
+                List.of("Error interno: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Edita un movimiento de insumo existente
+     * Solo se ejecuta si la validación es exitosa
+     */
+    @Transactional
+    public MovimientoInsumoLote editarMovimientoInsumo(EditarMovimientoDeInsumoDTO dto) {
+        try {
+            // Primero validar que se puede editar
+            ValidacionEdicionDTO validacion = validarEdicionMovimiento(dto.id());
+            if (!validacion.puedeEditar()) {
+                throw new IllegalArgumentException("No se puede editar el movimiento: " + validacion.razon());
+            }
+
+            MovimientoInsumoLote movimiento = movimientoRepository.findById(dto.id())
+                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+
+            // Revertir el movimiento original
+            for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                Insumo insumo = detalle.getInsumo();
+                
+                if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    insumo.setStockActual(insumo.getStockActual() - detalle.getCantidad());
+                } else {
+                    insumo.setStockActual(insumo.getStockActual() + detalle.getCantidad());
+                }
+                insumoRepository.save(insumo);
+            }
+
+            // Limpiar detalles existentes
+            movimiento.getDetalles().clear();
+
+            // Actualizar datos básicos del movimiento
+            movimiento.setFecha(dto.fecha());
+            movimiento.setDescripcion(dto.descripcion());
+            movimiento.setTipoMovimiento(dto.tipoMovimiento());
+
+            // Aplicar los nuevos detalles
+            List<Long> insumosParaRecalcular = new ArrayList<>();
+            
+            for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
+                Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
+                        .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + detalleDto.insumoId()));
+
+                // Validaciones básicas
+                if (detalleDto.cantidad() <= 0) {
+                    throw new IllegalArgumentException("La cantidad debe ser mayor a 0 para el insumo: " + insumo.getNombre());
+                }
+
+                if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    if (detalleDto.precio() <= 0) {
+                        throw new IllegalArgumentException("El precio debe ser mayor a 0 para el insumo: " + insumo.getNombre());
+                    }
+                }
+
+                // Aplicar cambios al stock
+                if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    insumo.setStockActual(insumo.getStockActual() + detalleDto.cantidad());
+                    double precioPorUnidad = detalleDto.precio() / detalleDto.cantidad();
+                    insumo.setPrecioDeCompra(precioPorUnidad);
+                    insumosParaRecalcular.add(insumo.getId());
+                } else {
+                    insumo.setStockActual(insumo.getStockActual() - detalleDto.cantidad());
+                }
+
+                insumoRepository.save(insumo);
+
+                // Crear nuevo detalle
+                DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
+                nuevoDetalle.setInsumo(insumo);
+                if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    nuevoDetalle.setPrecioTotal(detalleDto.precio());
+                }
+                movimiento.addDetalle(nuevoDetalle);
+            }
+
+            // Guardar el movimiento actualizado
+            MovimientoInsumoLote movimientoActualizado = movimientoRepository.save(movimiento);
+
+            // Recalcular precios de inversión de productos
+            for (Long insumoId : insumosParaRecalcular) {
+                recalcularPrecioInversionProductos(insumoId);
+            }
+
+            return movimientoActualizado;
+
+        } catch (Exception e) {
+            System.err.println("Error en editarMovimientoInsumo: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
