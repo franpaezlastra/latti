@@ -1,4 +1,6 @@
 package com.Latti.stock.dtos;
 
-public record CrearInsumoDTO(String nombre, String unidadMedida) {
+import com.Latti.stock.modules.UnidadMedida;
+
+public record CrearInsumoDTO(String nombre, UnidadMedida unidadMedida) {
 }

@@ -63,7 +63,17 @@ const productosReducer = createReducer(initialState, (builder) => {
     })
     .addCase(crearProducto.fulfilled, (state, action) => {
       state.createStatus = "succeeded";
-      // No agregues el producto devuelto directamente, espera a recargar la lista
+      // ✅ ARREGLADO: Agregar el nuevo producto al estado local inmediatamente
+      // Esto hará que aparezca inmediatamente en el dashboard
+      const nuevoProducto = action.payload.producto || action.payload;
+      if (nuevoProducto && nuevoProducto.id) {
+        // Verificar que no esté duplicado
+        const existe = state.productos.find(p => p.id === nuevoProducto.id);
+        if (!existe) {
+          state.productos.push(nuevoProducto);
+          console.log('✅ Producto agregado al estado local:', nuevoProducto.nombre);
+        }
+      }
     })
     .addCase(crearProducto.rejected, (state, action) => {
       state.createStatus = "failed";

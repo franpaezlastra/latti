@@ -96,9 +96,21 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() + d.cantidad());
                     
-                    // Usar siempre el último precio de compra por unidad
+                    // ✅ LÓGICA CORREGIDA: Solo actualizar precio si el nuevo es mayor (peor)
                     double precioPorUnidad = d.precio() / d.cantidad();
+                    double precioActual = insumo.getPrecioDeCompra();
+                    
+                    // Solo actualizar si:
+                    // 1. No hay precio previo (primera compra)
+                    // 2. El nuevo precio es mayor (peor) que el anterior
+                    if (precioActual == 0 || precioPorUnidad > precioActual) {
                     insumo.setPrecioDeCompra(precioPorUnidad);
+                        System.out.println("🔄 Precio actualizado para " + insumo.getNombre() + 
+                                         ": $" + precioActual + " → $" + precioPorUnidad + " por " + insumo.getUnidadMedida());
+                    } else {
+                        System.out.println("✅ Manteniendo mejor precio para " + insumo.getNombre() + 
+                                         ": $" + precioActual + " (nuevo: $" + precioPorUnidad + ")");
+                    }
                     
                     // Agregar a la lista para recalcular después
                     insumosParaRecalcular.add(insumo.getId());

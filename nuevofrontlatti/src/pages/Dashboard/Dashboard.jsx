@@ -10,11 +10,12 @@ import {
   BarChart3
 } from 'lucide-react';
 import { loadProductos } from '../../store/actions/productosActions.js';
-import { loadInsumos } from '../../store/actions/insumoActions.js';
+import { fetchInsumos } from '../../store/slices/insumoSlice.js';
 import { loadMovimientosProducto } from '../../store/actions/movimientoProductoActions.js';
 import { loadMovimientosInsumo } from '../../store/actions/movimientoInsumoActions.js';
 import Tabla from '../../components/ui/Tabla.jsx';
 import { formatPrice, formatNumber } from '../../utils/formatters.js';
+import { getAbreviaturaByValue } from '../../constants/unidadesMedida.js';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -23,7 +24,7 @@ const Dashboard = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const lotesPorPagina = 10;
   
-  // Usar el nuevo sistema de Redux
+  // ✅ USAR LAS MISMAS ACCIONES QUE PRODUCTOSPAGE
   const { productos, status: productosStatus } = useSelector((state) => state.productos);
   const { insumos, status: insumosStatus } = useSelector((state) => state.insumos);
   const { movimientos: movimientosProductos, loading: movimientosProductosLoading } = useSelector((state) => state.movimientosProducto);
@@ -32,11 +33,12 @@ const Dashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // ✅ USAR LAS MISMAS ACCIONES PARA SINCRONIZACIÓN
         await Promise.all([
-          dispatch(loadProductos()),
-          dispatch(loadInsumos()),
-          dispatch(loadMovimientosProducto()),
-          dispatch(loadMovimientosInsumo())
+          dispatch(loadProductos()),           // Misma acción que ProductosPage
+          dispatch(fetchInsumos()),            // Misma acción que ProductosPage
+          dispatch(loadMovimientosProducto()), // Misma acción que ProductosPage
+          dispatch(loadMovimientosInsumo())    // Misma acción que ProductosPage
         ]);
         setLoading(false);
       } catch (error) {
@@ -367,12 +369,14 @@ const Dashboard = () => {
         datos={insumosOrdenados}
         renderFila={(insumo) => {
           const stockBajo = (insumo.stockActual || 0) < 10;
+          // ✅ CAMBIADO: Usar abreviatura de la unidad de medida
+          const unidadAbreviatura = getAbreviaturaByValue(insumo.unidadMedida) || 'unidades';
           
           return (
             <>
               <td className="px-4 py-2">{insumo.nombre}</td>
               <td className="px-4 py-2">
-                {formatNumber(insumo.stockActual || 0)} {insumo.unidadMedida || 'unidades'}
+                {formatNumber(insumo.stockActual || 0)} {unidadAbreviatura}
               </td>
               <td className="px-4 py-2">{formatPrice(insumo.precioDeCompra || 0)}</td>
               <td className="px-4 py-2">{formatPrice(insumo.totalInvertido || 0)}</td>

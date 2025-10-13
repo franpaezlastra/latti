@@ -2,6 +2,7 @@ import React from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../ui/DataTable';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
+import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
 
 const InsumosSection = ({ 
   insumos = [], 
@@ -31,7 +32,9 @@ const InsumosSection = ({
     
     return insumosOrdenados.map(insumo => ({
       ...insumo,
-      stockActual: formatQuantity(insumo.stockActual || 0, insumo.unidadMedida || '')
+      stockActual: formatQuantity(insumo.stockActual || 0, getAbreviaturaByValue(insumo.unidadMedida) || ''),
+      // ✅ CAMBIADO: Mostrar abreviatura de la unidad de medida
+      unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A'
     }));
   };
 

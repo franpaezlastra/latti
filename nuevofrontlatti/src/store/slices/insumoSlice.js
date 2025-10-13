@@ -65,6 +65,8 @@ const initialState = {
   loading: false,
   error: null,
   selectedInsumo: null,
+  createStatus: 'idle', // Agregado para tracking del estado de creación
+  createError: null,    // Agregado para errores de creación
 };
 
 // Slice
@@ -76,8 +78,7 @@ const insumoSlice = createSlice({
       state.error = null;
     },
     clearCreateError: (state) => {
-      // Limpiar solo errores de creación
-      state.error = null;
+      state.createError = null;
     },
     setSelectedInsumo: (state, action) => {
       state.selectedInsumo = action.payload;
@@ -105,19 +106,32 @@ const insumoSlice = createSlice({
       
       // Create insumo
       .addCase(createInsumo.pending, (state) => {
+        state.createStatus = 'loading';
+        state.createError = null;
         state.loading = true;
-        // No limpiar el error aquí para no afectar otros estados
       })
       .addCase(createInsumo.fulfilled, (state, action) => {
+        state.createStatus = 'succeeded';
         state.loading = false;
-        // El backend devuelve un objeto con mensaje e insumo, necesitamos acceder al insumo
+        // El backend devuelve un objeto con mensaje e insumo
         const nuevoInsumo = action.payload.insumo || action.payload;
-        state.insumos.push(nuevoInsumo);
-        // No limpiar el error aquí para no afectar otros estados
+        
+        // ✅ ARREGLADO: Agregar el nuevo insumo al estado local
+        // Esto hará que aparezca inmediatamente en el dashboard
+        if (nuevoInsumo && nuevoInsumo.id) {
+          // Verificar que no esté duplicado
+          const existe = state.insumos.find(i => i.id === nuevoInsumo.id);
+          if (!existe) {
+            state.insumos.push(nuevoInsumo);
+          }
+        }
+        
+        state.createError = null;
       })
       .addCase(createInsumo.rejected, (state, action) => {
+        state.createStatus = 'failed';
         state.loading = false;
-        // No guardar el error en el estado global, solo retornarlo
+        state.createError = action.payload;
       })
       
       // Update insumo
@@ -141,16 +155,16 @@ const insumoSlice = createSlice({
       // Delete insumo
       .addCase(deleteInsumo.pending, (state) => {
         state.loading = true;
-        // No limpiar el error aquí para no afectar otros estados
+        state.error = null;
       })
       .addCase(deleteInsumo.fulfilled, (state, action) => {
         state.loading = false;
         state.insumos = state.insumos.filter(i => i.id !== action.payload);
-        // No limpiar el error aquí para no afectar otros estados
+        state.error = null;
       })
       .addCase(deleteInsumo.rejected, (state, action) => {
         state.loading = false;
-        // No guardar el error en el estado global, solo retornarlo
+        state.error = action.payload;
       });
   },
 });

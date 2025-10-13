@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux';
-import { loadInsumos } from '../store/actions/insumoActions';
+import { fetchInsumos } from '../store/slices/insumoSlice';
 import { loadProductos } from '../store/actions/productosActions';
 import { loadMovimientosInsumo } from '../store/actions/movimientoInsumoActions';
 import { loadMovimientosProducto } from '../store/actions/movimientoProductoActions';
@@ -12,7 +12,7 @@ export const useGlobalUpdate = () => {
     try {
       // Cargar todos los datos críticos en paralelo
       const promises = [
-        dispatch(loadInsumos()),
+        dispatch(fetchInsumos()),
         dispatch(loadProductos()),
         dispatch(loadMovimientosInsumo()),
         dispatch(loadMovimientosProducto())
@@ -30,7 +30,7 @@ export const useGlobalUpdate = () => {
     try {
       // Solo recargar insumos y movimientos de insumos
       const promises = [
-        dispatch(loadInsumos()),
+        dispatch(fetchInsumos()),
         dispatch(loadMovimientosInsumo())
       ];
       
@@ -62,7 +62,7 @@ export const useGlobalUpdate = () => {
     try {
       // Recargar insumos (para actualizar stock) y movimientos
       const promises = [
-        dispatch(loadInsumos()),
+        dispatch(fetchInsumos()),
         dispatch(loadMovimientosInsumo())
       ];
       
