@@ -6,6 +6,7 @@ import com.Latti.stock.dtos.CrearInsumoCompuestoDTO;
 import com.Latti.stock.dtos.InsumoResponseDTO;
 import com.Latti.stock.dtos.InsumoCompuestoResponseDTO;
 import com.Latti.stock.dtos.InsumoUnificadoDTO;
+import com.Latti.stock.modules.UnidadMedida;
 import com.Latti.stock.modules.Insumo;
 import com.Latti.stock.service.InsumoService;
 import com.Latti.stock.service.InsumoCompuestoService;
@@ -33,11 +34,20 @@ public class InsumoCotroller {
             
             if ("COMPUESTO".equals(tipo)) {
                 // Convertir a DTO de insumo compuesto
-                CrearInsumoCompuestoDTO dto = new CrearInsumoCompuestoDTO(
-                    (String) requestBody.get("nombre"),
-                    (String) requestBody.get("unidadMedida"),
-                    (java.util.List<com.Latti.stock.dtos.RecetaInsumoDTO>) requestBody.get("receta")
-                );
+                String nombre = (String) requestBody.get("nombre");
+                String unidadMedidaStr = (String) requestBody.get("unidadMedida");
+                UnidadMedida unidadMedida = UnidadMedida.valueOf(unidadMedidaStr);
+                
+                // Convertir la receta del formato frontend al DTO
+                java.util.List<Map<String, Object>> recetaRaw = (java.util.List<Map<String, Object>>) requestBody.get("receta");
+                java.util.List<CrearInsumoCompuestoDTO.ComponenteRecetaDTO> receta = recetaRaw.stream()
+                    .map(item -> new CrearInsumoCompuestoDTO.ComponenteRecetaDTO(
+                        ((Number) item.get("insumoBaseId")).longValue(),
+                        ((Number) item.get("cantidad")).doubleValue()
+                    ))
+                    .toList();
+                
+                CrearInsumoCompuestoDTO dto = new CrearInsumoCompuestoDTO(nombre, unidadMedida, receta);
                 
                 InsumoCompuestoResponseDTO insumoCompuesto = insumoCompuestoService.crearInsumoCompuesto(dto);
                 return ResponseEntity.ok(Map.of(
@@ -46,10 +56,11 @@ public class InsumoCotroller {
                 ));
             } else {
                 // Insumo base normal
-                CrearInsumoDTO dto = new CrearInsumoDTO(
-                    (String) requestBody.get("nombre"),
-                    (String) requestBody.get("unidadMedida")
-                );
+                String nombre = (String) requestBody.get("nombre");
+                String unidadMedidaStr = (String) requestBody.get("unidadMedida");
+                UnidadMedida unidadMedida = UnidadMedida.valueOf(unidadMedidaStr);
+                
+                CrearInsumoDTO dto = new CrearInsumoDTO(nombre, unidadMedida);
                 
                 Insumo insumoCreado = insumoService.crearInsumo(dto);
                 return ResponseEntity.ok(new InsumoResponseDTO("Insumo creado correctamente", insumoCreado));
