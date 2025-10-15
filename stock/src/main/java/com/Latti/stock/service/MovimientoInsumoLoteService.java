@@ -16,4 +16,8 @@ public interface MovimientoInsumoLoteService {
     // Nuevos métodos para edición
     ValidacionEdicionDTO validarEdicionMovimiento(Long movimientoId);
     MovimientoInsumoLote editarMovimientoInsumo(EditarMovimientoDeInsumoDTO dto);
+    
+    // ✅ NUEVO: Métodos para insumos compuestos
+    void crearMovimientoEntrada(Long insumoId, double cantidad, double precioTotal, java.time.LocalDate fecha, String descripcion);
+    void crearMovimientoSalida(Long insumoId, double cantidad, java.time.LocalDate fecha, String descripcion);
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaTrash, FaCalendarAlt, FaTag, FaDollarSign, FaBox } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCalendarAlt, FaTag, FaDollarSign, FaBox, FaCog, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { createMovimientoInsumo } from '../../../../store/actions/movimientoInsumoActions';
 import { loadInsumos } from '../../../../store/actions/insumoActions';
@@ -297,6 +297,16 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
               <p className="text-xs text-green-600 mt-1">
                 💡 Ejemplo: Si compraste 10 kg de harina por $80, ingresa $80 (no $8 por kg)
               </p>
+              <div className="mt-2 p-2 bg-green-100 rounded border border-green-300">
+                <div className="flex items-start gap-2">
+                  <FaInfoCircle className="text-green-700 mt-0.5" size={12} />
+                  <div className="text-xs text-green-800">
+                    <p className="font-medium">Insumos Compuestos:</p>
+                    <p>Para insumos compuestos, este movimiento solo registra el stock. 
+                    Para ensamblar, usa la opción "Ensamblar" en la lista de insumos.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -312,6 +322,16 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
               <p className="text-sm text-orange-700">
                 Se descontará del stock disponible del insumo
               </p>
+              <div className="mt-2 p-2 bg-orange-100 rounded border border-orange-300">
+                <div className="flex items-start gap-2">
+                  <FaInfoCircle className="text-orange-700 mt-0.5" size={12} />
+                  <div className="text-xs text-orange-800">
+                    <p className="font-medium">Insumos Compuestos:</p>
+                    <p>Para insumos compuestos, esto descuenta el insumo compuesto directamente, 
+                    NO sus componentes individuales.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -372,6 +392,11 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                           const estaSeleccionadoEnOtro = insumoIdsSeleccionados.includes(String(i.id));
                           const esSeleccionActual = String(insumo.insumoId) === String(i.id);
                           
+                          // Determinar si se debe mostrar información adicional
+                          const tipoTexto = i.tipo === 'COMPUESTO' ? ' (Compuesto)' : ' (Base)';
+                          const stockInfo = formData.tipoMovimiento === "SALIDA" ? ` - Stock: ${i.stockActual}` : "";
+                          const yaSeleccionado = estaSeleccionadoEnOtro && !esSeleccionActual ? ' (ya seleccionado)' : '';
+                          
                           return (
                             <option 
                               key={i.id} 
@@ -382,7 +407,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                                 fontStyle: estaSeleccionadoEnOtro && !esSeleccionActual ? 'italic' : 'normal'
                               }}
                             >
-                              {i.nombre} {formData.tipoMovimiento === "SALIDA" ? `(Stock: ${i.stockActual})` : ""} {estaSeleccionadoEnOtro && !esSeleccionActual ? '(ya seleccionado)' : ''}
+                              {i.nombre}{tipoTexto}{stockInfo}{yaSeleccionado}
                             </option>
                           );
                         })}
@@ -445,6 +470,20 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Nota informativa sobre insumos compuestos */}
+      <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-2">
+          <FaInfoCircle className="text-blue-600 mt-0.5" size={14} />
+          <div className="text-sm text-blue-700">
+            <p className="font-medium">💡 Diferencia entre Movimientos y Ensamble</p>
+            <div className="mt-1 space-y-1 text-xs">
+              <p><strong>Movimientos de Insumos:</strong> Para comprar/vender insumos base o registrar stock de insumos compuestos</p>
+              <p><strong>Ensamble:</strong> Para crear insumos compuestos usando sus componentes base (usa el botón "Ensamblar" en la lista)</p>
+            </div>
+          </div>
+        </div>
       </div>
     </FormModal>
   );

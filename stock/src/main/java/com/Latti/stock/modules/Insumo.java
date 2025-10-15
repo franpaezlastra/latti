@@ -16,6 +16,10 @@ public class Insumo {
     @Enumerated(EnumType.STRING)
     private UnidadMedida unidadMedida;
     
+    // ✅ NUEVO: Tipo de insumo (BASE o COMPUESTO)
+    @Enumerated(EnumType.STRING)
+    private TipoInsumo tipo = TipoInsumo.BASE;
+    
     private double stockActual = 0;
     private double precioDeCompra = 0;
 
@@ -25,11 +29,26 @@ public class Insumo {
     @OneToMany(mappedBy = "insumo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetalleMovimientoInsumo> movimientos = new ArrayList<>();
 
+    // ✅ NUEVO: Receta para insumos compuestos (componentes que forman este insumo)
+    @OneToMany(mappedBy = "insumoCompuesto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecetaInsumo> receta = new ArrayList<>();
+
+    // ✅ NUEVO: Referencias como componente en otros insumos compuestos
+    @OneToMany(mappedBy = "insumoBase", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecetaInsumo> componenteEn = new ArrayList<>();
+
     public Insumo() {}
 
     public Insumo(String nombre, UnidadMedida unidadMedida) {
         this.nombre = nombre;
         this.unidadMedida = unidadMedida;
+        this.tipo = TipoInsumo.BASE; // Por defecto es BASE
+    }
+
+    public Insumo(String nombre, UnidadMedida unidadMedida, TipoInsumo tipo) {
+        this.nombre = nombre;
+        this.unidadMedida = unidadMedida;
+        this.tipo = tipo;
     }
 
     public Long getId() { return id; }
@@ -39,6 +58,9 @@ public class Insumo {
     // ✅ GETTERS Y SETTERS PARA ENUM
     public UnidadMedida getUnidadMedida() { return unidadMedida; }
     public void setUnidadMedida(UnidadMedida unidadMedida) { this.unidadMedida = unidadMedida; }
+    
+    public TipoInsumo getTipo() { return tipo; }
+    public void setTipo(TipoInsumo tipo) { this.tipo = tipo; }
     
     public double getStockActual() { return stockActual; }
     public void setStockActual(double stockActual) { this.stockActual = stockActual; }
@@ -63,5 +85,27 @@ public class Insumo {
     public void addMovimiento(DetalleMovimientoInsumo movimiento) {
         movimiento.setInsumo(this);
         this.movimientos.add(movimiento);
+    }
+
+    // ✅ NUEVO: Getters y setters para receta
+    public List<RecetaInsumo> getReceta() { return receta; }
+    public void setReceta(List<RecetaInsumo> receta) { this.receta = receta; }
+    
+    public List<RecetaInsumo> getComponenteEn() { return componenteEn; }
+    public void setComponenteEn(List<RecetaInsumo> componenteEn) { this.componenteEn = componenteEn; }
+
+    public void addComponenteReceta(RecetaInsumo componente) {
+        componente.setInsumoCompuesto(this);
+        this.receta.add(componente);
+    }
+
+    // ✅ NUEVO: Método para verificar si es insumo compuesto
+    public boolean esCompuesto() {
+        return TipoInsumo.COMPUESTO.equals(this.tipo);
+    }
+
+    // ✅ NUEVO: Método para verificar si es insumo base
+    public boolean esBase() {
+        return TipoInsumo.BASE.equals(this.tipo);
     }
 }

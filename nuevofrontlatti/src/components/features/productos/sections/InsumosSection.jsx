@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaBox, FaHammer } from 'react-icons/fa';
 import DataTable from '../../../ui/DataTable';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
 import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
@@ -7,34 +7,75 @@ import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
 const InsumosSection = ({ 
   insumos = [], 
   onCreate, 
-  onDelete 
+  onDelete,
+  onEnsamblar
 }) => {
   const columns = [
     { key: 'nombre', label: 'Nombre', sortable: true },
-    { key: 'stockActual', label: 'Cantidad disponible', sortable: true },
-    { key: 'unidadMedida', label: 'Unidad de medida', sortable: true }
+    { key: 'tipo', label: 'Tipo', sortable: true },
+    { key: 'stockActual', label: 'Stock', sortable: true },
+    { key: 'unidadMedida', label: 'Unidad', sortable: true },
+    { key: 'precioDeCompra', label: 'Precio/u', sortable: true }
   ];
 
-  const actions = [
-    {
-      label: 'Eliminar',
-      icon: <FaTrash />,
-      onClick: onDelete,
-      className: 'text-red-600 hover:bg-red-200'
+  const getActions = (insumo) => {
+    const actions = [
+      {
+        label: 'Eliminar',
+        icon: <FaTrash />,
+        onClick: () => onDelete(insumo.id),
+        className: 'text-red-600 hover:bg-red-200'
+      }
+    ];
+
+    // Agregar acción de ensamblar solo para insumos compuestos
+    if (insumo.tipo === 'COMPUESTO') {
+      actions.unshift({
+        label: 'Ensamblar',
+        icon: <FaHammer />,
+        onClick: () => onEnsamblar(insumo),
+        className: 'text-purple-600 hover:bg-purple-200'
+      });
     }
-  ];
+
+    return actions;
+  };
 
   const formatData = (insumos) => {
-    // Ordenar insumos alfabéticamente por nombre
-    const insumosOrdenados = [...insumos].sort((a, b) => 
-      a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
-    );
+    // Ordenar insumos: primero BASE, luego COMPUESTO, alfabéticamente
+    const insumosOrdenados = [...insumos].sort((a, b) => {
+      // Primero por tipo
+      if (a.tipo !== b.tipo) {
+        return a.tipo === 'BASE' ? -1 : 1;
+      }
+      // Luego alfabéticamente
+      return a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' });
+    });
     
     return insumosOrdenados.map(insumo => ({
       ...insumo,
       stockActual: formatQuantity(insumo.stockActual || 0, getAbreviaturaByValue(insumo.unidadMedida) || ''),
-      // ✅ CAMBIADO: Mostrar abreviatura de la unidad de medida
-      unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A'
+      // Mostrar abreviatura de la unidad de medida
+      unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A',
+      // Formatear tipo con icono
+      tipo: (
+        <div className="flex items-center gap-2">
+          {insumo.tipo === 'COMPUESTO' ? (
+            <FaCog className="text-purple-600" size={12} />
+          ) : (
+            <FaBox className="text-blue-600" size={12} />
+          )}
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+            insumo.tipo === 'COMPUESTO' 
+              ? 'bg-purple-100 text-purple-800' 
+              : 'bg-blue-100 text-blue-800'
+          }`}>
+            {insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base'}
+          </span>
+        </div>
+      ),
+      // Formatear precio
+      precioDeCompra: formatPrice(insumo.precioDeCompra || 0)
     }));
   };
 
@@ -42,7 +83,7 @@ const InsumosSection = ({
     <section className="h-full flex flex-col">
       {/* Header con botón de agregar */}
       <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-        <h2 className="text-base font-semibold text-blue-700 font-[TransformaSans_Trial-Bold] tracking-tight">
+        <h2 className="text-base font-[TransformaSans_Trial-Bold] text-blue-700 tracking-tight">
           Insumos
         </h2>
         <button
@@ -60,7 +101,7 @@ const InsumosSection = ({
         <DataTable
           data={formatData(insumos)}
           columns={columns}
-          actions={actions}
+          getActions={getActions}
           emptyMessage="No hay insumos registrados"
           className="h-full"
           itemsPerPage={10}

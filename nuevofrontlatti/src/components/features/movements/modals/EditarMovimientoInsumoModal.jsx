@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaExclamationTriangle, FaCheckCircle } from "react-icons/fa";
+import { FaTimes, FaExclamationTriangle, FaCheckCircle, FaBox, FaCog } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loadInsumos } from "../../../../store/actions/insumoActions";
 import { loadMovimientosInsumo } from "../../../../store/actions/movimientoInsumoActions";
@@ -364,11 +364,14 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
                             {cargandoInsumos ? "Cargando insumos..." : "Seleccionar insumo"}
                           </option>
                           {insumos && insumos.length > 0 ? (
-                            insumos.map((insumo) => (
-                              <option key={insumo.id} value={insumo.id}>
-                                {insumo.nombre} ({insumo.unidadMedida})
-                              </option>
-                            ))
+                            insumos.map((insumo) => {
+                              const tipoTexto = insumo.tipo === 'COMPUESTO' ? ' (Compuesto)' : ' (Base)';
+                              return (
+                                <option key={insumo.id} value={insumo.id}>
+                                  {insumo.nombre}{tipoTexto} ({insumo.unidadMedida})
+                                </option>
+                              );
+                            })
                           ) : (
                             !cargandoInsumos && (
                               <option value="" disabled>

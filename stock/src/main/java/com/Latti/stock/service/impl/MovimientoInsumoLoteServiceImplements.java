@@ -529,5 +529,67 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         }
     }
 
+    // ✅ NUEVO: Métodos para insumos compuestos
+    @Override
+    @Transactional
+    public void crearMovimientoEntrada(Long insumoId, double cantidad, double precioTotal, LocalDate fecha, String descripcion) {
+        Insumo insumo = insumoRepository.findById(insumoId)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + insumoId));
+
+        // Crear el movimiento
+        MovimientoInsumoLote movimiento = new MovimientoInsumoLote(fecha, descripcion, TipoMovimiento.ENTRADA);
+        
+        // Crear el detalle
+        DetalleMovimientoInsumo detalle = new DetalleMovimientoInsumo(cantidad);
+        detalle.setInsumo(insumo);
+        detalle.setPrecioTotal(precioTotal);
+        movimiento.addDetalle(detalle);
+
+        // Actualizar stock y precio del insumo
+        insumo.setStockActual(insumo.getStockActual() + cantidad);
+        
+        // Calcular precio por unidad
+        double precioPorUnidad = precioTotal / cantidad;
+        
+        // Solo actualizar precio si es mayor (peor) que el actual
+        if (insumo.getPrecioDeCompra() == 0 || precioPorUnidad > insumo.getPrecioDeCompra()) {
+            insumo.setPrecioDeCompra(precioPorUnidad);
+        }
+
+        // Guardar todo
+        insumoRepository.save(insumo);
+        movimientoRepository.save(movimiento);
+    }
+
+    @Override
+    @Transactional
+    public void crearMovimientoSalida(Long insumoId, double cantidad, LocalDate fecha, String descripcion) {
+        Insumo insumo = insumoRepository.findById(insumoId)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + insumoId));
+
+        // Validar stock suficiente
+        if (insumo.getStockActual() < cantidad) {
+            throw new IllegalArgumentException(
+                    String.format("Stock insuficiente para el insumo '%s'. Stock actual: %.2f, Cantidad solicitada: %.2f",
+                            insumo.getNombre(), insumo.getStockActual(), cantidad)
+            );
+        }
+
+        // Crear el movimiento
+        MovimientoInsumoLote movimiento = new MovimientoInsumoLote(fecha, descripcion, TipoMovimiento.SALIDA);
+        
+        // Crear el detalle
+        DetalleMovimientoInsumo detalle = new DetalleMovimientoInsumo(cantidad);
+        detalle.setInsumo(insumo);
+        movimiento.addDetalle(detalle);
+
+        // Actualizar stock del insumo
+        insumo.setStockActual(insumo.getStockActual() - cantidad);
+
+        // Guardar todo
+        insumoRepository.save(insumo);
+        movimientoRepository.save(movimiento);
+    }
+
 
 }
