@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaHammer, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaHammer, FaCalendarAlt, FaInfoCircle } from 'react-icons/fa';
 import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
 import NumberInput from '../../../ui/NumberInput';
+import RecetaInsumoDisplay from '../components/RecetaInsumoDisplay';
 
-const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, onSubmit, insumoCompuesto }) => {
+const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSubmit }) => {
   const [formData, setFormData] = useState({
     cantidad: '',
     fecha: '',
@@ -13,54 +14,32 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, onSubmit, insumoCompue
   const [error, setError] = useState(false);
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [validacionStock, setValidacionStock] = useState(null);
 
-  // Inicializar formulario cuando se abre el modal
+  // Establecer fecha actual por defecto
   useEffect(() => {
-    if (isOpen && insumoCompuesto) {
-      const today = new Date().toISOString().split('T')[0];
-      setFormData({
-        cantidad: '',
-        fecha: today,
-        descripcion: `Ensamblar ${insumoCompuesto.nombre}`
-      });
-      setError(false);
-      setTextoError('');
-      setValidacionStock(null);
+    if (isOpen) {
+      const hoy = new Date().toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        fecha: hoy,
+        descripcion: `Ensamble de ${insumoCompuesto?.nombre || ''}`
+      }));
     }
   }, [isOpen, insumoCompuesto]);
 
-  // Validar stock cuando cambia la cantidad
+  // Limpiar formulario al cerrar
   useEffect(() => {
-    if (formData.cantidad && insumoCompuesto && insumoCompuesto.receta) {
-      validarStockSuficiente();
+    if (!isOpen) {
+      setFormData({
+        cantidad: '',
+        fecha: '',
+        descripcion: ''
+      });
+      setError(false);
+      setTextoError('');
+      setIsSubmitting(false);
     }
-  }, [formData.cantidad, insumoCompuesto]);
-
-  const validarStockSuficiente = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `https://api.lattituc.site/api/insumo-compuesto/${insumoCompuesto.id}/validar-stock?cantidad=${formData.cantidad}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (response.ok) {
-        setValidacionStock({ valido: true });
-      } else {
-        const errorData = await response.json();
-        setValidacionStock({ valido: false, mensaje: errorData.error || 'Stock insuficiente' });
-      }
-    } catch (error) {
-      console.error('Error validando stock:', error);
-      setValidacionStock({ valido: false, mensaje: 'Error al validar stock' });
-    }
-  };
+  }, [isOpen]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -76,194 +55,150 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, onSubmit, insumoCompue
     setTextoError('');
     setIsSubmitting(true);
 
-    // Validaciones
-    if (!formData.cantidad || parseFloat(formData.cantidad) <= 0) {
-      setError(true);
-      setTextoError('La cantidad debe ser mayor a 0');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!formData.fecha) {
-      setError(true);
-      setTextoError('La fecha es obligatoria');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (validacionStock && !validacionStock.valido) {
-      setError(true);
-      setTextoError(validacionStock.mensaje);
-      setIsSubmitting(false);
-      return;
-    }
-
-    const ensambleData = {
-      cantidad: parseFloat(formData.cantidad),
-      fecha: formData.fecha,
-      descripcion: formData.descripcion.trim()
-    };
-
     try {
-      const result = await onSubmit(insumoCompuesto.id, ensambleData);
-      if (result && result.error) {
+      // Validaciones
+      if (!formData.cantidad || parseFloat(formData.cantidad) <= 0) {
         setError(true);
-        setTextoError(result.error);
-      } else {
-        handleClose();
+        setTextoError('La cantidad debe ser mayor a 0');
+        setIsSubmitting(false);
+        return;
       }
+
+      if (!formData.fecha) {
+        setError(true);
+        setTextoError('La fecha es obligatoria');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.descripcion.trim()) {
+        setError(true);
+        setTextoError('La descripción es obligatoria');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const data = {
+        cantidad: parseFloat(formData.cantidad),
+        fecha: formData.fecha,
+        descripcion: formData.descripcion.trim()
+      };
+
+      await onSubmit(insumoCompuesto.id, data);
+      
+      // Limpiar formulario y cerrar
+      setFormData({
+        cantidad: '',
+        fecha: '',
+        descripcion: ''
+      });
+      handleClose();
+      
     } catch (error) {
+      console.error('Error al ensamblar insumo:', error);
       setError(true);
-      setTextoError('Error inesperado al ensamblar insumo');
+      setTextoError(error.response?.data?.error || 'Error inesperado al ensamblar');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ cantidad: '', fecha: '', descripcion: '' });
+    setFormData({
+      cantidad: '',
+      fecha: '',
+      descripcion: ''
+    });
     setError(false);
     setTextoError('');
-    setValidacionStock(null);
     setIsSubmitting(false);
     onClose();
   };
-
-  if (!isOpen || !insumoCompuesto) return null;
 
   return (
     <FormModal
       isOpen={isOpen}
       onClose={handleClose}
-      title={`Ensamblar ${insumoCompuesto.nombre}`}
-      onSubmit={handleSubmit}
+      title={`Ensamblar ${insumoCompuesto?.nombre || 'Insumo Compuesto'}`}
       submitText="Ensamblar"
       isSubmitting={isSubmitting}
       error={error}
       errorMessage={textoError}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-lg"
     >
-      {/* Información del insumo compuesto */}
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <FaHammer className="text-purple-600 text-xl mt-1" />
-          <div className="flex-1">
-            <h3 className="text-purple-800 font-medium text-lg">
-              {insumoCompuesto.nombre}
-            </h3>
-            <p className="text-sm text-purple-700 mt-1">
-              Insumo compuesto que se ensambla con otros componentes
-            </p>
-            
-            {/* Mostrar receta */}
-            {insumoCompuesto.receta && insumoCompuesto.receta.length > 0 && (
-              <div className="mt-3">
-                <p className="text-sm font-medium text-purple-800 mb-2">Receta:</p>
-                <div className="space-y-1">
-                  {insumoCompuesto.receta.map((componente, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm text-purple-700">
-                      <span className="w-6 h-6 bg-purple-200 rounded-full flex items-center justify-center text-xs font-medium">
-                        {componente.cantidad}
-                      </span>
-                      <span>{componente.nombreInsumoBase}</span>
-                      <span className="text-purple-500">
-                        ({componente.unidadMedida})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Formulario de ensamble */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Cantidad a ensamblar */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-600 mb-1">
             Cantidad a Ensamblar *
           </label>
           <NumberInput
-            placeholder="0"
             value={formData.cantidad}
             onChange={(value) => handleInputChange('cantidad', value)}
-            required
+            placeholder="0"
+            min="0"
+            step="0.01"
             disabled={isSubmitting}
-            className="w-full"
+            required
           />
           <p className="text-xs text-gray-500 mt-1">
-            Cuántas unidades de {insumoCompuesto.nombre} quieres ensamblar
+            Cantidad de {insumoCompuesto?.nombre} que deseas ensamblar
           </p>
         </div>
 
+        {/* Fecha */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Fecha *
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Fecha del Ensamble *
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              value={formData.fecha}
+              onChange={(e) => handleInputChange('fecha', e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              disabled={isSubmitting}
+              required
+            />
+            <FaCalendarAlt className="absolute right-3 top-2.5 text-gray-400" size={14} />
+          </div>
+        </div>
+
+        {/* Descripción */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Descripción *
           </label>
           <Input
-            type="date"
-            value={formData.fecha}
-            onChange={(e) => handleInputChange('fecha', e.target.value)}
-            required
+            type="text"
+            value={formData.descripcion}
+            onChange={(e) => handleInputChange('descripcion', e.target.value)}
+            placeholder="Ej: Ensamble realizado en línea de producción"
             disabled={isSubmitting}
+            required
           />
         </div>
-      </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Descripción
-        </label>
-        <Input
-          type="text"
-          placeholder="Ej: Ensamblaje realizado por Juan"
-          value={formData.descripcion}
-          onChange={(e) => handleInputChange('descripcion', e.target.value)}
-          disabled={isSubmitting}
-        />
-      </div>
+        {/* Mostrar receta del insumo compuesto */}
+        {insumoCompuesto && insumoCompuesto.receta && (
+          <RecetaInsumoDisplay receta={insumoCompuesto.receta} />
+        )}
 
-      {/* Validación de stock */}
-      {formData.cantidad && validacionStock && (
-        <div className={`p-3 rounded-lg border mb-6 ${
-          validacionStock.valido 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-red-50 border-red-200'
-        }`}>
-          <div className="flex items-center gap-2">
-            {validacionStock.valido ? (
-              <FaInfoCircle className="text-green-600" size={16} />
-            ) : (
-              <FaExclamationTriangle className="text-red-600" size={16} />
-            )}
-            <p className={`text-sm font-medium ${
-              validacionStock.valido ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {validacionStock.valido 
-                ? `✅ Stock suficiente para ensamblar ${formData.cantidad} unidades`
-                : `❌ ${validacionStock.mensaje}`
-              }
-            </p>
+        {/* Información sobre el ensamble */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <FaInfoCircle className="text-blue-600 mt-0.5" size={14} />
+            <div className="text-sm text-blue-700">
+              <p className="font-medium">¿Qué sucede al ensamblar?</p>
+              <ul className="mt-1 space-y-1 text-xs">
+                <li>• Se descontarán automáticamente los componentes base del stock</li>
+                <li>• Se agregará stock del insumo compuesto ensamblado</li>
+                <li>• Se calculará el precio unitario basado en el costo de los componentes</li>
+              </ul>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Información sobre el proceso */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <div className="flex items-start gap-2">
-          <FaInfoCircle className="text-blue-600 mt-0.5" size={14} />
-          <div className="text-sm text-blue-700">
-            <p className="font-medium">¿Qué sucederá al ensamblar?</p>
-            <ul className="mt-1 space-y-1 text-xs">
-              <li>• Se descontará la cantidad necesaria de cada componente</li>
-              <li>• Se sumará {formData.cantidad || 'X'} unidades de {insumoCompuesto.nombre}</li>
-              <li>• Se calculará automáticamente el precio por unidad</li>
-              <li>• Se registrará el movimiento en el historial</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      </form>
     </FormModal>
   );
 };

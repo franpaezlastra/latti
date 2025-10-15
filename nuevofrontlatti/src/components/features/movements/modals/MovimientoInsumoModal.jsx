@@ -477,10 +477,11 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
         <div className="flex items-start gap-2">
           <FaInfoCircle className="text-blue-600 mt-0.5" size={14} />
           <div className="text-sm text-blue-700">
-            <p className="font-medium">💡 Diferencia entre Movimientos y Ensamble</p>
+            <p className="font-medium">💡 Tipos de Operaciones con Insumos</p>
             <div className="mt-1 space-y-1 text-xs">
-              <p><strong>Movimientos de Insumos:</strong> Para comprar/vender insumos base o registrar stock de insumos compuestos</p>
-              <p><strong>Ensamble:</strong> Para crear insumos compuestos usando sus componentes base (usa el botón "Ensamblar" en la lista)</p>
+              <p><strong>📦 Movimientos:</strong> Para comprar/vender insumos (base o compuestos ya existentes)</p>
+              <p><strong>🔨 Ensamble:</strong> Para crear insumos compuestos desde cero usando componentes base</p>
+              <p><strong>💡 Consejo:</strong> Si quieres ensamblar, ve a la lista de insumos y usa el botón "Ensamblar"</p>
             </div>
           </div>
         </div>
