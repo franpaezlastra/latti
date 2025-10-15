@@ -29,32 +29,53 @@ public class InsumoCotroller {
     @PostMapping
     public ResponseEntity<?> crearInsumo(@RequestBody Map<String, Object> requestBody) {
         try {
+            System.out.println("🔍 Request body recibido: " + requestBody);
+            
             // Verificar si es un insumo compuesto
             String tipo = (String) requestBody.get("tipo");
+            System.out.println("🔍 Tipo detectado: " + tipo);
             
             if ("COMPUESTO".equals(tipo)) {
+                System.out.println("🔍 Procesando insumo compuesto...");
+                
                 // Convertir a DTO de insumo compuesto
                 String nombre = (String) requestBody.get("nombre");
                 String unidadMedidaStr = (String) requestBody.get("unidadMedida");
+                
+                System.out.println("🔍 Nombre: " + nombre);
+                System.out.println("🔍 Unidad medida string: " + unidadMedidaStr);
+                
                 UnidadMedida unidadMedida = UnidadMedida.valueOf(unidadMedidaStr);
                 
                 // Convertir la receta del formato frontend al DTO
                 java.util.List<Map<String, Object>> recetaRaw = (java.util.List<Map<String, Object>>) requestBody.get("receta");
+                System.out.println("🔍 Receta raw: " + recetaRaw);
+                
                 java.util.List<CrearInsumoCompuestoDTO.ComponenteRecetaDTO> receta = recetaRaw.stream()
-                    .map(item -> new CrearInsumoCompuestoDTO.ComponenteRecetaDTO(
-                        ((Number) item.get("insumoBaseId")).longValue(),
-                        ((Number) item.get("cantidad")).doubleValue()
-                    ))
+                    .map(item -> {
+                        System.out.println("🔍 Procesando componente: " + item);
+                        Long insumoBaseId = ((Number) item.get("insumoBaseId")).longValue();
+                        Double cantidad = ((Number) item.get("cantidad")).doubleValue();
+                        System.out.println("🔍 Insumo base ID: " + insumoBaseId + ", Cantidad: " + cantidad);
+                        return new CrearInsumoCompuestoDTO.ComponenteRecetaDTO(insumoBaseId, cantidad);
+                    })
                     .toList();
                 
+                System.out.println("🔍 Receta procesada: " + receta);
+                
                 CrearInsumoCompuestoDTO dto = new CrearInsumoCompuestoDTO(nombre, unidadMedida, receta);
+                System.out.println("🔍 DTO creado: " + dto);
                 
                 InsumoCompuestoResponseDTO insumoCompuesto = insumoCompuestoService.crearInsumoCompuesto(dto);
+                System.out.println("✅ Insumo compuesto creado exitosamente");
+                
                 return ResponseEntity.ok(Map.of(
                     "mensaje", "Insumo compuesto creado correctamente",
                     "insumo", insumoCompuesto
                 ));
             } else {
+                System.out.println("🔍 Procesando insumo base...");
+                
                 // Insumo base normal
                 String nombre = (String) requestBody.get("nombre");
                 String unidadMedidaStr = (String) requestBody.get("unidadMedida");
@@ -66,9 +87,13 @@ public class InsumoCotroller {
                 return ResponseEntity.ok(new InsumoResponseDTO("Insumo creado correctamente", insumoCreado));
             }
         } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al crear el insumo"));
+            System.err.println("❌ Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al crear el insumo: " + e.getMessage()));
         }
     }
 
