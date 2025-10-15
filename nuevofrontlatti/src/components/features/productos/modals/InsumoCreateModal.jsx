@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaCog, FaBox, FaPlus, FaTrash } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchInsumos } from '../../../../store/slices/insumoSlice';
+import api from '../../../../services/api';
+import { API_ENDPOINTS } from '../../../../constants/api';
 import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
 import { getUnidadesMedidaOptions } from '../../../../constants/unidadesMedida';
@@ -45,7 +47,12 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
 
   // Función para limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Capitalizar automáticamente el nombre mientras se escribe
+    if (field === 'nombre') {
+      setFormData(prev => ({ ...prev, [field]: capitalizarPrimeraLetra(value) }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
     
     // Si cambia el tipo a BASE, limpiar receta
     if (field === 'tipo' && value === 'BASE') {
@@ -72,6 +79,12 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
     const nuevaReceta = [...receta];
     nuevaReceta[index] = { ...nuevaReceta[index], [field]: value };
     setReceta(nuevaReceta);
+  };
+
+  // Función para capitalizar la primera letra
+  const capitalizarPrimeraLetra = (texto) => {
+    if (!texto) return texto;
+    return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
   };
 
   const handleSubmit = async (e) => {
@@ -125,24 +138,40 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
     }
 
     const insumoData = {
-      nombre: formData.nombre.trim(),
+      nombre: capitalizarPrimeraLetra(formData.nombre.trim()),
       unidadMedida: formData.unidadMedida.trim(),
       tipo: formData.tipo,
       ...(formData.tipo === 'COMPUESTO' && { receta })
     };
 
     try {
-      const result = await onSubmit(insumoData);
-      console.log('InsumoCreateModal - onSubmit result:', result);
-      if (result && result.error) {
-        console.log('InsumoCreateModal - setting error:', result.error);
-        setError(true);
-        setTextoError(result.error);
+      // Usar endpoint correcto según el tipo de insumo
+      let endpoint;
+      if (formData.tipo === 'COMPUESTO') {
+        endpoint = API_ENDPOINTS.INSUMOS.COMPUESTOS;
+      } else {
+        endpoint = API_ENDPOINTS.INSUMOS.BASE;
       }
+
+      console.log('📤 Enviando a endpoint:', endpoint);
+      console.log('📤 Datos:', insumoData);
+
+      const response = await api.post(endpoint, insumoData);
+      console.log('✅ Respuesta del servidor:', response.data);
+      
+      // Cerrar modal y limpiar formulario
+      setFormData({
+        nombre: '',
+        unidadMedida: '',
+        tipo: 'BASE'
+      });
+      setReceta([]);
+      handleClose();
+      
     } catch (error) {
-      console.log('InsumoCreateModal - catch error:', error);
+      console.log('❌ Error:', error);
       setError(true);
-      setTextoError('Error inesperado al crear insumo');
+      setTextoError(error.response?.data?.error || 'Error inesperado al crear insumo');
     } finally {
       setIsSubmitting(false);
     }

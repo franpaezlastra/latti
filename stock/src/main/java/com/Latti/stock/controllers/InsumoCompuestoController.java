@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/insumo-compuesto")
+@RequestMapping("/api/insumos-compuestos")
 @CrossOrigin(origins = "*")
 public class InsumoCompuestoController {
 
@@ -22,12 +22,26 @@ public class InsumoCompuestoController {
      * Crear un nuevo insumo compuesto
      */
     @PostMapping
-    public ResponseEntity<InsumoCompuestoResponseDTO> crearInsumoCompuesto(@RequestBody CrearInsumoCompuestoDTO dto) {
+    public ResponseEntity<?> crearInsumoCompuesto(@RequestBody CrearInsumoCompuestoDTO dto) {
         try {
+            System.out.println("🔍 Creando insumo compuesto: " + dto.nombre());
+            System.out.println("🔍 Receta: " + dto.receta());
+            
             InsumoCompuestoResponseDTO insumoCompuesto = insumoCompuestoService.crearInsumoCompuesto(dto);
-            return ResponseEntity.ok(insumoCompuesto);
+            System.out.println("✅ Insumo compuesto creado exitosamente");
+            
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Insumo compuesto creado correctamente",
+                "insumo", insumoCompuesto
+            ));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            System.err.println("❌ Error de validación: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("❌ Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al crear el insumo compuesto: " + e.getMessage()));
         }
     }
 

@@ -16,8 +16,11 @@ export const API_ENDPOINTS = {
   
   // Insumos
   INSUMOS: {
-    BASE: '/insumos',
+    BASE: '/insumos',                    // Insumos base (simples)
+    COMPUESTOS: '/insumos-compuestos',   // Insumos compuestos
+    TODOS: '/insumos/todos',             // Todos los insumos (base + compuestos)
     BY_ID: (id) => `/insumos/${id}`,
+    COMPUESTO_BY_ID: (id) => `/insumos-compuestos/${id}`,
   },
   
   // Movimientos
