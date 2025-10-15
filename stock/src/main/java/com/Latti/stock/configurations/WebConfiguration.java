@@ -44,6 +44,10 @@ public class WebConfiguration {
                         // Público: login & register
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        // Endpoints de insumos (base y compuestos) requieren rol ADMIN
+                        .requestMatchers("/api/insumos/**").hasRole("ADMIN")
+                        .requestMatchers("/api/insumos-compuestos/**").hasRole("ADMIN")
+
                         // Todo lo demás requiere rol ADMIN
                         .anyRequest().hasRole("ADMIN"))
 

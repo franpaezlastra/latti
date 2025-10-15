@@ -265,6 +265,7 @@ const ProductosPage = () => {
         isOpen={modals.insumoCreate}
         onClose={() => closeModal('insumoCreate')}
         onSubmit={handleCreateInsumo}
+        onRefresh={updateAfterInsumoCreation}
       />
 
       <DeleteConfirmationModal

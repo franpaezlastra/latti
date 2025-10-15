@@ -8,7 +8,7 @@ import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
 import { getUnidadesMedidaOptions } from '../../../../constants/unidadesMedida';
 
-const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
+const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
   const dispatch = useDispatch();
   const insumos = useSelector((state) => state.insumos.insumos);
   
@@ -166,6 +166,12 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
         tipo: 'BASE'
       });
       setReceta([]);
+      
+      // Refrescar la lista de insumos
+      if (onRefresh) {
+        onRefresh();
+      }
+      
       handleClose();
       
     } catch (error) {
