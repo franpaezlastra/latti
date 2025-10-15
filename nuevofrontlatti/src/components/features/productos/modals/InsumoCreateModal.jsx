@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FaCog, FaBox, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
+import { FaCog, FaBox, FaPlus, FaTrash } from 'react-icons/fa';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchInsumos } from '../../../../store/slices/insumoSlice';
 import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
 import { getUnidadesMedidaOptions } from '../../../../constants/unidadesMedida';
 
 const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
+  const dispatch = useDispatch();
+  const insumos = useSelector((state) => state.insumos.insumos);
+  
   const [formData, setFormData] = useState({
     nombre: '',
     unidadMedida: '',
@@ -16,7 +21,6 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
   
   // Estados para insumos compuestos
   const [receta, setReceta] = useState([]);
-  const [insumosDisponibles, setInsumosDisponibles] = useState([]);
 
   // Obtener opciones de unidades de medida
   const unidadesMedidaOptions = getUnidadesMedidaOptions();
@@ -29,12 +33,15 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
 
   // Cargar insumos base disponibles al abrir el modal
   useEffect(() => {
-    if (isOpen && formData.tipo === 'COMPUESTO') {
-      // TODO: Cargar insumos base desde el store
-      // Por ahora usamos datos mock
-      setInsumosDisponibles([]);
+    if (isOpen) {
+      console.log('🔍 Insumos disponibles:', insumos);
+      console.log('🔍 Cantidad de insumos:', insumos?.length);
+      
+      // Siempre cargar insumos para asegurar datos actualizados
+      console.log('📥 Cargando insumos...');
+      dispatch(fetchInsumos());
     }
-  }, [isOpen, formData.tipo]);
+  }, [isOpen, dispatch]);
 
   // Función para limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
@@ -292,19 +299,6 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
             </button>
           </div>
 
-          {/* Información sobre insumos compuestos */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <FaInfoCircle className="text-purple-600 mt-0.5" size={14} />
-              <div className="text-sm text-purple-700">
-                <p className="font-medium">¿Qué es un insumo compuesto?</p>
-                <p className="mt-1">
-                  Un insumo que se crea ensamblando otros insumos base. 
-                  Ejemplo: "Botella Armada" = 1 Botella + 1 Tapa + 1 Etiqueta
-                </p>
-              </div>
-            </div>
-          </div>
 
           {/* Lista de componentes */}
           {receta.length === 0 ? (
@@ -344,17 +338,45 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit }) => {
                         disabled={isSubmitting}
                       >
                         <option value="">Seleccionar insumo base</option>
-                        {insumosDisponibles.map((insumo) => (
-                          <option key={insumo.id} value={insumo.id}>
-                            {insumo.nombre} ({insumo.unidadMedida})
-                          </option>
-                        ))}
+                        {insumos && insumos.filter(insumo => {
+                          const esBase = !insumo.tipo || insumo.tipo === 'BASE';
+                          console.log(`🔍 Insumo ${insumo.nombre}: tipo=${insumo.tipo}, esBase=${esBase}`);
+                          return esBase;
+                        }).map((insumo) => {
+                          // Verificar si este insumo ya está seleccionado en otro componente
+                          const insumosYaSeleccionados = receta
+                            .map((comp, idx) => ({ id: comp.insumoBaseId, index: idx }))
+                            .filter(comp => comp.id && comp.id !== '' && comp.index !== index);
+                          
+                          const insumoIdsYaSeleccionados = insumosYaSeleccionados.map(comp => comp.id);
+                          const estaSeleccionadoEnOtro = insumoIdsYaSeleccionados.includes(String(insumo.id));
+                          const esSeleccionActual = String(componente.insumoBaseId) === String(insumo.id);
+                          
+                          return (
+                            <option 
+                              key={insumo.id} 
+                              value={insumo.id}
+                              disabled={estaSeleccionadoEnOtro && !esSeleccionActual}
+                              style={{
+                                color: estaSeleccionadoEnOtro && !esSeleccionActual ? '#999' : 'inherit',
+                                fontStyle: estaSeleccionadoEnOtro && !esSeleccionActual ? 'italic' : 'normal'
+                              }}
+                            >
+                              {insumo.nombre} ({insumo.unidadMedida})
+                              {estaSeleccionadoEnOtro && !esSeleccionActual ? ' (ya seleccionado)' : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">
                         Cantidad *
+                        {componente.insumoBaseId && (() => {
+                          const insumoSeleccionado = insumos.find(i => i.id === parseInt(componente.insumoBaseId));
+                          return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
+                        })()}
                       </label>
                       <input
                         type="number"
