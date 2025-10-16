@@ -211,13 +211,14 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       isOpen={isOpen}
       onClose={handleClose}
       title="Editar Insumo Compuesto"
+      onSubmit={handleSubmit}
       submitText="Actualizar"
       isSubmitting={isSubmitting}
       error={error}
       errorMessage={textoError}
       maxWidth="max-w-2xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-6">
         {/* Información básica */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Nombre */}
@@ -356,7 +357,7 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
             </div>
           </div>
         </div>
-      </form>
+      </div>
     </FormModal>
   );
 };

@@ -110,6 +110,8 @@ const insumoSlice = createSlice({
       })
       .addCase(fetchInsumos.fulfilled, (state, action) => {
         state.loading = false;
+        console.log('📥 Insumos recibidos de la API:', action.payload);
+        console.log('📊 Total de insumos:', action.payload?.length);
         state.insumos = action.payload;
         state.error = null;
       })
@@ -127,19 +129,7 @@ const insumoSlice = createSlice({
       .addCase(createInsumo.fulfilled, (state, action) => {
         state.createStatus = 'succeeded';
         state.loading = false;
-        // El backend devuelve un objeto con mensaje e insumo
-        const nuevoInsumo = action.payload.insumo || action.payload;
-        
-        // ✅ ARREGLADO: Agregar el nuevo insumo al estado local
-        // Esto hará que aparezca inmediatamente en el dashboard
-        if (nuevoInsumo && nuevoInsumo.id) {
-          // Verificar que no esté duplicado
-          const existe = state.insumos.find(i => i.id === nuevoInsumo.id);
-          if (!existe) {
-            state.insumos.push(nuevoInsumo);
-          }
-        }
-        
+        // No agregar al estado local aquí - se refrescará con fetchInsumos()
         state.createError = null;
       })
       .addCase(createInsumo.rejected, (state, action) => {

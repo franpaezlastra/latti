@@ -50,6 +50,28 @@ public class InsumoCotroller {
         }
     }
 
+    /**
+     * Obtener un insumo base por ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> obtenerInsumoBasePorId(@PathVariable Long id) {
+        try {
+            System.out.println("🔍 Obteniendo insumo base ID: " + id);
+            Insumo insumo = insumoService.obtenerInsumoPorId(id);
+            if (insumo == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(insumo);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.err.println("❌ Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error al obtener el insumo base"));
+        }
+    }
+
     @GetMapping("/todos")
     public ResponseEntity<?> obtenerTodosLosInsumos() {
         try {
@@ -103,8 +125,12 @@ public class InsumoCotroller {
                 todosLosInsumos.add(insumoMap);
             });
             
+            System.out.println("📊 Total de insumos devueltos: " + todosLosInsumos.size());
+            System.out.println("📋 Lista de insumos: " + todosLosInsumos);
             return ResponseEntity.ok(todosLosInsumos);
         } catch (Exception e) {
+            System.err.println("❌ Error al obtener insumos: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", "Error al obtener la lista de insumos"));
         }
     }

@@ -72,6 +72,8 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔄 Iniciando actualización de insumo:', insumo);
+    console.log('📝 Datos del formulario:', formData);
     setError(false);
     setTextoError('');
     setIsSubmitting(true);
@@ -100,8 +102,10 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       };
 
       const result = await dispatch(updateInsumo({ id: insumo.id, insumoData }));
+      console.log('📤 Resultado del dispatch:', result);
       
       if (updateInsumo.fulfilled.match(result)) {
+        console.log('✅ Actualización exitosa');
         // Llamar al callback del padre para manejar el éxito
         if (onSubmit) {
           await onSubmit(insumoData);
@@ -139,14 +143,15 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
     <FormModal
       isOpen={isOpen}
       onClose={handleClose}
-      title={`Editar Insumo ${insumo?.tipo === 'COMPUESTO' ? 'Compuesto' : 'Simple'}`}
+      title={`Editar Insumo ${insumo?.tipoOriginal === 'COMPUESTO' ? 'Compuesto' : 'Simple'}`}
+      onSubmit={handleSubmit}
       submitText="Actualizar"
       isSubmitting={isSubmitting}
       error={error}
       errorMessage={textoError}
       maxWidth="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         {/* Nombre */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -221,7 +226,7 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
             </div>
           </div>
         </div>
-      </form>
+      </div>
     </FormModal>
   );
 };

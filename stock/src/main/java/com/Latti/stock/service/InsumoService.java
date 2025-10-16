@@ -13,6 +13,8 @@ public interface InsumoService {
 
     List<InsumoListadoDTO> obtenerInsumos();
 
+    Insumo obtenerInsumoPorId(Long id);
+
     Insumo actualizarInsumo(Long id, CrearInsumoDTO actualizarInsumoDTO);
 
     void eliminarInsumo(Long id);

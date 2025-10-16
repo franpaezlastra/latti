@@ -61,6 +61,11 @@ public class InsumoServiceImplements implements InsumoService {
                 .toList();
     }
 
+    @Override
+    public Insumo obtenerInsumoPorId(Long id) {
+        return insumoRepository.findById(id).orElse(null);
+    }
+
     /**
      * Calcula el total invertido en un insumo basado en el historial de movimientos de entrada
      */

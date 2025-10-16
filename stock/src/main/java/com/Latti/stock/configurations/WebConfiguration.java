@@ -48,6 +48,13 @@ public class WebConfiguration {
                         .requestMatchers("/api/insumos/**").hasRole("ADMIN")
                         .requestMatchers("/api/insumos-compuestos/**").hasRole("ADMIN")
 
+                        // Endpoints de movimientos requieren rol ADMIN
+                        .requestMatchers("/api/movimiento-insumo/**").hasRole("ADMIN")
+                        .requestMatchers("/api/movimiento-productos/**").hasRole("ADMIN")
+
+                        // Endpoints de productos requieren rol ADMIN
+                        .requestMatchers("/api/productos/**").hasRole("ADMIN")
+
                         // Todo lo demás requiere rol ADMIN
                         .anyRequest().hasRole("ADMIN"))
 
