@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface InsumoRepository extends JpaRepository<Insumo, Long> {
     boolean existsByNombreIgnoreCase(String nombre);
+    
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
 
     @Query("SELECT COUNT(r) > 0 FROM Insumo i JOIN i.detalles r WHERE i.id = :insumoId")
     boolean existsInRecetas(@Param("insumoId") Long insumoId);
