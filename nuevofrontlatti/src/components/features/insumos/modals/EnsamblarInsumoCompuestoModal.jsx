@@ -4,6 +4,8 @@ import FormModal from '../../../ui/FormModal';
 import Input from '../../../ui/Input';
 import NumberInput from '../../../ui/NumberInput';
 import RecetaInsumoDisplay from '../components/RecetaInsumoDisplay';
+import api from '../../../../services/api';
+import { API_ENDPOINTS } from '../../../../constants/api';
 
 const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -84,7 +86,16 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSub
         descripcion: formData.descripcion.trim()
       };
 
-      await onSubmit(insumoCompuesto.id, data);
+      // Llamar al endpoint de ensamble directamente
+      const endpoint = API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(insumoCompuesto.id) + '/ensamblar';
+      const response = await api.post(endpoint, data);
+      
+      console.log('✅ Insumo ensamblado exitosamente:', response.data);
+      
+      // Llamar al callback del padre para manejar el éxito
+      if (onSubmit) {
+        await onSubmit(insumoCompuesto.id, data);
+      }
       
       // Limpiar formulario y cerrar
       setFormData({

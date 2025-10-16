@@ -29,6 +29,7 @@ import ProductoCreateModal from "./modals/ProductoCreateModal";
 import ProductoEditModal from "./modals/ProductoEditModal";
 import ProductoDetailsModal from "./modals/ProductoDetailsModal";
 import InsumoCreateModal from "./modals/InsumoCreateModal";
+import EnsamblarInsumoCompuestoModal from "../insumos/modals/EnsamblarInsumoCompuestoModal";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 
 const ProductosPage = () => {
@@ -56,6 +57,7 @@ const ProductosPage = () => {
     productoEdit: false,
     productoDetails: false,
     insumoCreate: false,
+    ensamblarInsumo: false,
     deleteProducto: false,
     deleteInsumo: false
   });
@@ -197,6 +199,25 @@ const ProductosPage = () => {
     }
   };
 
+  // Handler para ensamblar insumos compuestos
+  const handleEnsamblarInsumo = (insumo) => {
+    setSelectedItem(insumo);
+    openModal('ensamblarInsumo');
+  };
+
+  const handleEnsamblarSubmit = async (insumoId, ensambleData) => {
+    try {
+      // Actualizar datos globalmente después del éxito
+      await updateAfterInsumoCreation();
+      closeModal('ensamblarInsumo');
+      showToast("Insumo compuesto ensamblado exitosamente", "success");
+    } catch (error) {
+      console.error("Error al ensamblar insumo:", error);
+      showToast(error.message || "Error inesperado al ensamblar insumo", "error");
+      throw error; // Re-lanzar para que el modal maneje el error
+    }
+  };
+
   // Toast helper
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -235,6 +256,7 @@ const ProductosPage = () => {
             insumos={insumos}
             onCreate={() => openModal('insumoCreate')}
             onDelete={handleDeleteInsumo}
+            onEnsamblar={handleEnsamblarInsumo}
           />
         </div>
       </div>
@@ -266,6 +288,13 @@ const ProductosPage = () => {
         onClose={() => closeModal('insumoCreate')}
         onSubmit={handleCreateInsumo}
         onRefresh={updateAfterInsumoCreation}
+      />
+
+      <EnsamblarInsumoCompuestoModal
+        isOpen={modals.ensamblarInsumo}
+        onClose={() => closeModal('ensamblarInsumo')}
+        insumoCompuesto={selectedItem}
+        onSubmit={handleEnsamblarSubmit}
       />
 
       <DeleteConfirmationModal
