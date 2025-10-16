@@ -75,8 +75,12 @@ public class InsumoCotroller {
     @GetMapping("/todos")
     public ResponseEntity<?> obtenerTodosLosInsumos() {
         try {
-            // Obtener insumos base
+            // Obtener insumos base (solo los de tipo BASE)
             java.util.List<com.Latti.stock.dtos.InsumoListadoDTO> insumosBase = insumoService.obtenerInsumos();
+            java.util.List<com.Latti.stock.dtos.InsumoListadoDTO> insumosBaseFiltrados = 
+                insumosBase.stream()
+                    .filter(insumo -> insumo.tipo().toString().equals("BASE"))
+                    .collect(java.util.stream.Collectors.toList());
             
             // Obtener insumos compuestos
             java.util.List<InsumoCompuestoResponseDTO> insumosCompuestos = 
@@ -85,8 +89,8 @@ public class InsumoCotroller {
             // Crear lista unificada con estructura que el frontend espera
             java.util.List<Map<String, Object>> todosLosInsumos = new java.util.ArrayList<>();
             
-            // Agregar insumos base
-            insumosBase.forEach(base -> {
+            // Agregar insumos base (solo los filtrados)
+            insumosBaseFiltrados.forEach(base -> {
                 Map<String, Object> insumoMap = new java.util.HashMap<>();
                 insumoMap.put("id", base.id());
                 insumoMap.put("nombre", base.nombre());

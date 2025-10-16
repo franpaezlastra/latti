@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPlus, FaTrash, FaCog, FaBox, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaBox, FaEdit, FaEye } from 'react-icons/fa';
 import DataTable from '../../../ui/DataTable';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
 import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
@@ -8,7 +8,8 @@ const InsumosSection = ({
   insumos = [], 
   onCreate, 
   onDelete,
-  onEdit
+  onEdit,
+  onDetails
 }) => {
   const columns = [
     { key: 'nombre', label: 'Nombre', sortable: true },
@@ -20,6 +21,12 @@ const InsumosSection = ({
 
   const getActions = (insumo) => {
     const actions = [
+      {
+        label: 'Ver detalles',
+        icon: <FaEye />,
+        onClick: () => onDetails(insumo),
+        className: 'text-green-600 hover:bg-green-200'
+      },
       {
         label: 'Editar',
         icon: <FaEdit />,

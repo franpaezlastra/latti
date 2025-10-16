@@ -31,6 +31,7 @@ import ProductoDetailsModal from "./modals/ProductoDetailsModal";
 import InsumoCreateModal from "./modals/InsumoCreateModal";
 import EditarInsumoModal from "../insumos/modals/EditarInsumoModal";
 import EditarInsumoCompuestoModal from "../insumos/modals/EditarInsumoCompuestoModal";
+import DetallesInsumoModal from "../insumos/modals/DetallesInsumoModal";
 import EnsamblarInsumoCompuestoModal from "../insumos/modals/EnsamblarInsumoCompuestoModal";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 
@@ -61,6 +62,7 @@ const ProductosPage = () => {
     insumoCreate: false,
     insumoEdit: false,
     insumoCompuestoEdit: false,
+    insumoDetails: false,
     ensamblarInsumo: false,
     deleteProducto: false,
     deleteInsumo: false
@@ -155,6 +157,11 @@ const ProductosPage = () => {
   const handleViewProducto = (producto) => {
     setSelectedItem(producto);
     openModal('productoDetails');
+  };
+
+  const handleViewInsumo = (insumo) => {
+    setSelectedItem(insumo);
+    openModal('insumoDetails');
   };
 
   // Handlers para insumos
@@ -286,6 +293,7 @@ const ProductosPage = () => {
             onCreate={() => openModal('insumoCreate')}
             onDelete={handleDeleteInsumo}
             onEdit={handleEditInsumo}
+            onDetails={handleViewInsumo}
           />
         </div>
       </div>
@@ -353,7 +361,13 @@ const ProductosPage = () => {
         onClose={() => closeModal('deleteInsumo')}
         onConfirm={confirmDeleteInsumo}
         title="Eliminar Insumo"
-        message={`¿Estás seguro de que quieres eliminar "${selectedItem?.nombre}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de que quieres eliminar "${selectedItem?.nombre || 'este insumo'}"? Esta acción no se puede deshacer.`}
+      />
+
+      <DetallesInsumoModal
+        isOpen={modals.insumoDetails}
+        onClose={() => closeModal('insumoDetails')}
+        insumo={selectedItem}
       />
 
       {/* Toast de notificaciones */}
