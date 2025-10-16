@@ -2,6 +2,34 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { API_BASE_URL } from '../constants/api.js';
 
+// Variable para evitar múltiples redirecciones
+let isRedirecting = false;
+
+// Función para limpiar sesión y redirigir
+const clearSessionAndRedirect = () => {
+  // Evitar múltiples redirecciones
+  if (isRedirecting) return;
+  isRedirecting = true;
+  
+  // Limpiar localStorage
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  
+  // Limpiar sessionStorage por si acaso
+  sessionStorage.clear();
+  
+  // Limpiar todos los toasts existentes
+  toast.dismiss();
+  
+  // Mostrar mensaje
+  toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+  
+  // Redirigir al login
+  setTimeout(() => {
+    window.location.href = '/login';
+  }, 1500); // Delay para que se vea el toast
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -68,15 +96,20 @@ api.interceptors.response.use(
           
         case 401:
           // Unauthorized - Token expirado o inválido
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
-          window.location.href = '/login';
+          clearSessionAndRedirect();
           break;
           
         case 403:
-          // Forbidden - Sin permisos
-          toast.error('No tienes permisos para realizar esta acción.');
+          // Forbidden - Sin permisos o token expirado
+          // Verificar si el error es por token expirado
+          const errorMessage = response.data?.message || response.data?.error || '';
+          if (errorMessage.includes('token') || errorMessage.includes('expired') || errorMessage.includes('invalid') || errorMessage.includes('permisos')) {
+            // Es un error de autenticación, cerrar sesión
+            clearSessionAndRedirect();
+          } else {
+            // Es realmente un error de permisos
+            toast.error('No tienes permisos para realizar esta acción.');
+          }
           break;
           
         case 404:
