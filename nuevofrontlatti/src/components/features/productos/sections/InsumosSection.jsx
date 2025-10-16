@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPlus, FaTrash, FaCog, FaBox, FaHammer } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaCog, FaBox, FaEdit } from 'react-icons/fa';
 import DataTable from '../../../ui/DataTable';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
 import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
@@ -8,7 +8,7 @@ const InsumosSection = ({
   insumos = [], 
   onCreate, 
   onDelete,
-  onEnsamblar
+  onEdit
 }) => {
   const columns = [
     { key: 'nombre', label: 'Nombre', sortable: true },
@@ -21,22 +21,18 @@ const InsumosSection = ({
   const getActions = (insumo) => {
     const actions = [
       {
+        label: 'Editar',
+        icon: <FaEdit />,
+        onClick: () => onEdit(insumo),
+        className: 'text-blue-600 hover:bg-blue-200'
+      },
+      {
         label: 'Eliminar',
         icon: <FaTrash />,
         onClick: () => onDelete(insumo.id),
         className: 'text-red-600 hover:bg-red-200'
       }
     ];
-
-    // Agregar acción de ensamblar solo para insumos compuestos
-    if (insumo.tipo === 'COMPUESTO') {
-      actions.unshift({
-        label: 'Ensamblar',
-        icon: <FaHammer />,
-        onClick: () => onEnsamblar(insumo),
-        className: 'text-purple-600 hover:bg-purple-200'
-      });
-    }
 
     return actions;
   };
@@ -57,9 +53,11 @@ const InsumosSection = ({
       stockActual: formatQuantity(insumo.stockActual || 0, getAbreviaturaByValue(insumo.unidadMedida) || ''),
       // Mostrar abreviatura de la unidad de medida
       unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A',
-      // Formatear tipo con icono
+      // Preservar el tipo original para la lógica
+      tipoOriginal: insumo.tipo,
+      // Formatear tipo con icono - centrado (solo para visualización)
       tipo: (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           {insumo.tipo === 'COMPUESTO' ? (
             <FaCog className="text-purple-600" size={12} />
           ) : (
@@ -101,7 +99,7 @@ const InsumosSection = ({
         <DataTable
           data={formatData(insumos)}
           columns={columns}
-          getActions={getActions}
+          actions={getActions}
           emptyMessage="No hay insumos registrados"
           className="h-full"
           itemsPerPage={10}

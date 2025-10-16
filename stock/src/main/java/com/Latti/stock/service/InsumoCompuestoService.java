@@ -30,6 +30,11 @@ public interface InsumoCompuestoService {
     InsumoCompuestoResponseDTO ensamblarInsumoCompuesto(Long insumoCompuestoId, EnsamblarInsumoCompuestoDTO dto);
     
     /**
+     * Actualizar un insumo compuesto existente
+     */
+    InsumoCompuestoResponseDTO actualizarInsumoCompuesto(Long id, CrearInsumoCompuestoDTO dto);
+    
+    /**
      * Eliminar un insumo compuesto (solo si no tiene stock)
      */
     void eliminarInsumoCompuesto(Long id);

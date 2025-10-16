@@ -7,7 +7,7 @@ export const fetchInsumos = createAsyncThunk(
   'insumos/fetchInsumos',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get(API_ENDPOINTS.INSUMOS.BASE);
+      const response = await api.get(API_ENDPOINTS.INSUMOS.TODOS);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -40,6 +40,20 @@ export const updateInsumo = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error || 'Error al actualizar insumo'
+      );
+    }
+  }
+);
+
+export const updateInsumoCompuesto = createAsyncThunk(
+  'insumos/updateInsumoCompuesto',
+  async ({ id, insumoData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id), insumoData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || 'Error al actualizar insumo compuesto'
       );
     }
   }
@@ -148,6 +162,24 @@ const insumoSlice = createSlice({
         state.error = null;
       })
       .addCase(updateInsumo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Update insumo compuesto
+      .addCase(updateInsumoCompuesto.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateInsumoCompuesto.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.insumos.findIndex(i => i.id === action.payload.id);
+        if (index !== -1) {
+          state.insumos[index] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(updateInsumoCompuesto.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -51,21 +51,24 @@ const DataTable = ({
                         {item[column.key]}
                       </td>
                     ))}
-                    {actions.length > 0 && (
+                    {actions && (
                       <td className="px-2 py-1">
                         <div className="flex justify-center gap-1">
-                          {actions.map((action, j) => (
-                            <button
-                              key={j}
-                              onClick={() => action.onClick(item)}
-                              className={`rounded-full p-1 text-xs shadow hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300 transition ${action.className}`}
-                              title={action.label}
-                              aria-label={action.label}
-                              tabIndex={0}
-                            >
-                              {action.icon}
-                            </button>
-                          ))}
+                          {(() => {
+                            const itemActions = typeof actions === 'function' ? actions(item) : actions;
+                            return itemActions.map((action, j) => (
+                              <button
+                                key={j}
+                                onClick={() => action.onClick(item)}
+                                className={`rounded-full p-1 text-xs shadow hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300 transition ${action.className}`}
+                                title={action.label}
+                                aria-label={action.label}
+                                tabIndex={0}
+                              >
+                                {action.icon}
+                              </button>
+                            ));
+                          })()}
                         </div>
                       </td>
                     )}

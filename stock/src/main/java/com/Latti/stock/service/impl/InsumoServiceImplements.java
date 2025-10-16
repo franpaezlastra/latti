@@ -78,6 +78,29 @@ public class InsumoServiceImplements implements InsumoService {
 
     @Override
     @Transactional
+    public Insumo actualizarInsumo(Long id, CrearInsumoDTO dto) {
+        validarCrearInsumoDTO(dto);
+
+        Insumo insumo = insumoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado con ID: " + id));
+
+        String nombre = dto.nombre().trim();
+        UnidadMedida unidad = dto.unidadMedida();
+
+        // Validación de nombre único (ignorando mayúsculas/minúsculas y el propio insumo)
+        if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+            throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
+        }
+
+        // Actualizar los campos
+        insumo.setNombre(nombre);
+        insumo.setUnidadMedida(unidad);
+
+        return insumoRepository.save(insumo);
+    }
+
+    @Override
+    @Transactional
     public void eliminarInsumo(Long id) {
         Insumo insumo = insumoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado con ID: " + id));

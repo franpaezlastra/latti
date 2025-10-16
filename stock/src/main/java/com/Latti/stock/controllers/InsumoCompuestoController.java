@@ -84,6 +84,33 @@ public class InsumoCompuestoController {
     }
 
     /**
+     * Actualizar un insumo compuesto existente
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> actualizarInsumoCompuesto(@PathVariable Long id, @RequestBody CrearInsumoCompuestoDTO dto) {
+        try {
+            System.out.println("🔍 Actualizando insumo compuesto ID: " + id);
+            System.out.println("🔍 Receta: " + dto.receta());
+            
+            InsumoCompuestoResponseDTO insumoActualizado = insumoCompuestoService.actualizarInsumoCompuesto(id, dto);
+            System.out.println("✅ Insumo compuesto actualizado exitosamente");
+            
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Insumo compuesto actualizado correctamente",
+                "insumo", insumoActualizado
+            ));
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("❌ Error inesperado: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al actualizar el insumo compuesto: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Eliminar un insumo compuesto
      */
     @DeleteMapping("/{id}")

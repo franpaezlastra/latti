@@ -139,6 +139,55 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
 
     @Override
     @Transactional
+    public InsumoCompuestoResponseDTO actualizarInsumoCompuesto(Long id, CrearInsumoCompuestoDTO dto) {
+        // Validaciones
+        validarCrearInsumoCompuestoDTO(dto);
+
+        Insumo insumoCompuesto = insumoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo compuesto no encontrado: " + id));
+
+        if (!insumoCompuesto.esCompuesto()) {
+            throw new IllegalArgumentException("El insumo no es de tipo compuesto: " + id);
+        }
+
+        String nombre = dto.nombre().trim();
+        
+        // Verificar que no exista otro insumo con ese nombre (excluyendo el actual)
+        if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+            throw new IllegalArgumentException("Ya existe un insumo con ese nombre: " + nombre);
+        }
+
+        // Actualizar el insumo compuesto
+        insumoCompuesto.setNombre(nombre);
+        insumoCompuesto.setUnidadMedida(dto.unidadMedida());
+        insumoCompuesto = insumoRepository.save(insumoCompuesto);
+
+        // Limpiar la receta existente
+        recetaInsumoRepository.deleteByInsumoCompuesto(insumoCompuesto);
+
+        // Crear la nueva receta
+        for (CrearInsumoCompuestoDTO.ComponenteRecetaDTO componenteDTO : dto.receta()) {
+            Insumo insumoBase = insumoRepository.findById(componenteDTO.insumoBaseId())
+                    .orElseThrow(() -> new IllegalArgumentException("Insumo base no encontrado: " + componenteDTO.insumoBaseId()));
+
+            if (!insumoBase.esBase()) {
+                throw new IllegalArgumentException("El insumo debe ser de tipo base: " + insumoBase.getNombre());
+            }
+
+            // Verificar que no se use a sí mismo como componente
+            if (insumoBase.getId().equals(id)) {
+                throw new IllegalArgumentException("Un insumo compuesto no puede ser componente de sí mismo");
+            }
+
+            RecetaInsumo recetaInsumo = new RecetaInsumo(insumoCompuesto, insumoBase, componenteDTO.cantidad());
+            recetaInsumoRepository.save(recetaInsumo);
+        }
+
+        return convertirAInsumoCompuestoResponseDTO(insumoCompuesto);
+    }
+
+    @Override
+    @Transactional
     public void eliminarInsumoCompuesto(Long id) {
         Insumo insumo = insumoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + id));

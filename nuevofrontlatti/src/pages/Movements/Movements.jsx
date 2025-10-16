@@ -15,6 +15,7 @@ import Button from "../../components/ui/Button";
 // Modales de movimientos
 import MovimientoSeleccionModal from "../../components/features/movements/modals/MovimientoSeleccionModal";
 import MovimientoInsumoModal from "../../components/features/movements/modals/MovimientoInsumoModal";
+import MovimientoInsumoCompuestoModal from "../../components/features/movements/modals/MovimientoInsumoCompuestoModal";
 import MovimientoProductoModal from "../../components/features/movements/modals/MovimientoProductoModal";
 import MovimientoDetallesModal from "../../components/features/movements/modals/MovimientoDetallesModal";
 import EditarMovimientoInsumoModal from "../../components/features/movements/modals/EditarMovimientoInsumoModal";
@@ -25,6 +26,7 @@ const Movements = () => {
   // Estados de modales
   const [showSeleccionModal, setShowSeleccionModal] = useState(false);
   const [showInsumoModal, setShowInsumoModal] = useState(false);
+  const [showInsumoCompuestoModal, setShowInsumoCompuestoModal] = useState(false);
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -137,8 +139,10 @@ const Movements = () => {
 
   // Handlers
   const handleSeleccionarTipo = (tipo) => {
-    if (tipo === "insumo") {
+    if (tipo === "insumo-simple") {
       setShowInsumoModal(true);
+    } else if (tipo === "insumo-compuesto") {
+      setShowInsumoCompuestoModal(true);
     } else if (tipo === "producto") {
       setShowProductoModal(true);
     }
@@ -147,6 +151,7 @@ const Movements = () => {
 
   const handleExitoMovimiento = () => {
     setShowInsumoModal(false);
+    setShowInsumoCompuestoModal(false);
     setShowProductoModal(false);
     // Los modales ya actualizan los datos automáticamente
   };
@@ -276,6 +281,12 @@ const Movements = () => {
       <MovimientoInsumoModal
         isOpen={showInsumoModal}
         onClose={() => setShowInsumoModal(false)}
+        onSubmit={handleExitoMovimiento}
+      />
+
+      <MovimientoInsumoCompuestoModal
+        isOpen={showInsumoCompuestoModal}
+        onClose={() => setShowInsumoCompuestoModal(false)}
         onSubmit={handleExitoMovimiento}
       />
 

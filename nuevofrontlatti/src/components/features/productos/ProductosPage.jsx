@@ -29,6 +29,8 @@ import ProductoCreateModal from "./modals/ProductoCreateModal";
 import ProductoEditModal from "./modals/ProductoEditModal";
 import ProductoDetailsModal from "./modals/ProductoDetailsModal";
 import InsumoCreateModal from "./modals/InsumoCreateModal";
+import EditarInsumoModal from "../insumos/modals/EditarInsumoModal";
+import EditarInsumoCompuestoModal from "../insumos/modals/EditarInsumoCompuestoModal";
 import EnsamblarInsumoCompuestoModal from "../insumos/modals/EnsamblarInsumoCompuestoModal";
 import DeleteConfirmationModal from "../../ui/DeleteConfirmationModal";
 
@@ -57,6 +59,8 @@ const ProductosPage = () => {
     productoEdit: false,
     productoDetails: false,
     insumoCreate: false,
+    insumoEdit: false,
+    insumoCompuestoEdit: false,
     ensamblarInsumo: false,
     deleteProducto: false,
     deleteInsumo: false
@@ -181,6 +185,17 @@ const ProductosPage = () => {
     openModal('deleteInsumo');
   };
 
+  const handleEditInsumo = (insumo) => {
+    setSelectedItem(insumo);
+    // Abrir modal diferente según el tipo de insumo
+    // Usar tipoOriginal que preserva el valor original del tipo
+    if (insumo.tipoOriginal === 'COMPUESTO') {
+      openModal('insumoCompuestoEdit');
+    } else {
+      openModal('insumoEdit');
+    }
+  };
+
   const confirmDeleteInsumo = async () => {
     try {
       const result = await dispatch(deleteInsumo(selectedItem.id));
@@ -203,6 +218,20 @@ const ProductosPage = () => {
   const handleEnsamblarInsumo = (insumo) => {
     setSelectedItem(insumo);
     openModal('ensamblarInsumo');
+  };
+
+  const handleEditInsumoSubmit = async (insumoData) => {
+    try {
+      // Actualizar datos globalmente después del éxito
+      await updateAfterInsumoCreation();
+      closeModal('insumoEdit');
+      closeModal('insumoCompuestoEdit');
+      showToast("Insumo actualizado exitosamente", "success");
+    } catch (error) {
+      console.error("Error al editar insumo:", error);
+      showToast(error.message || "Error inesperado al editar insumo", "error");
+      throw error; // Re-lanzar para que el modal maneje el error
+    }
   };
 
   const handleEnsamblarSubmit = async (insumoId, ensambleData) => {
@@ -256,7 +285,7 @@ const ProductosPage = () => {
             insumos={insumos}
             onCreate={() => openModal('insumoCreate')}
             onDelete={handleDeleteInsumo}
-            onEnsamblar={handleEnsamblarInsumo}
+            onEdit={handleEditInsumo}
           />
         </div>
       </div>
@@ -288,6 +317,20 @@ const ProductosPage = () => {
         onClose={() => closeModal('insumoCreate')}
         onSubmit={handleCreateInsumo}
         onRefresh={updateAfterInsumoCreation}
+      />
+
+      <EditarInsumoModal
+        isOpen={modals.insumoEdit}
+        onClose={() => closeModal('insumoEdit')}
+        insumo={selectedItem}
+        onSubmit={handleEditInsumoSubmit}
+      />
+
+      <EditarInsumoCompuestoModal
+        isOpen={modals.insumoCompuestoEdit}
+        onClose={() => closeModal('insumoCompuestoEdit')}
+        insumo={selectedItem}
+        onSubmit={handleEditInsumoSubmit}
       />
 
       <EnsamblarInsumoCompuestoModal
