@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { FaPlus, FaBox } from "react-icons/fa";
 import { 
   loadProductos, 
   deleteProducto, 
@@ -266,28 +267,38 @@ const ProductosPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      {/* Header */}
-      <PageHeader 
+    <div className="flex flex-col bg-gradient-to-br from-blue-50 via-white to-blue-100 h-screen">
+      <PageHeader
         title="Gestión de Productos e Insumos"
         subtitle="Administra tu inventario de productos y materias primas"
+        actionButton={{
+          icon: <FaPlus size={16} />,
+          onClick: () => openModal('productoCreate'),
+          label: "Agregar producto"
+        }}
+        secondaryActionButton={{
+          icon: <FaBox size={16} />,
+          onClick: () => openModal('insumoCreate'),
+          label: "Agregar insumo"
+        }}
       />
 
-      {/* Contenido principal - Layout dinámico */}
-      <div className="h-[calc(100vh-120px)] flex flex-col">
-        {/* Sección de Productos - Ocupa solo su contenido hasta máximo 50% */}
-        <div className="flex-shrink-0 p-4 pb-2">
+      <div className="flex-1 overflow-y-auto p-4 pt-2">
+        {/* Sección de Productos */}
+        <div className="mb-6">
           <ProductosSection
             productos={productos}
-            onCreate={() => openModal('productoCreate')}
             onEdit={handleEditProducto}
             onDelete={handleDeleteProducto}
-            onView={handleViewProducto}
+            onDetails={(producto) => {
+              setSelectedItem(producto);
+              openModal('productoDetails');
+            }}
           />
         </div>
 
-        {/* Sección de Insumos - Ocupa el resto del espacio disponible */}
-        <div className="flex-1 p-4 pt-2">
+        {/* Sección de Insumos */}
+        <div>
           <InsumosSection
             insumos={insumos}
             onCreate={() => openModal('insumoCreate')}

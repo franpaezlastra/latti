@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -104,17 +105,22 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
         // Validar stock suficiente
         validarStockSuficienteParaEnsamblar(insumoCompuestoId, dto.cantidad());
 
+        // Generar UUID único para este ensamble
+        String ensambleId = UUID.randomUUID().toString();
+        System.out.println("🔧 Ensamble ID generado: " + ensambleId);
+
         // Crear movimientos de salida para cada componente
         for (RecetaInsumo componente : insumoCompuesto.getReceta()) {
             Insumo insumoBase = componente.getInsumoBase();
             double cantidadNecesaria = componente.getCantidad() * dto.cantidad();
 
-            // Crear movimiento de salida para el componente
-            movimientoInsumoLoteService.crearMovimientoSalida(
+            // Crear movimiento de salida para el componente con ensambleId
+            movimientoInsumoLoteService.crearMovimientoSalidaConEnsamble(
                     insumoBase.getId(),
                     cantidadNecesaria,
                     dto.fecha(),
-                    dto.descripcion() + " (componente: " + insumoBase.getNombre() + ")"
+                    dto.descripcion() + " (componente: " + insumoBase.getNombre() + ")",
+                    ensambleId
             );
         }
 
@@ -122,17 +128,22 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
         // El precio se calcula sumando el costo de todos los componentes
         double precioTotalComponentes = calcularPrecioTotalComponentes(insumoCompuesto, dto.cantidad());
         
-        movimientoInsumoLoteService.crearMovimientoEntrada(
+        movimientoInsumoLoteService.crearMovimientoEntradaConEnsamble(
                 insumoCompuestoId,
                 dto.cantidad(),
                 precioTotalComponentes,
                 dto.fecha(),
-                dto.descripcion()
+                dto.descripcion(),
+                ensambleId
         );
 
-        // Actualizar el precio de compra del insumo compuesto
-        insumoCompuesto.setPrecioDeCompra(precioTotalComponentes / dto.cantidad());
+        // ✅ CORREGIDO: El precio del insumo compuesto debe ser el precio POR UNIDAD, no el total
+        // El precio por unidad se calcula sumando el costo de todos los componentes por unidad
+        double precioPorUnidadCompuesto = calcularPrecioPorUnidadCompuesto(insumoCompuesto);
+        insumoCompuesto.setPrecioDeCompra(precioPorUnidadCompuesto);
         insumoCompuesto = insumoRepository.save(insumoCompuesto);
+        
+        System.out.println("💰 Precio por unidad del insumo compuesto '" + insumoCompuesto.getNombre() + "': $" + precioPorUnidadCompuesto);
 
         return convertirAInsumoCompuestoResponseDTO(insumoCompuesto);
     }
@@ -275,6 +286,27 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
         }
 
         return precioTotal;
+    }
+
+    /**
+     * Calcula el precio por unidad de un insumo compuesto basado en el costo de sus componentes
+     */
+    private double calcularPrecioPorUnidadCompuesto(Insumo insumoCompuesto) {
+        double precioPorUnidad = 0;
+
+        for (RecetaInsumo componente : insumoCompuesto.getReceta()) {
+            Insumo insumoBase = componente.getInsumoBase();
+            double cantidadPorUnidad = componente.getCantidad(); // Cantidad necesaria para 1 unidad del compuesto
+            double precioUnitarioComponente = insumoBase.getPrecioDeCompra();
+            precioPorUnidad += cantidadPorUnidad * precioUnitarioComponente;
+            
+            System.out.println("  - Componente: " + insumoBase.getNombre() + 
+                             " (cantidad: " + cantidadPorUnidad + 
+                             ", precio unitario: $" + precioUnitarioComponente + 
+                             ", costo: $" + (cantidadPorUnidad * precioUnitarioComponente) + ")");
+        }
+
+        return precioPorUnidad;
     }
 
     private InsumoCompuestoResponseDTO convertirAInsumoCompuestoResponseDTO(Insumo insumo) {

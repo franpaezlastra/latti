@@ -20,4 +20,11 @@ public interface MovimientoInsumoLoteService {
     // ✅ NUEVO: Métodos para insumos compuestos
     void crearMovimientoEntrada(Long insumoId, double cantidad, double precioTotal, java.time.LocalDate fecha, String descripcion);
     void crearMovimientoSalida(Long insumoId, double cantidad, java.time.LocalDate fecha, String descripcion);
+    
+    // ✅ NUEVO: Métodos para ensambles con tracking
+    void crearMovimientoEntradaConEnsamble(Long insumoId, double cantidad, double precioTotal, java.time.LocalDate fecha, String descripcion, String ensambleId);
+    void crearMovimientoSalidaConEnsamble(Long insumoId, double cantidad, java.time.LocalDate fecha, String descripcion, String ensambleId);
+    
+    // ✅ NUEVO: Método para validar si un movimiento es parte de un ensamble
+    boolean esMovimientoDeEnsamble(Long movimientoId);
 }

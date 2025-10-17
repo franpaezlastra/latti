@@ -49,9 +49,17 @@ export const updateInsumoCompuesto = createAsyncThunk(
   'insumos/updateInsumoCompuesto',
   async ({ id, insumoData }, { rejectWithValue }) => {
     try {
+      console.log('🔄 Actualizando insumo compuesto ID:', id);
+      console.log('🔄 Datos:', insumoData);
+      console.log('🔄 Endpoint:', API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id));
+      
       const response = await api.put(API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id), insumoData);
+      console.log('✅ Respuesta del servidor:', response.data);
       return response.data;
     } catch (error) {
+      console.error('❌ Error al actualizar insumo compuesto:', error);
+      console.error('❌ Status:', error.response?.status);
+      console.error('❌ Data:', error.response?.data);
       return rejectWithValue(
         error.response?.data?.error || 'Error al actualizar insumo compuesto'
       );

@@ -89,7 +89,8 @@ public class InsumoCompuestoController {
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarInsumoCompuesto(@PathVariable Long id, @RequestBody CrearInsumoCompuestoDTO dto) {
         try {
-            System.out.println("🔍 Actualizando insumo compuesto ID: " + id);
+            System.out.println("🔍 PUT /api/insumos-compuestos/" + id + " - Iniciando actualización");
+            System.out.println("🔍 Datos recibidos: " + dto);
             System.out.println("🔍 Receta: " + dto.receta());
             
             InsumoCompuestoResponseDTO insumoActualizado = insumoCompuestoService.actualizarInsumoCompuesto(id, dto);

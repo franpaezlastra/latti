@@ -177,6 +177,14 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         MovimientoInsumoLote movimiento = movimientoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
+        // ✅ NUEVA VALIDACIÓN: Verificar si es parte de un ensamble
+        if (esMovimientoDeEnsamble(id)) {
+            throw new IllegalArgumentException(
+                "No se puede eliminar este movimiento porque es parte de un ensamble de insumo compuesto. " +
+                "Para deshacer un ensamble, debe eliminar el insumo compuesto resultante primero."
+            );
+        }
+
         // Lista para recalcular productos después de eliminar
         Set<Long> insumosParaRecalcular = new HashSet<>();
 
@@ -589,6 +597,82 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         // Guardar todo
         insumoRepository.save(insumo);
         movimientoRepository.save(movimiento);
+    }
+
+    // ✅ NUEVO: Método para crear movimiento de entrada con ensambleId
+    @Override
+    @Transactional
+    public void crearMovimientoEntradaConEnsamble(Long insumoId, double cantidad, double precioTotal, LocalDate fecha, String descripcion, String ensambleId) {
+        Insumo insumo = insumoRepository.findById(insumoId)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + insumoId));
+
+        // Crear el movimiento
+        MovimientoInsumoLote movimiento = new MovimientoInsumoLote(fecha, descripcion, TipoMovimiento.ENTRADA);
+        
+        // Crear el detalle con ensambleId
+        DetalleMovimientoInsumo detalle = new DetalleMovimientoInsumo(cantidad);
+        detalle.setInsumo(insumo);
+        detalle.setPrecioTotal(precioTotal);
+        detalle.setEnsambleId(ensambleId); // ✅ Marcar como parte de un ensamble
+        movimiento.addDetalle(detalle);
+
+        // Actualizar stock y precio del insumo
+        insumo.setStockActual(insumo.getStockActual() + cantidad);
+        
+        // Calcular precio por unidad
+        double precioPorUnidad = precioTotal / cantidad;
+        
+        // Solo actualizar precio si es mayor (peor) que el actual
+        if (insumo.getPrecioDeCompra() == 0 || precioPorUnidad > insumo.getPrecioDeCompra()) {
+            insumo.setPrecioDeCompra(precioPorUnidad);
+        }
+
+        // Guardar todo
+        insumoRepository.save(insumo);
+        movimientoRepository.save(movimiento);
+    }
+
+    // ✅ NUEVO: Método para crear movimiento de salida con ensambleId
+    @Override
+    @Transactional
+    public void crearMovimientoSalidaConEnsamble(Long insumoId, double cantidad, LocalDate fecha, String descripcion, String ensambleId) {
+        Insumo insumo = insumoRepository.findById(insumoId)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + insumoId));
+
+        // Validar stock suficiente
+        if (insumo.getStockActual() < cantidad) {
+            throw new IllegalArgumentException(
+                    String.format("Stock insuficiente para el insumo '%s'. Stock actual: %.2f, Cantidad solicitada: %.2f",
+                            insumo.getNombre(), insumo.getStockActual(), cantidad)
+            );
+        }
+
+        // Crear el movimiento
+        MovimientoInsumoLote movimiento = new MovimientoInsumoLote(fecha, descripcion, TipoMovimiento.SALIDA);
+        
+        // Crear el detalle con ensambleId
+        DetalleMovimientoInsumo detalle = new DetalleMovimientoInsumo(cantidad);
+        detalle.setInsumo(insumo);
+        detalle.setEnsambleId(ensambleId); // ✅ Marcar como parte de un ensamble
+        movimiento.addDetalle(detalle);
+
+        // Actualizar stock del insumo
+        insumo.setStockActual(insumo.getStockActual() - cantidad);
+
+        // Guardar todo
+        insumoRepository.save(insumo);
+        movimientoRepository.save(movimiento);
+    }
+
+    // ✅ NUEVO: Método para validar si un movimiento es parte de un ensamble
+    @Override
+    public boolean esMovimientoDeEnsamble(Long movimientoId) {
+        MovimientoInsumoLote movimiento = movimientoRepository.findById(movimientoId)
+                .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+
+        // Un movimiento es parte de un ensamble si alguno de sus detalles tiene ensambleId
+        return movimiento.getDetalles().stream()
+                .anyMatch(detalle -> detalle.getEnsambleId() != null && !detalle.getEnsambleId().trim().isEmpty());
     }
 
 
