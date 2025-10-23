@@ -165,7 +165,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                                         det.getCantidad(),
                                         det.getInsumo().getUnidadMedida(),
                                         det.getInsumo().getPrecioDeCompra(),
-                                        det.getPrecioTotal()
+                                        det.getPrecioTotal(),
+                                        det.getEnsambleId()
                                 ))
                                 .toList()
                 ))

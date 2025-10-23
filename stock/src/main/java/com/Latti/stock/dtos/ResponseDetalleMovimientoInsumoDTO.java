@@ -8,5 +8,6 @@ public record ResponseDetalleMovimientoInsumoDTO(
     double cantidad, 
     UnidadMedida unidadMedida, 
     double precioDeCompra, 
-    double precioTotal
+    double precioTotal,
+    String ensambleId
 ) {}
