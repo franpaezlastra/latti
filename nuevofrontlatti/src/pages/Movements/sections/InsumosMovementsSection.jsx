@@ -101,9 +101,9 @@ const InsumosMovementsSection = ({
 
   // Columnas de la tabla
   const columnas = [
-    { key: 'fecha', label: 'Fecha', sortable: true },
-    { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
-    { key: 'total', label: 'Total', sortable: true }
+    { key: 'fecha', label: 'Fecha', sortable: true, width: 'w-32' },
+    { key: 'tipoMovimiento', label: 'Tipo', sortable: true, width: 'w-24' },
+    { key: 'total', label: 'Total', sortable: true, width: 'w-32' }
   ];
 
   // Función para ver detalles

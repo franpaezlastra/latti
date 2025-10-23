@@ -35,7 +35,7 @@ const DataTable = ({
     return (
       <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full ${className}`} {...props}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-gray-700">
+          <table className="w-full text-sm text-gray-700 table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {columns.map((column, index) => {
@@ -43,14 +43,22 @@ const DataTable = ({
                   return (
                     <th
                       key={column.key || index}
-                      className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                      className={`px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide ${
+                        column.key === 'fecha' ? 'w-32' :
+                        column.key === 'tipoMovimiento' ? 'w-24' :
+                        column.key === 'total' ? 'w-32' :
+                        column.key === 'nombre' ? 'w-48' :
+                        column.key === 'stockActual' ? 'w-24' :
+                        column.key === 'precioDeCompra' ? 'w-32' :
+                        'w-auto'
+                      }`}
                     >
                       {column.label || 'Columna'}
                     </th>
                   );
                 })}
                 {actions.length > 0 && (
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-32">
                     Acciones
                   </th>
                 )}

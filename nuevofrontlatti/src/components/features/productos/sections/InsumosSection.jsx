@@ -22,17 +22,17 @@ const InsumosSection = ({
   const actions = [
     {
       label: 'Ver detalles',
-      icon: <FaEye />,
+      icon: <FaEye size={14} />,
       onClick: (insumo) => onDetails(insumo)
     },
     {
       label: 'Editar',
-      icon: <FaEdit />,
+      icon: <FaEdit size={14} />,
       onClick: (insumo) => onEdit(insumo)
     },
     {
       label: 'Eliminar',
-      icon: <FaTrash />,
+      icon: <FaTrash size={14} />,
       onClick: (insumo) => onDelete(insumo)
     }
   ];
