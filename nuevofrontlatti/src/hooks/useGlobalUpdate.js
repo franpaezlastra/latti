@@ -60,16 +60,18 @@ export const useGlobalUpdate = () => {
   // Actualización específica después de crear movimiento de insumo
   const updateAfterInsumoMovement = async () => {
     try {
+      console.log('🔄 updateAfterInsumoMovement - Iniciando actualización...');
       // Recargar insumos (para actualizar stock) y movimientos
       const promises = [
         dispatch(fetchInsumos()),
         dispatch(loadMovimientosInsumo())
       ];
       
+      console.log('🔄 updateAfterInsumoMovement - Ejecutando promesas...');
       await Promise.all(promises);
-      console.log('✅ Datos actualizados después de movimiento de insumo');
+      console.log('✅ updateAfterInsumoMovement - Datos actualizados correctamente');
     } catch (error) {
-      console.error('❌ Error al actualizar después de movimiento de insumo:', error);
+      console.error('❌ updateAfterInsumoMovement - Error al actualizar:', error);
     }
   };
 

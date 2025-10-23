@@ -83,11 +83,18 @@ const MovementsPage = () => {
 
   // Cargar datos al montar el componente
   useEffect(() => {
+    console.log('🔄 Cargando datos en MovementsPage...');
     dispatch(loadMovimientosInsumo());
     dispatch(loadMovimientosProducto());
     dispatch(loadInsumos());
     dispatch(loadProductos());
   }, [dispatch]);
+
+  // Debug: Log cuando cambien los movimientos
+  useEffect(() => {
+    console.log('📊 Movimientos de insumos actualizados:', movimientosInsumo);
+    console.log('📊 Cantidad de movimientos:', movimientosInsumo?.length || 0);
+  }, [movimientosInsumo]);
 
   // Configuración de tabs
   const tabs = [

@@ -183,6 +183,9 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       await updateAfterInsumoMovement();
       console.log('✅ Datos actualizados correctamente');
       
+      // Mostrar mensaje de éxito
+      console.log('🎉 Movimiento creado exitosamente');
+      
       // Limpiar formulario
       setFormData({
         tipoMovimiento: '',
@@ -192,8 +195,11 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       });
       setHasError(false);
       setTextoError('');
+      setIsSubmitting(false);
       
+      // Cerrar modal
       if (onSubmit) onSubmit();
+      onClose();
     } catch (err) {
       console.error('❌ Error al crear movimiento de insumo:', err);
       setHasError(true);
