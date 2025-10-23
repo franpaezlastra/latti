@@ -238,11 +238,10 @@ const InsumosMovementsSection = ({
       {/* Tabla */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <Tabla
-          data={formatearMovimientos(movimientosFiltrados)}
-          columns={columnas}
-          actions={acciones}
-          emptyMessage="No hay movimientos de insumos registrados"
-          itemsPerPage={10}
+          datos={formatearMovimientos(movimientosFiltrados)}
+          columnas={columnas}
+          columnasAcciones={acciones}
+          mensajeVacio="No hay movimientos de insumos registrados"
         />
       </div>
 

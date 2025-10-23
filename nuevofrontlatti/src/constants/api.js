@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://72.60.11.86:8080/api';
+export const API_BASE_URL = 'https://api.lattituc.site/api';
 
 export const API_ENDPOINTS = {
   // Autenticación

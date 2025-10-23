@@ -1,12 +1,32 @@
 import React from "react";
 
 const Tabla = ({
-  columnas,
-  datos,
+  columnas = [],
+  datos = [],
   renderFila,
   columnasAcciones = [],
   mensajeVacio = "No hay datos disponibles",
 }) => {
+  // Validar que los datos sean un array
+  if (!Array.isArray(datos)) {
+    console.warn('Tabla: datos debe ser un array, recibido:', typeof datos);
+    return (
+      <div className="w-full p-4 text-center text-gray-500">
+        {mensajeVacio}
+      </div>
+    );
+  }
+
+  // Validar que las columnas sean un array
+  if (!Array.isArray(columnas)) {
+    console.warn('Tabla: columnas debe ser un array, recibido:', typeof columnas);
+    return (
+      <div className="w-full p-4 text-center text-gray-500">
+        Error: columnas no válidas
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-hidden rounded-xl border border-blue-200 shadow bg-white/90">
       <div className="overflow-x-auto max-w-full">
