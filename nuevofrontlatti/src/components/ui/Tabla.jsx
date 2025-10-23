@@ -36,7 +36,7 @@ const Tabla = ({
               <tr>
                 {columnas.map((col, i) => (
                   <th key={i} className="px-2 py-2 font-semibold tracking-tight text-xs">
-                    {col}
+                    {typeof col === 'object' ? col.label : col}
                   </th>
                 ))}
                 {columnasAcciones.length > 0 && (
@@ -51,7 +51,11 @@ const Tabla = ({
                     key={i}
                     className={`${i % 2 === 0 ? "bg-white" : "bg-blue-50"} hover:bg-blue-100 transition`}
                   >
-                    {renderFila(fila, i)}
+                    {columnas.map((col, j) => (
+                      <td key={j} className="px-2 py-1 text-xs">
+                        {fila[col.key]}
+                      </td>
+                    ))}
                     {columnasAcciones.length > 0 && (
                       <td className="px-2 py-1">
                         <div className="flex justify-center gap-1">
