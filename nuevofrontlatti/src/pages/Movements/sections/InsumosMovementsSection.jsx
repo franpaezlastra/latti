@@ -87,11 +87,11 @@ const InsumosMovementsSection = ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
-      detalles: movimiento.detalles?.map(detalle => 
-        `${detalle.nombreInsumo} • ${formatQuantity(detalle.cantidad, getAbreviaturaByValue(detalle.unidadMedida))}${detalle.precioTotal > 0 ? ` • ${formatPrice(detalle.precioTotal)}` : ''}`
+      detalles: movimiento.insumos?.map(insumo => 
+        `${insumo.nombreInsumo} • ${formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida))}${insumo.precioTotal > 0 ? ` • ${formatPrice(insumo.precioTotal)}` : ''}`
       ).join('\n') || 'Sin detalles',
-      total: movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0,
-      totalFormateado: formatPrice(movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0)
+      total: movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0,
+      totalFormateado: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0)
     }));
     console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
     return formateados;
@@ -123,7 +123,7 @@ const InsumosMovementsSection = ({
       className: 'text-gray-600 hover:text-gray-800',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
-        return mov.detalles?.some(detalle => detalle.ensambleId) || false;
+        return mov.insumos?.some(insumo => insumo.ensambleId) || false;
       }
     },
     {
@@ -134,7 +134,7 @@ const InsumosMovementsSection = ({
       className: 'text-red-600 hover:text-red-800',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
-        return mov.detalles?.some(detalle => detalle.ensambleId) || false;
+        return mov.insumos?.some(insumo => insumo.ensambleId) || false;
       }
     }
   ];
