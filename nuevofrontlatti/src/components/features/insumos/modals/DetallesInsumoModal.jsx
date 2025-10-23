@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaBox, FaCog, FaEye, FaInfoCircle, FaList, FaTag, FaWeight } from 'react-icons/fa';
-import { Modal } from 'src/components/ui';
+import { Modal } from '../../../ui';
 import RecetaInsumoDisplay from '../components/RecetaInsumoDisplay';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
 import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';

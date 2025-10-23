@@ -20,7 +20,7 @@ import {
   LoadingSpinner, 
   ErrorMessage, 
   DeleteConfirmationModal 
-} from "src/components/ui";
+} from "../../components/ui";
 
 // Modales
 import MovimientoSeleccionModal from "../../components/features/movements/modals/MovimientoSeleccionModal";

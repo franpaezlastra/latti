@@ -13,7 +13,7 @@ import { loadProductos } from '../../store/actions/productosActions.js';
 import { fetchInsumos } from '../../store/slices/insumoSlice.js';
 import { loadMovimientosProducto } from '../../store/actions/movimientoProductoActions.js';
 import { loadMovimientosInsumo } from '../../store/actions/movimientoInsumoActions.js';
-import { Tabla } from 'src/components/ui';
+import { Tabla } from '../../components/ui';
 import { formatPrice, formatNumber } from '../../utils/formatters.js';
 import { getAbreviaturaByValue } from '../../constants/unidadesMedida.js';
 
