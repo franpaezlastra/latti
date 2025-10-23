@@ -171,8 +171,15 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
     @Override
     @Transactional
     public MovimientoProductoLote eliminarMovimientoProducto(Long id) {
+        System.out.println("🗑️ BACKEND: Intentando eliminar movimiento de producto con ID: " + id);
+        
         MovimientoProductoLote movimiento = movimientoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+                .orElseThrow(() -> {
+                    System.out.println("❌ BACKEND: Movimiento de producto con ID " + id + " no encontrado");
+                    return new IllegalArgumentException("Movimiento no encontrado");
+                });
+        
+        System.out.println("✅ BACKEND: Movimiento encontrado: " + movimiento.getId() + " - " + movimiento.getDescripcion());
 
         // Lista para restaurar insumos después de eliminar el movimiento
         List<Object[]> insumosParaRestaurar = new ArrayList<>();

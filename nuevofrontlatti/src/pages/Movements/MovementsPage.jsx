@@ -205,15 +205,21 @@ const MovementsPage = () => {
   const handleConfirmarEliminacion = async () => {
     if (!movimientoAEliminar) return;
 
+    console.log('🗑️ Intentando eliminar movimiento:', movimientoAEliminar);
+    console.log('🗑️ ID del movimiento:', movimientoAEliminar.id);
+    console.log('🗑️ Tipo del movimiento:', movimientoAEliminar.tipo);
+
     setEliminando(true);
     setErrorEliminacion("");
     setMostrarError(false);
     
     try {
       if (movimientoAEliminar.tipo === "Insumo") {
+        console.log('🗑️ Eliminando movimiento de insumo con ID:', movimientoAEliminar.id);
         await dispatch(deleteMovimientoInsumo(movimientoAEliminar.id)).unwrap();
         await updateAfterDeletion('movimientoInsumo');
       } else {
+        console.log('🗑️ Eliminando movimiento de producto con ID:', movimientoAEliminar.id);
         await dispatch(deleteMovimientoProducto(movimientoAEliminar.id)).unwrap();
         await updateAfterDeletion('movimientoProducto');
       }
