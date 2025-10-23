@@ -159,12 +159,12 @@ const InsumosMovementsSection = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header con botones */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Movimientos de Insumos</h2>
-          <p className="text-gray-600">Gestiona entradas y salidas de materias primas</p>
+          <h2 className="text-lg font-semibold text-gray-900">Movimientos de Insumos</h2>
+          <p className="text-sm text-gray-600">Gestiona entradas y salidas de materias primas</p>
         </div>
         
         <div className="flex flex-wrap gap-2">

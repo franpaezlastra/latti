@@ -11,8 +11,8 @@ const DataTable = ({
   // Validaciones básicas
   if (!Array.isArray(data) || data.length === 0) {
     return (
-      <div className="w-full p-8 text-center text-gray-500">
-        {emptyMessage}
+      <div className="w-full p-4 text-center text-gray-500">
+        <p className="text-sm">{emptyMessage}</p>
       </div>
     );
   }
@@ -43,14 +43,14 @@ const DataTable = ({
                   return (
                     <th
                       key={column.key || index}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
                     >
                       {column.label || 'Columna'}
                     </th>
                   );
                 })}
                 {actions.length > 0 && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                     Acciones
                   </th>
                 )}
@@ -71,13 +71,13 @@ const DataTable = ({
                       console.log('🔍 DataTable - Renderizando celda:', column.key, cellValue, displayValue);
                       
                       return (
-                        <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
+                        <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-sm">
                           {displayValue}
                         </td>
                       );
                     })}
                     {actions.length > 0 && (
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {actions.map((action, actionIndex) => {
                             if (!action || typeof action.onClick !== 'function') {
@@ -87,19 +87,19 @@ const DataTable = ({
                             const isDisabled = action.disabled && typeof action.disabled === 'function' ? action.disabled(row) : false;
                             
                             return (
-                              <button
-                                key={actionIndex}
-                                onClick={() => action.onClick(row)}
-                                disabled={isDisabled}
-                                className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded transition-colors ${
-                                  action.variant === 'ghost' 
-                                    ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
-                                    : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                                } ${action.className || ''}`}
-                                title={action.label || 'Acción'}
-                              >
-                                {action.icon || '⚙️'}
-                              </button>
+                            <button
+                              key={actionIndex}
+                              onClick={() => action.onClick(row)}
+                              disabled={isDisabled}
+                              className={`inline-flex items-center justify-center px-1.5 py-1 text-xs font-medium rounded transition-colors ${
+                                action.variant === 'ghost' 
+                                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                              } ${action.className || ''}`}
+                              title={action.label || 'Acción'}
+                            >
+                              {action.icon || '⚙️'}
+                            </button>
                             );
                           })}
                         </div>

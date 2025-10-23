@@ -149,11 +149,11 @@ const ProductosMovementsSection = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header con botones */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-900">Movimientos de Productos</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Movimientos de Productos</h2>
           <button
             onClick={onNuevoProducto}
             className="flex items-center gap-1 p-2 text-white bg-green-600 rounded-full shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
