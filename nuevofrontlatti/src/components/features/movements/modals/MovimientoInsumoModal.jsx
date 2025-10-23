@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaCalendarAlt, FaTag, FaDollarSign, FaBox, FaCog, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { createMovimientoInsumo } from '../../../../store/actions/movimientoInsumoActions';
-import { fetchInsumosSimples } from '../../../../store/slices/insumoSlice';
+import { fetchInsumos } from '../../../../store/slices/insumoSlice';
 import { useGlobalUpdate } from '../../../../hooks/useGlobalUpdate';
 import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
@@ -33,12 +33,12 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       console.log("🔄 Abriendo modal de movimiento de insumos");
       console.log("📊 Estado actual de insumos:", { insumos, loading, error });
       
-      // Solo cargar insumos simples si no están cargados o hay error
+      // Solo cargar insumos si no están cargados o hay error
       if (!insumos || insumos.length === 0) {
-        console.log("📥 Cargando insumos simples...");
-        dispatch(fetchInsumosSimples());
+        console.log("📥 Cargando insumos...");
+        dispatch(fetchInsumos());
       } else {
-        console.log("✅ Insumos simples ya disponibles:", insumos.length);
+        console.log("✅ Insumos ya disponibles:", insumos.length);
       }
       
       setFormData({
@@ -405,7 +405,9 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                         <option value="">
                           {loading ? 'Cargando insumos...' : 'Seleccionar insumo'}
                         </option>
-                        {!loading && !error && insumos && insumos.length > 0 ? insumos.map((i) => {
+                        {!loading && !error && insumos && insumos.length > 0 ? insumos
+                          .filter(i => i.tipo === 'BASE' || !i.tipo) // Solo insumos base o sin tipo (compatibilidad)
+                          .map((i) => {
                           // Verificar si este insumo está seleccionado en otra fila
                           const insumosSeleccionados = formData.insumos
                             .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
