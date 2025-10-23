@@ -33,6 +33,21 @@ const DataTable = ({
     );
   }
 
+  // Debug: Log de datos recibidos
+  console.log('🔍 DataTable - Datos recibidos:', data);
+  console.log('🔍 DataTable - Columnas recibidas:', columns);
+  console.log('🔍 DataTable - Acciones recibidas:', actions);
+
+  // Si no hay datos, mostrar mensaje
+  if (data.length === 0) {
+    console.log('🔍 DataTable - No hay datos, mostrando mensaje vacío');
+    return (
+      <div className="w-full p-8 text-center text-gray-500">
+        {emptyMessage}
+      </div>
+    );
+  }
+
   // Función de ordenamiento
   const handleSort = (key) => {
     let direction = 'asc';
@@ -112,29 +127,43 @@ const DataTable = ({
                   key={rowIndex}
                   className="hover:bg-gray-50 transition-colors duration-150"
                 >
-                  {columns.map((column, colIndex) => (
-                    <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                      {row[column.key]}
+                  {columns.map((column, colIndex) => {
+                    const cellValue = row[column.key];
+                    const displayValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
+                    
+                    return (
+                      <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
+                        {displayValue}
                       </td>
-                    ))}
+                    );
+                  })}
                     {actions.length > 0 && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        {actions.map((action, actionIndex) => (
-                          <button
-                            key={actionIndex}
-                            onClick={() => action.onClick(row)}
-                            disabled={action.disabled && action.disabled(row)}
-                            className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded transition-colors ${
-                              action.variant === 'ghost' 
-                                ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
-                                : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                            } ${action.className || ''}`}
-                            title={action.label}
-                          >
-                            {action.icon}
-                          </button>
-                        ))}
+                        {actions.map((action, actionIndex) => {
+                          if (!action || typeof action.onClick !== 'function') {
+                            console.warn('DataTable: Acción inválida en índice', actionIndex, action);
+                            return null;
+                          }
+                          
+                          const isDisabled = action.disabled && typeof action.disabled === 'function' ? action.disabled(row) : false;
+                          
+                          return (
+                            <button
+                              key={actionIndex}
+                              onClick={() => action.onClick(row)}
+                              disabled={isDisabled}
+                              className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded transition-colors ${
+                                action.variant === 'ghost' 
+                                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                              } ${action.className || ''}`}
+                              title={action.label || 'Acción'}
+                            >
+                              {action.icon || '⚙️'}
+                            </button>
+                          );
+                        })}
                         </div>
                       </td>
                     )}
