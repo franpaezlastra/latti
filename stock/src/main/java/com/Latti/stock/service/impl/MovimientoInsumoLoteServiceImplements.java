@@ -335,30 +335,16 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
             }
 
-            // Condición 2: El insumo NO se ha usado en producción de productos
+            // Condición 2: El insumo NO se ha usado en producción de productos DESPUÉS de este movimiento
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
-                // Verificar si el insumo se ha usado en producción después de este movimiento
-                List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
-                        .filter(producto -> producto.getReceta() != null && 
-                                producto.getReceta().getDetalles().stream()
-                                        .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
-                        .toList();
+                // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
+                boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
                 
-                if (!productosQueUsanInsumo.isEmpty()) {
-                    // Verificar si algún producto fue producido después de este movimiento
-                    boolean hayProduccionPosterior = productosQueUsanInsumo.stream()
-                            .anyMatch(producto -> {
-                                // Aquí deberías verificar si el producto fue producido después de la fecha del movimiento
-                                // Por simplicidad, asumimos que si el producto existe, ya fue producido
-                                return true; // En una implementación real, verificarías fechas de producción
-                            });
-                    
-                    if (hayProduccionPosterior) {
-                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
-                            "' ha sido usado en la producción de productos");
-                    }
+                if (hayProduccionPosterior) {
+                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                        "' ha sido usado en la producción de productos después de este movimiento");
                 }
             }
 
@@ -377,23 +363,9 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
             }
 
-            // Condición 4: No afecta el cálculo de precios de inversión de productos
-            if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
-                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
-                    Insumo insumo = detalle.getInsumo();
-                    
-                    // Verificar si este insumo contribuye al costo de productos ya producidos
-                    List<Producto> productosAfectados = productoRepository.findAll().stream()
-                            .filter(producto -> producto.getReceta() != null && 
-                                    producto.getReceta().getDetalles().stream()
-                                            .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
-                            .toList();
-                    
-                    if (!productosAfectados.isEmpty()) {
-                        detallesValidacion.add("La edición de este movimiento de entrada afectaría el costo de " + 
-                            productosAfectados.size() + " producto(s) ya producido(s)");
-                    }
-                }
+            // Condición 4: No es un movimiento de ensamble (los movimientos de ensamble no se pueden editar)
+            if (esMovimientoDeEnsamble(movimientoId)) {
+                detallesValidacion.add("Este movimiento es parte de un ensamble de insumo compuesto y no se puede editar");
             }
 
             boolean puedeEditar = detallesValidacion.isEmpty();
@@ -673,6 +645,33 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         // Un movimiento es parte de un ensamble si alguno de sus detalles tiene ensambleId
         return movimiento.getDetalles().stream()
                 .anyMatch(detalle -> detalle.getEnsambleId() != null && !detalle.getEnsambleId().trim().isEmpty());
+    }
+
+    /**
+     * Verifica si un insumo ha sido usado en producción de productos después de una fecha específica
+     */
+    private boolean verificarUsoEnProduccionPosterior(Insumo insumo, LocalDate fechaMovimiento) {
+        // Obtener todos los productos que usan este insumo
+        List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
+                .filter(producto -> producto.getReceta() != null && 
+                        producto.getReceta().getDetalles().stream()
+                                .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                .toList();
+
+        // Para cada producto, verificar si tiene movimientos de entrada después de la fecha del movimiento de insumo
+        for (Producto producto : productosQueUsanInsumo) {
+            boolean tieneProduccionPosterior = producto.getMovimientos().stream()
+                    .anyMatch(movimientoProducto -> 
+                        movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
+                        movimientoProducto.getFecha().isAfter(fechaMovimiento)
+                    );
+            
+            if (tieneProduccionPosterior) {
+                return true; // El insumo se usó en producción después del movimiento
+            }
+        }
+        
+        return false; // No se usó en producción después del movimiento
     }
 
 
