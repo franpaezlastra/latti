@@ -267,15 +267,20 @@ const ProductosPage = () => {
   }
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-blue-50 via-white to-blue-100 h-screen">
-      <div className="px-8 py-6 bg-white border-b border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Productos e Insumos</h1>
-        <p className="text-lg text-gray-600">Administra tu inventario de productos y materias primas</p>
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col">
+      {/* Header fijo */}
+      <div className="px-6 py-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Gestión de Productos e Insumos</h1>
+          <p className="text-sm text-gray-600">Administra tu inventario de productos y materias primas</p>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pt-2">
+      {/* Contenido principal con scroll */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-4">
         {/* Sección de Productos */}
-        <div className="mb-6">
+        <div className="mb-4">
           <ProductosSection
             productos={productos}
             onCreate={() => openModal('productoCreate')}
@@ -297,6 +302,7 @@ const ProductosPage = () => {
             onEdit={handleEditInsumo}
             onDetails={handleViewInsumo}
           />
+        </div>
         </div>
       </div>
 

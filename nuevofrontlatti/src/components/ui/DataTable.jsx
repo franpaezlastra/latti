@@ -33,7 +33,7 @@ const DataTable = ({
 
   try {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`} {...props}>
+      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full ${className}`} {...props}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-gray-700">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -43,14 +43,14 @@ const DataTable = ({
                   return (
                     <th
                       key={column.key || index}
-                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide"
+                      className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide"
                     >
                       {column.label || 'Columna'}
                     </th>
                   );
                 })}
                 {actions.length > 0 && (
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                     Acciones
                   </th>
                 )}
@@ -71,7 +71,7 @@ const DataTable = ({
                       console.log('🔍 DataTable - Renderizando celda:', column.key, cellValue, displayValue);
                       
                       return (
-                        <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-sm">
+                        <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-xs">
                           {displayValue}
                         </td>
                       );
@@ -93,8 +93,12 @@ const DataTable = ({
                               disabled={isDisabled}
                               className={`inline-flex items-center justify-center px-1.5 py-1 text-xs font-medium rounded transition-colors ${
                                 action.variant === 'ghost' 
-                                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
-                                  : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' 
+                                  : action.label === 'Eliminar'
+                                  ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                                  : action.label === 'Editar'
+                                  ? 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'
+                                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                               } ${action.className || ''}`}
                               title={action.label || 'Acción'}
                             >
