@@ -10,6 +10,7 @@ import com.Latti.stock.modules.DetalleMovimientoInsumo;
 import com.Latti.stock.modules.Insumo;
 import com.Latti.stock.modules.InsumoReceta;
 import com.Latti.stock.modules.MovimientoInsumoLote;
+import com.Latti.stock.modules.MovimientoProductoLote;
 import com.Latti.stock.modules.Producto;
 import com.Latti.stock.modules.TipoMovimiento;
 import com.Latti.stock.repositories.InsumoRepository;
