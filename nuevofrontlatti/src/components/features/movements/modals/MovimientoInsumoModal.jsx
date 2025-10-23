@@ -173,7 +173,13 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
       console.log('🔐 Token presente:', !!token);
-      console.log('👤 Usuario:', user ? JSON.parse(user) : 'No encontrado');
+      console.log('👤 Usuario:', user ? (() => {
+        try {
+          return JSON.parse(user);
+        } catch (e) {
+          return user;
+        }
+      })() : 'No encontrado');
       console.log('🚀 Enviando movimiento de insumo:', movimientoData);
       const result = await dispatch(createMovimientoInsumo(movimientoData)).unwrap();
       console.log('✅ Movimiento creado exitosamente:', result);
