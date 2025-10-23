@@ -33,8 +33,13 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       console.log("🔄 Abriendo modal de movimiento de insumos");
       console.log("📊 Estado actual de insumos:", { insumos, loading, error });
       
-      // Cargar insumos siempre para asegurar datos actualizados
-      dispatch(fetchInsumos());
+      // Solo cargar insumos si no están cargados o hay error
+      if (!insumos || insumos.length === 0) {
+        console.log("📥 Cargando insumos...");
+        dispatch(fetchInsumos());
+      } else {
+        console.log("✅ Insumos ya disponibles:", insumos.length);
+      }
       
       setFormData({
         tipoMovimiento: '',
@@ -45,19 +50,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       setHasError(false);
       setTextoError('');
     }
-  }, [isOpen, dispatch]);
-
-  // Debug: Log cuando cambie el estado de insumos
-  useEffect(() => {
-    console.log("📊 Estado de insumos actualizado:", { insumos, loading, error });
-    if (insumos && insumos.length > 0) {
-      console.log("✅ Insumos disponibles:", insumos);
-    } else if (!loading && !error) {
-      console.log("⚠️ No hay insumos disponibles");
-    } else if (error) {
-      console.log("❌ Error cargando insumos:", error);
-    }
-  }, [insumos, loading, error]);
+  }, [isOpen, dispatch, insumos]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
