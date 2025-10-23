@@ -50,7 +50,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       setHasError(false);
       setTextoError('');
     }
-  }, [isOpen, dispatch, insumos]);
+  }, [isOpen, dispatch]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
