@@ -6,8 +6,7 @@ import { toast } from 'react-hot-toast';
 import { loginUser, loadCriticalData } from '../../store/actions/authActions.js';
 import { ROUTES } from '../../constants/routes.js';
 import { MESSAGES } from '../../constants/messages.js';
-import Button from '../../components/common/Button/Button.jsx';
-import Input from '../../components/common/Input/Input.jsx';
+import { Button, Input } from '../../components/ui';
 import logo from '../../assets/logoazul.png';
 
 const Login = () => {
