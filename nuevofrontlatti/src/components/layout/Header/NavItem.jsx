@@ -27,7 +27,7 @@ const NavItem = ({ to, icon: Icon, text }) => {
   };
 
   // Clase base
-  let className = "flex items-center gap-2 px-4 py-2 rounded transition-colors duration-200";
+  let className = "flex items-center gap-2 px-4 py-2 rounded transition-colors duration-200 text-white";
 
   // Agregar clase si está activo
   if (isActive) {
