@@ -95,18 +95,8 @@ const InsumosMovementsSection = ({
     });
     
     const formateados = movimientosOrdenados.map(movimiento => {
-      // Debug: Log del movimiento completo
-      console.log('🔍 Movimiento completo:', movimiento);
-      console.log('🔍 Insumos del movimiento:', movimiento.insumos);
-      
       // Verificar si es un movimiento de ensamble
-      const esEnsamble = movimiento.insumos?.some(insumo => {
-        console.log('🔍 Insumo individual:', insumo);
-        console.log('🔍 ensambleId del insumo:', insumo.ensambleId);
-        return insumo.ensambleId;
-      }) || false;
-      
-      console.log('🔍 ¿Es ensamble?', esEnsamble);
+      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId) || false;
       
       return {
         id: movimiento.id,
