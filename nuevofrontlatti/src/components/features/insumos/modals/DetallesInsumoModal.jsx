@@ -15,10 +15,7 @@ const DetallesInsumoModal = ({ isOpen, onClose, insumo }) => {
       isOpen={isOpen}
       onClose={onClose}
       title={`Detalles del Insumo`}
-      submitText="Cerrar"
-      onSubmit={onClose}
-      maxWidth="max-w-2xl"
-      showCancel={false}
+      size="lg"
     >
       <div className="space-y-6">
         {/* Información básica */}
@@ -126,6 +123,16 @@ const DetallesInsumoModal = ({ isOpen, onClose, insumo }) => {
             </div>
           </div>
         )}
+
+        {/* Botón de cerrar */}
+        <div className="flex justify-end pt-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </Modal>
   );

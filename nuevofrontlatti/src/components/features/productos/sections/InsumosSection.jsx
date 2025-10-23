@@ -35,7 +35,7 @@ const InsumosSection = ({
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: (insumo) => onDelete(insumo.id),
+      onClick: (insumo) => onDelete(insumo),
       className: 'text-red-600 hover:bg-red-200'
     }
   ];
