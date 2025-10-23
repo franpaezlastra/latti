@@ -37,6 +37,10 @@ const Movements = () => {
   const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
   const [movimientoAEditar, setMovimientoAEditar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+  
+  // Estados de error
+  const [errorEliminacion, setErrorEliminacion] = useState("");
+  const [mostrarError, setMostrarError] = useState(false);
 
   // Estados de filtros
   const [productoFiltro, setProductoFiltro] = useState("");
@@ -163,6 +167,8 @@ const Movements = () => {
 
   const handleEliminarMovimiento = (movimiento) => {
     setMovimientoAEliminar(movimiento);
+    setErrorEliminacion(""); // Limpiar errores previos
+    setMostrarError(false);
     setShowDeleteModal(true);
   };
 
@@ -178,6 +184,9 @@ const Movements = () => {
     if (!movimientoAEliminar) return;
 
     setEliminando(true);
+    setErrorEliminacion(""); // Limpiar errores previos
+    setMostrarError(false);
+    
     try {
       if (movimientoAEliminar.tipo === "Insumo") {
         await dispatch(deleteMovimientoInsumo(movimientoAEliminar.id)).unwrap();
@@ -189,10 +198,18 @@ const Movements = () => {
         await updateAfterDeletion('movimientoProducto');
       }
 
+      // Éxito: cerrar modal y limpiar estado
       setShowDeleteModal(false);
       setMovimientoAEliminar(null);
+      setErrorEliminacion("");
+      setMostrarError(false);
     } catch (error) {
       console.error("Error al eliminar movimiento:", error);
+      
+      // Mostrar error del backend
+      const errorMessage = error.message || "Error inesperado al eliminar el movimiento";
+      setErrorEliminacion(errorMessage);
+      setMostrarError(true);
     } finally {
       setEliminando(false);
     }
@@ -310,11 +327,15 @@ const Movements = () => {
         onClose={() => {
           setShowDeleteModal(false);
           setMovimientoAEliminar(null);
+          setErrorEliminacion("");
+          setMostrarError(false);
         }}
         onConfirm={handleConfirmarEliminacion}
         title="Eliminar Movimiento"
         message={`¿Estás seguro de que quieres eliminar este movimiento de ${movimientoAEliminar?.tipo?.toLowerCase()}? Esta acción revertirá todos los cambios de stock y no se puede deshacer.`}
         loading={eliminando}
+        error={mostrarError}
+        errorMessage={errorEliminacion}
       />
 
       <EditarMovimientoInsumoModal

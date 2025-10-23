@@ -10,7 +10,9 @@ const DeleteConfirmationModal = ({
   message = "¿Estás seguro de que quieres eliminar este elemento?",
   confirmText = "Eliminar",
   cancelText = "Cancelar",
-  isLoading = false
+  isLoading = false,
+  error = false,
+  errorMessage = ""
 }) => {
   if (!isOpen) return null;
 
@@ -42,6 +44,15 @@ const DeleteConfirmationModal = ({
           <p className="text-red-600 text-xs mt-3 font-medium">
             Esta acción no se puede deshacer.
           </p>
+          
+          {/* Error Message */}
+          {error && errorMessage && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm font-medium">
+                {errorMessage}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

@@ -60,12 +60,25 @@ export const deleteMovimientoInsumo = createAsyncThunk(
   'movimientosInsumo/deleteMovimientoInsumo',
   async (id, { rejectWithValue }) => {
     try {
+      console.log("🗑️ Intentando eliminar movimiento de insumo ID:", id);
       const response = await api.delete(`${BASE_URL}/${id}`);
+      console.log("✅ Movimiento de insumo eliminado exitosamente");
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.error || "Error al eliminar el movimiento de insumo"
-      );
+      console.error("❌ Error eliminando movimiento de insumo:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Extraer el mensaje de error del backend
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al eliminar el movimiento de insumo";
+      
+      return rejectWithValue(errorMessage);
     }
   }
 ); 
