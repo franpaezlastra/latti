@@ -17,6 +17,20 @@ export const fetchInsumos = createAsyncThunk(
   }
 );
 
+export const fetchInsumosSimples = createAsyncThunk(
+  'insumos/fetchInsumosSimples',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(API_ENDPOINTS.INSUMOS.BASE);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || 'Error al cargar insumos simples'
+      );
+    }
+  }
+);
+
 export const createInsumo = createAsyncThunk(
   'insumos/createInsumo',
   async (insumoData, { rejectWithValue }) => {
@@ -124,6 +138,23 @@ const insumoSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchInsumos.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch insumos simples
+      .addCase(fetchInsumosSimples.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInsumosSimples.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log('📥 Insumos simples recibidos de la API:', action.payload);
+        console.log('📊 Total de insumos simples:', action.payload?.length);
+        state.insumos = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchInsumosSimples.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
