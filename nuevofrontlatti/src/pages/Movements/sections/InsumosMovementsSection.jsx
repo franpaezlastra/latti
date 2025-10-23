@@ -103,7 +103,6 @@ const InsumosMovementsSection = ({
   const columnas = [
     { key: 'fecha', label: 'Fecha', sortable: true },
     { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
-    { key: 'descripcion', label: 'Descripción', sortable: true },
     { key: 'total', label: 'Total', sortable: true }
   ];
 
