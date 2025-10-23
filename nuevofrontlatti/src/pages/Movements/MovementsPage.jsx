@@ -92,8 +92,13 @@ const MovementsPage = () => {
 
   // Debug: Log cuando cambien los movimientos
   useEffect(() => {
-    console.log('📊 Movimientos de insumos actualizados:', movimientosInsumo);
-    console.log('📊 Cantidad de movimientos:', movimientosInsumo?.length || 0);
+    console.log('📊 MovementsPage - Movimientos de insumos actualizados:', movimientosInsumo);
+    console.log('📊 MovementsPage - Cantidad de movimientos:', movimientosInsumo?.length || 0);
+    console.log('📊 MovementsPage - Tipo de datos:', typeof movimientosInsumo);
+    console.log('📊 MovementsPage - Es array:', Array.isArray(movimientosInsumo));
+    if (movimientosInsumo && movimientosInsumo.length > 0) {
+      console.log('📊 MovementsPage - Primer movimiento:', movimientosInsumo[0]);
+    }
   }, [movimientosInsumo]);
 
   // Configuración de tabs
