@@ -23,7 +23,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   });
   
   // Estados de error
-  const [error, setError] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,7 +42,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
         descripcion: '',
         insumos: [{ insumoId: '', cantidad: '', precioDeCompra: '' }]
       });
-      setError(false);
+      setHasError(false);
       setTextoError('');
     }
   }, [isOpen, dispatch]);
@@ -62,8 +62,8 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (error) {
-      setError(false);
+    if (hasError) {
+      setHasError(false);
       setTextoError('');
     }
   };
@@ -75,8 +75,8 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
         i === index ? { ...insumo, [field]: value } : insumo
       )
     }));
-    if (error) {
-      setError(false);
+    if (hasError) {
+      setHasError(false);
       setTextoError('');
     }
   };
@@ -86,8 +86,8 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       ...prev,
       insumos: [...prev.insumos, { insumoId: '', cantidad: '', precioDeCompra: '' }]
     }));
-    if (error) {
-      setError(false);
+    if (hasError) {
+      setHasError(false);
       setTextoError('');
     }
   };
@@ -98,35 +98,35 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       ...prev,
       insumos: prev.insumos.filter((_, i) => i !== index)
     }));
-    if (error) {
-      setError(false);
+    if (hasError) {
+      setHasError(false);
       setTextoError('');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(false);
+    setHasError(false);
     setTextoError('');
     setIsSubmitting(true);
 
     // Validaciones básicas
     if (!formData.tipoMovimiento.trim()) {
-      setError(true);
+      setHasError(true);
       setTextoError('El tipo de movimiento es obligatorio');
       setIsSubmitting(false);
       return;
     }
 
     if (!formData.fecha) {
-      setError(true);
+      setHasError(true);
       setTextoError('La fecha es obligatoria');
       setIsSubmitting(false);
       return;
     }
 
     if (formData.insumos.length === 0) {
-      setError(true);
+      setHasError(true);
       setTextoError('Debe agregar al menos un insumo');
       setIsSubmitting(false);
       return;
@@ -135,7 +135,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
     // Validar que todos los insumos tengan datos válidos
     for (const insumo of formData.insumos) {
       if (!insumo.insumoId || !insumo.cantidad || parseFloat(insumo.cantidad) <= 0) {
-        setError(true);
+        setHasError(true);
         setTextoError('Todos los insumos deben tener cantidad válida y estar seleccionados');
         setIsSubmitting(false);
         return;
@@ -145,7 +145,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
     // Validar insumos duplicados
     const insumoIds = formData.insumos.map(i => i.insumoId);
     if (new Set(insumoIds).size !== insumoIds.length) {
-      setError(true);
+      setHasError(true);
       setTextoError('No puede seleccionar el mismo insumo más de una vez');
       setIsSubmitting(false);
       return;
@@ -155,7 +155,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
     if (formData.tipoMovimiento === "ENTRADA") {
       for (const insumo of formData.insumos) {
         if (!insumo.precioDeCompra || parseFloat(insumo.precioDeCompra) <= 0) {
-          setError(true);
+          setHasError(true);
           setTextoError('Para movimientos de entrada, el precio de compra es obligatorio');
           setIsSubmitting(false);
           return;
@@ -188,13 +188,13 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
         descripcion: '',
         insumos: [{ insumoId: '', cantidad: '', precioDeCompra: '' }]
       });
-      setError(false);
+      setHasError(false);
       setTextoError('');
       
       if (onSubmit) onSubmit();
     } catch (err) {
       console.log('MovimientoInsumoModal - catch error:', err);
-      setError(true);
+      setHasError(true);
       
       // Si err es directamente el string del error (viene de rejectWithValue)
       if (typeof err === 'string') {
@@ -222,7 +222,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       descripcion: '',
       insumos: [{ insumoId: '', cantidad: '', precioDeCompra: '' }]
     });
-    setError(false);
+    setHasError(false);
     setTextoError('');
     setIsSubmitting(false);
     onClose();
@@ -236,7 +236,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       onSubmit={handleSubmit}
       submitText="Confirmar movimiento"
       isSubmitting={isSubmitting}
-      error={error}
+      error={hasError}
       errorMessage={textoError}
       maxWidth="max-w-4xl"
     >
