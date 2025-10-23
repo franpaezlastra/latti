@@ -86,31 +86,11 @@ const InsumosMovementsSection = ({
     const formateados = movimientos.map(movimiento => ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
-      tipoMovimiento: (
-        <Badge 
-          variant={movimiento.tipoMovimiento === 'ENTRADA' ? 'success' : 'danger'}
-          size="sm"
-        >
-          {movimiento.tipoMovimiento === 'ENTRADA' ? 'Entrada' : 'Salida'}
-        </Badge>
-      ),
-      detalles: (
-        <div className="space-y-1">
-          {movimiento.detalles?.map((detalle, index) => (
-            <div key={index} className="text-xs text-gray-600">
-              <span className="font-medium">{detalle.nombreInsumo}</span>
-              <span className="mx-1">•</span>
-              <span>{formatQuantity(detalle.cantidad, getAbreviaturaByValue(detalle.unidadMedida))}</span>
-              {detalle.precioTotal > 0 && (
-                <>
-                  <span className="mx-1">•</span>
-                  <span className="text-green-600 font-medium">{formatPrice(detalle.precioTotal)}</span>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      ),
+      tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? 'Entrada' : 'Salida',
+      tipoMovimientoClass: movimiento.tipoMovimiento === 'ENTRADA' ? 'success' : 'danger',
+      detalles: movimiento.detalles?.map(detalle => 
+        `${detalle.nombreInsumo} • ${formatQuantity(detalle.cantidad, getAbreviaturaByValue(detalle.unidadMedida))}${detalle.precioTotal > 0 ? ` • ${formatPrice(detalle.precioTotal)}` : ''}`
+      ).join('\n') || 'Sin detalles',
       total: movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0,
       totalFormateado: formatPrice(movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0)
     }));
@@ -121,9 +101,31 @@ const InsumosMovementsSection = ({
   // Columnas de la tabla
   const columnas = [
     { key: 'fecha', label: 'Fecha', sortable: true },
-    { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
+    { 
+      key: 'tipoMovimiento', 
+      label: 'Tipo', 
+      sortable: true,
+      render: (value, row) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          row.tipoMovimientoClass === 'success' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {value}
+        </span>
+      )
+    },
     { key: 'descripcion', label: 'Descripción', sortable: true },
-    { key: 'detalles', label: 'Insumos', sortable: false },
+    { 
+      key: 'detalles', 
+      label: 'Insumos', 
+      sortable: false,
+      render: (value) => (
+        <div className="text-xs text-gray-600 whitespace-pre-line">
+          {value}
+        </div>
+      )
+    },
     { key: 'totalFormateado', label: 'Total', sortable: true }
   ];
 
