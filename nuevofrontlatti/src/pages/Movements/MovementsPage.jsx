@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaBox, FaCog, FaChartLine, FaFilter } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loadMovimientosInsumo, deleteMovimientoInsumo } from "../../store/actions/movimientoInsumoActions";
 import { loadMovimientosProducto, deleteMovimientoProducto } from "../../store/actions/movimientoProductoActions";
@@ -9,14 +8,6 @@ import { useGlobalUpdate } from "../../hooks/useGlobalUpdate";
 
 // Componentes UI
 import { 
-  PageHeader, 
-  Card, 
-  Button, 
-  Tabs, 
-  DataTable, 
-  FilterPanel, 
-  StatCard, 
-  Badge, 
   LoadingSpinner, 
   ErrorMessage, 
   DeleteConfirmationModal 
@@ -32,8 +23,6 @@ import EditarMovimientoInsumoModal from "../../components/features/movements/mod
 
 // Componentes de secciones
 import InsumosMovementsSection from "./sections/InsumosMovementsSection";
-import ProductosMovementsSection from "./sections/ProductosMovementsSection";
-import StockSummary from "./components/StockSummary";
 
 const MovementsPage = () => {
   const dispatch = useDispatch();
@@ -63,7 +52,6 @@ const MovementsPage = () => {
   } = useSelector((state) => state.productos);
 
   // Estados locales
-  const [activeTab, setActiveTab] = useState("insumos");
   const [showSeleccionModal, setShowSeleccionModal] = useState(false);
   const [showInsumoModal, setShowInsumoModal] = useState(false);
   const [showInsumoCompuestoModal, setShowInsumoCompuestoModal] = useState(false);
@@ -90,26 +78,6 @@ const MovementsPage = () => {
     dispatch(loadProductos());
   }, [dispatch]);
 
-  // Configuración de tabs
-  const tabs = [
-    {
-      id: "insumos",
-      label: "Insumos",
-      icon: <FaBox size={14} />,
-      badge: movimientosInsumo?.length || 0
-    },
-    {
-      id: "productos", 
-      label: "Productos",
-      icon: <FaCog size={14} />,
-      badge: movimientosProducto?.length || 0
-    },
-    {
-      id: "stock",
-      label: "Resumen de Stock",
-      icon: <FaChartLine size={14} />
-    }
-  ];
 
   // Handlers de modales
   const openModal = (modalName) => {
@@ -245,52 +213,22 @@ const MovementsPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="px-8 py-6 bg-white border-b border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Movimientos</h1>
-        <p className="text-lg text-gray-600">Administra entradas y salidas de stock de insumos y productos</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Movimientos de Insumos</h1>
+        <p className="text-lg text-gray-600">Administra entradas, salidas y ensambles de materias primas</p>
       </div>
 
       {/* Contenido principal */}
       <div className="container mx-auto px-4 py-6">
-        {/* Tabs */}
-        <div className="mb-6">
-          <Tabs
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            variant="default"
-            className="bg-white p-1 rounded-lg shadow-sm"
-          />
-        </div>
-
-        {/* Contenido de tabs */}
-        {activeTab === "insumos" && (
-          <InsumosMovementsSection
-            movimientos={movimientosInsumo || []}
-            insumos={insumos || []}
-            onVerDetalles={handleVerDetalles}
-            onEliminar={handleEliminarMovimiento}
-            onEditar={handleEditarMovimiento}
-            onNuevoInsumo={() => openModal('insumo')}
-            onNuevoInsumoCompuesto={() => openModal('insumoCompuesto')}
-          />
-        )}
-
-        {activeTab === "productos" && (
-          <ProductosMovementsSection
-            movimientos={movimientosProducto || []}
-            productos={productos || []}
-            onVerDetalles={handleVerDetalles}
-            onEliminar={handleEliminarMovimiento}
-            onNuevoProducto={() => openModal('seleccion')}
-          />
-        )}
-
-        {activeTab === "stock" && (
-          <StockSummary
-            insumos={insumos || []}
-            productos={productos || []}
-          />
-        )}
+        {/* Solo sección de movimientos de insumos */}
+        <InsumosMovementsSection
+          movimientos={movimientosInsumo || []}
+          insumos={insumos || []}
+          onVerDetalles={handleVerDetalles}
+          onEliminar={handleEliminarMovimiento}
+          onEditar={handleEditarMovimiento}
+          onNuevoInsumo={() => openModal('insumo')}
+          onNuevoInsumoCompuesto={() => openModal('insumoCompuesto')}
+        />
       </div>
 
       {/* Modales */}
