@@ -3,7 +3,6 @@ import { FaPlus, FaEye, FaTrash, FaEdit, FaBox, FaCog, FaFilter, FaSearch } from
 import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
 import { formatQuantity, formatPrice } from "../../../utils/formatters";
 import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
-import DetallesMovimientoModal from '../../components/features/movements/modals/DetallesMovimientoModal';
 
 const InsumosMovementsSection = ({
   movimientos = [],
@@ -26,8 +25,6 @@ const InsumosMovementsSection = ({
   });
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
-  const [mostrarDetalles, setMostrarDetalles] = useState(false);
 
   // Configuración de filtros para FilterPanel
   const filterConfig = [
@@ -91,9 +88,13 @@ const InsumosMovementsSection = ({
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
       descripcion: movimiento.descripcion || 'Sin descripción',
-      total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0),
-      // Mantener datos originales para el modal de detalles
-      insumos: movimiento.insumos || []
+      detalles: movimiento.insumos?.map(insumo => {
+        const nombre = insumo.nombreInsumo || insumo.nombre || insumo.insumo?.nombre || 'Sin nombre';
+        const cantidad = formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida));
+        const precio = insumo.precioTotal > 0 ? formatPrice(insumo.precioTotal) : '';
+        return `${nombre} • ${cantidad}${precio ? ` • ${precio}` : ''}`;
+      }).join('\n') || 'Sin detalles',
+      total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0)
     }));
     console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
     return formateados;
@@ -104,21 +105,16 @@ const InsumosMovementsSection = ({
     { key: 'fecha', label: 'Fecha', sortable: true },
     { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
     { key: 'descripcion', label: 'Descripción', sortable: true },
+    { key: 'detalles', label: 'Detalles', sortable: false },
     { key: 'total', label: 'Total', sortable: true }
   ];
-
-  // Función para ver detalles
-  const handleVerDetalles = (movimiento) => {
-    setMovimientoSeleccionado(movimiento);
-    setMostrarDetalles(true);
-  };
 
   // Acciones de la tabla
   const acciones = [
     {
       label: 'Ver detalles',
       icon: <FaEye size={14} />,
-      onClick: handleVerDetalles,
+      onClick: (mov) => onVerDetalles(mov),
       variant: 'ghost',
       className: 'text-blue-600 hover:text-blue-800'
     },
@@ -259,12 +255,6 @@ const InsumosMovementsSection = ({
         </div>
       </Card>
 
-      {/* Modal de detalles */}
-      <DetallesMovimientoModal
-        isOpen={mostrarDetalles}
-        onClose={() => setMostrarDetalles(false)}
-        movimiento={movimientoSeleccionado}
-      />
     </div>
   );
 };
