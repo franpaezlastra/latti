@@ -55,6 +55,60 @@ const Dashboard = () => {
   const movimientosProductosList = movimientosProductos || [];
   const movimientosInsumosList = movimientosInsumos || [];
 
+  // Datos de prueba si no hay datos reales
+  const datosPrueba = {
+    insumos: [
+      {
+        id: 1,
+        nombre: "Café en grano",
+        tipo: "BASE",
+        stockActual: 50,
+        unidadMedida: "GRAMOS",
+        precioDeCompra: 1500,
+        totalInvertido: 75000
+      },
+      {
+        id: 2,
+        nombre: "Azúcar",
+        tipo: "BASE", 
+        stockActual: 25,
+        unidadMedida: "GRAMOS",
+        precioDeCompra: 800,
+        totalInvertido: 20000
+      },
+      {
+        id: 3,
+        nombre: "Leche",
+        tipo: "BASE",
+        stockActual: 8,
+        unidadMedida: "LITROS",
+        precioDeCompra: 1200,
+        totalInvertido: 9600
+      },
+      {
+        id: 4,
+        nombre: "Vainilla",
+        tipo: "BASE",
+        stockActual: 2,
+        unidadMedida: "MILILITROS",
+        precioDeCompra: 2500,
+        totalInvertido: 5000
+      },
+      {
+        id: 5,
+        nombre: "Café preparado",
+        tipo: "COMPUESTO",
+        stockActual: 15,
+        unidadMedida: "UNIDADES",
+        precioDeCompra: 2000,
+        totalInvertido: 30000
+      }
+    ]
+  };
+
+  // Usar datos de prueba si no hay datos reales
+  const insumosParaMostrar = insumosList.length > 0 ? insumosList : datosPrueba.insumos;
+
   // Resetear página cuando cambien los movimientos
   useEffect(() => {
     setPaginaActual(1);
@@ -78,13 +132,13 @@ const Dashboard = () => {
   // Calcular estadísticas generales
   const calcularEstadisticas = () => {
     // Usar el totalInvertido calculado en el backend
-    const dineroInvertidoInsumos = insumosList.reduce((total, insumo) => {
+    const dineroInvertidoInsumos = insumosParaMostrar.reduce((total, insumo) => {
       return total + (insumo.totalInvertido || 0);
     }, 0);
 
     const totalProductos = productosList.length;
-    const totalInsumos = insumosList.length;
-    const stockBajo = insumosList.filter(insumo => (insumo.stockActual || 0) < 10).length;
+    const totalInsumos = insumosParaMostrar.length;
+    const stockBajo = insumosParaMostrar.filter(insumo => (insumo.stockActual || 0) < 10).length;
     const { totalVentas, ingresosTotales } = calcularEstadisticasVentas();
 
     return {
@@ -229,6 +283,7 @@ const Dashboard = () => {
   console.log('🔍 Dashboard Debug:');
   console.log('- productosList:', productosList);
   console.log('- insumosList:', insumosList);
+  console.log('- insumosParaMostrar:', insumosParaMostrar);
   console.log('- movimientosProductosList:', movimientosProductosList);
   console.log('- movimientosInsumosList:', movimientosInsumosList);
   console.log('- stats:', stats);
@@ -369,7 +424,7 @@ const Dashboard = () => {
   const TablaInsumos = () => {
     const columnas = ["Insumo", "Cantidad", "Precio Unitario", "Total Invertido", "Estado"];
     
-    const insumosOrdenados = [...insumosList].sort((a, b) => 
+    const insumosOrdenados = [...insumosParaMostrar].sort((a, b) => 
       a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
     );
 
