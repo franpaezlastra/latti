@@ -93,7 +93,11 @@ const InsumosMovementsSection = ({
       descripcion: movimiento.descripcion || 'Sin descripción',
       total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0),
       // Mantener datos originales para el modal
-      insumos: movimiento.insumos || []
+      insumos: movimiento.insumos || [],
+      // Mantener el tipoMovimiento original para el modal
+      tipoMovimientoOriginal: movimiento.tipoMovimiento,
+      // Mantener la fecha original para el modal
+      fechaOriginal: movimiento.fecha
     }));
     console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
     return formateados;
@@ -108,7 +112,15 @@ const InsumosMovementsSection = ({
 
   // Función para ver detalles
   const handleVerDetalles = (movimiento) => {
-    setMovimientoSeleccionado(movimiento);
+    // Reconstruir el objeto con los datos originales para el modal
+    const movimientoOriginal = {
+      id: movimiento.id,
+      fecha: movimiento.fechaOriginal || movimiento.fecha,
+      tipoMovimiento: movimiento.tipoMovimientoOriginal || movimiento.tipoMovimiento,
+      descripcion: movimiento.descripcion,
+      insumos: movimiento.insumos
+    };
+    setMovimientoSeleccionado(movimientoOriginal);
     setMostrarDetalles(true);
   };
 
