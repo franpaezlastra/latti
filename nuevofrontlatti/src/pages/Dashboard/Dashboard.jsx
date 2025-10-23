@@ -225,6 +225,16 @@ const Dashboard = () => {
 
   const stats = calcularEstadisticas();
 
+  // Debug logs
+  console.log('🔍 Dashboard Debug:');
+  console.log('- productosList:', productosList);
+  console.log('- insumosList:', insumosList);
+  console.log('- movimientosProductosList:', movimientosProductosList);
+  console.log('- movimientosInsumosList:', movimientosInsumosList);
+  console.log('- stats:', stats);
+  console.log('- productosStatus:', productosStatus);
+  console.log('- insumosStatus:', insumosStatus);
+
   const isLoading = productosStatus === 'loading' || insumosStatus === 'loading' || movimientosProductosLoading || movimientosInsumosLoading || loading;
 
   if (isLoading) {
