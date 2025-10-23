@@ -186,13 +186,17 @@ const ProductosMovementsSection = ({
         onClearFilters={limpiarFiltros}
       />
 
-      {/* Tabla */}
-      <DataTable
-        data={formatearMovimientos(movimientosFiltrados)}
-        columns={columnas}
-        actions={acciones}
-        emptyMessage="No hay movimientos de productos registrados"
-      />
+      {/* Tabla con scroll */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="max-h-[60vh] overflow-y-auto">
+          <DataTable
+            data={formatearMovimientos(movimientosFiltrados)}
+            columns={columnas}
+            actions={acciones}
+            emptyMessage="No hay movimientos de productos registrados"
+          />
+        </div>
+      </div>
 
       {/* Información adicional */}
       <Card variant="outlined" className="bg-green-50 border-green-200">
