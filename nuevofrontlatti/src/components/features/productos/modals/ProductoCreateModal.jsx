@@ -3,7 +3,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
 import Input from '../../../ui/Input';
-import NumberInput from '../../../ui/NumberInput';
+import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
 
 const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const [formData, setFormData] = useState({
@@ -194,72 +194,99 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
           </div>
         ) : (
           <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-            {formData.insumos.map((insumo, index) => (
-              <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <select
-                    value={insumo.insumoId}
-                    onChange={(e) => updateInsumo(index, 'insumoId', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                    required
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Seleccionar insumo</option>
-                    {insumos.map((i) => {
-                      // Verificar si este insumo está seleccionado en otra fila
-                      const insumosSeleccionados = formData.insumos
-                        .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
-                        .filter(item => item.id && item.id !== 'undefined' && item.index !== index);
-                      
-                      const insumoIdsSeleccionados = insumosSeleccionados.map(item => item.id);
-                      const estaSeleccionadoEnOtra = insumoIdsSeleccionados.includes(String(i.id));
-                      const esSeleccionActual = String(insumo.insumoId) === String(i.id);
-                      
-                      return (
-                        <option 
-                          key={i.id} 
-                          value={i.id}
-                          disabled={estaSeleccionadoEnOtra && !esSeleccionActual}
-                          style={{
-                            color: estaSeleccionadoEnOtra && !esSeleccionActual ? '#999' : 'inherit',
-                            fontStyle: estaSeleccionadoEnOtra && !esSeleccionActual ? 'italic' : 'normal'
-                          }}
-                        >
-                          {i.nombre} {estaSeleccionadoEnOtra && !esSeleccionActual ? '(ya seleccionado)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                <div className="w-24">
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-600 block">
-                      Cantidad
-                      {insumo.insumoId && (() => {
-                        const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
-                        return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
-                      })()}
+            {formData.insumos.map((insumo, index) => {
+              const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
+              const esCompuesto = insumoSeleccionado?.tipo === 'COMPUESTO';
+              const unidadAbreviatura = insumoSeleccionado ? getAbreviaturaByValue(insumoSeleccionado.unidadMedida) : '';
+
+              return (
+                <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {/* Selector de insumo */}
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Insumo
                     </label>
-                    <NumberInput
-                      placeholder="Cantidad"
-                      value={insumo.cantidad}
-                      onChange={(value) => updateInsumo(index, 'cantidad', value)}
+                    <select
+                      value={insumo.insumoId}
+                      onChange={(e) => updateInsumo(index, 'insumoId', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                       required
                       disabled={isSubmitting}
-                      className="w-full px-2 py-1.5 text-sm"
+                    >
+                      <option value="">Seleccionar insumo</option>
+                      {insumos.map((i) => {
+                        // Verificar si este insumo está seleccionado en otra fila
+                        const insumosSeleccionados = formData.insumos
+                          .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
+                          .filter(item => item.id && item.id !== 'undefined' && item.index !== index);
+                        
+                        const insumoIdsSeleccionados = insumosSeleccionados.map(item => item.id);
+                        const estaSeleccionadoEnOtra = insumoIdsSeleccionados.includes(String(i.id));
+                        const esSeleccionActual = String(insumo.insumoId) === String(i.id);
+                        
+                        return (
+                          <option 
+                            key={i.id} 
+                            value={i.id}
+                            disabled={estaSeleccionadoEnOtra && !esSeleccionActual}
+                            style={{
+                              color: estaSeleccionadoEnOtra && !esSeleccionActual ? '#999' : 'inherit',
+                              fontStyle: estaSeleccionadoEnOtra && !esSeleccionActual ? 'italic' : 'normal'
+                            }}
+                          >
+                            {i.nombre} {estaSeleccionadoEnOtra && !esSeleccionActual ? '(ya seleccionado)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    
+                    {/* Mostrar tipo de insumo si está seleccionado */}
+                    {insumoSeleccionado && (
+                      <div className="mt-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          esCompuesto 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {esCompuesto ? 'Compuesto' : 'Base'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Campo de cantidad */}
+                  <div className="w-32">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cantidad {unidadAbreviatura && `(${unidadAbreviatura})`}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={insumo.cantidad}
+                      onChange={(e) => updateInsumo(index, 'cantidad', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                      required
+                      disabled={isSubmitting}
                     />
                   </div>
+
+                  {/* Botón eliminar */}
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => removeInsumo(index)}
+                      className="p-2 text-red-500 hover:bg-red-100 rounded-md transition-colors disabled:opacity-50"
+                      disabled={isSubmitting}
+                      title="Eliminar insumo"
+                    >
+                      <FaTrash size={14} />
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeInsumo(index)}
-                  className="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors disabled:opacity-50"
-                  disabled={isSubmitting}
-                >
-                  <FaTrash size={12} />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
