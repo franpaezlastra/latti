@@ -96,7 +96,7 @@ const InsumosMovementsSection = ({
     
     const formateados = movimientosOrdenados.map(movimiento => {
       // Verificar si es un movimiento de ensamble
-      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId) || false;
+      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
       
       return {
         id: movimiento.id,
@@ -156,7 +156,7 @@ const InsumosMovementsSection = ({
       variant: 'ghost',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
-        return mov.insumos?.some(insumo => insumo.ensambleId) || false;
+        return mov.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
       }
     },
     {
@@ -166,7 +166,7 @@ const InsumosMovementsSection = ({
       variant: 'ghost',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
-        return mov.insumos?.some(insumo => insumo.ensambleId) || false;
+        return mov.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
       }
     }
   ];
