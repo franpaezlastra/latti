@@ -1,18 +1,51 @@
 import React, { useState } from "react";
 import { FaBox, FaCog, FaChartLine, FaSearch, FaFilter } from "react-icons/fa";
-import { formatQuantity, formatPrice } from "../../../utils/formatters";
-import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
-import Input from "../../../components/ui/Input";
-import Button from "../../../components/ui/Button";
+import Card from "../../../../components/ui/Card";
+import Button from "../../../../components/ui/Button";
+import DataTable from "../../../../components/ui/DataTable";
+import StatCard from "../../../../components/ui/StatCard";
+import FilterPanel from "../../../../components/ui/FilterPanel";
+import Badge from "../../../../components/ui/Badge";
+import { formatQuantity, formatPrice } from "../../../../utils/formatters";
+import { getAbreviaturaByValue } from "../../../../constants/unidadesMedida";
 
 const StockSummary = ({ insumos = [], productos = [] }) => {
   const [filtros, setFiltros] = useState({
     busqueda: "",
-    tipo: "todos", // todos, insumos, productos
+    tipo: "todos",
     stockBajo: false
   });
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
+  // Configuración de filtros
+  const filterConfig = [
+    {
+      key: 'busqueda',
+      label: 'Buscar',
+      type: 'search',
+      placeholder: 'Buscar por nombre...',
+      value: filtros.busqueda
+    },
+    {
+      key: 'tipo',
+      label: 'Tipo',
+      type: 'select',
+      placeholder: 'Todos',
+      value: filtros.tipo,
+      options: [
+        { value: 'todos', label: 'Todos' },
+        { value: 'insumos', label: 'Solo Insumos' },
+        { value: 'productos', label: 'Solo Productos' }
+      ]
+    },
+    {
+      key: 'stockBajo',
+      label: 'Solo stock bajo',
+      type: 'checkbox',
+      value: filtros.stockBajo
+    }
+  ];
 
   // Filtrar datos
   const insumosFiltrados = insumos.filter(insumo => {
@@ -21,7 +54,7 @@ const StockSummary = ({ insumos = [], productos = [] }) => {
     
     const cumpleTipo = filtros.tipo === "todos" || filtros.tipo === "insumos";
     
-    const cumpleStockBajo = !filtros.stockBajo || insumo.stockActual <= 10; // Considerar stock bajo si es <= 10
+    const cumpleStockBajo = !filtros.stockBajo || insumo.stockActual <= 10;
     
     return cumpleBusqueda && cumpleTipo && cumpleStockBajo;
   });
@@ -32,7 +65,7 @@ const StockSummary = ({ insumos = [], productos = [] }) => {
     
     const cumpleTipo = filtros.tipo === "todos" || filtros.tipo === "productos";
     
-    const cumpleStockBajo = !filtros.stockBajo || producto.stockActual <= 5; // Considerar stock bajo si es <= 5
+    const cumpleStockBajo = !filtros.stockBajo || producto.stockActual <= 5;
     
     return cumpleBusqueda && cumpleTipo && cumpleStockBajo;
   });
@@ -44,6 +77,58 @@ const StockSummary = ({ insumos = [], productos = [] }) => {
     sum + (insumo.stockActual * insumo.precioDeCompra), 0);
   const totalValorProductos = productosFiltrados.reduce((sum, producto) => 
     sum + (producto.stockActual * producto.precioInversion), 0);
+
+  // Formatear datos para tablas
+  const formatearInsumos = (insumos) => {
+    return insumos.map(insumo => ({
+      ...insumo,
+      nombre: insumo.nombre,
+      tipo: (
+        <Badge 
+          variant={insumo.tipo === 'COMPUESTO' ? 'purple' : 'primary'}
+          size="sm"
+        >
+          {insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base'}
+        </Badge>
+      ),
+      stock: formatQuantity(insumo.stockActual, getAbreviaturaByValue(insumo.unidadMedida)),
+      precioUnitario: formatPrice(insumo.precioDeCompra),
+      valorTotal: formatPrice(insumo.stockActual * insumo.precioDeCompra)
+    }));
+  };
+
+  const formatearProductos = (productos) => {
+    return productos.map(producto => ({
+      ...producto,
+      nombre: producto.nombre,
+      stock: formatQuantity(producto.stockActual, 'unidades'),
+      precioInversion: formatPrice(producto.precioInversion),
+      precioVenta: formatPrice(producto.precioVenta),
+      valorTotal: formatPrice(producto.stockActual * producto.precioInversion)
+    }));
+  };
+
+  // Columnas para insumos
+  const columnasInsumos = [
+    { key: 'nombre', label: 'Nombre', sortable: true },
+    { key: 'tipo', label: 'Tipo', sortable: true },
+    { key: 'stock', label: 'Stock', sortable: true },
+    { key: 'precioUnitario', label: 'Precio Unit.', sortable: true },
+    { key: 'valorTotal', label: 'Valor Total', sortable: true }
+  ];
+
+  // Columnas para productos
+  const columnasProductos = [
+    { key: 'nombre', label: 'Nombre', sortable: true },
+    { key: 'stock', label: 'Stock', sortable: true },
+    { key: 'precioInversion', label: 'Precio Inversión', sortable: true },
+    { key: 'precioVenta', label: 'Precio Venta', sortable: true },
+    { key: 'valorTotal', label: 'Valor Total', sortable: true }
+  ];
+
+  const handleFilterChange = (key, value) => {
+    setFiltros(prev => ({ ...prev, [key]: value }));
+  };
 
   const limpiarFiltros = () => {
     setFiltros({
@@ -63,258 +148,131 @@ const StockSummary = ({ insumos = [], productos = [] }) => {
         </div>
         
         <Button
-          onClick={() => setMostrarFiltros(!mostrarFiltros)}
           variant="outline"
-          className="flex items-center gap-2"
+          size="sm"
+          onClick={() => setMostrarFiltros(!mostrarFiltros)}
+          leftIcon={<FaFilter size={14} />}
         >
-          <FaFilter size={14} />
           Filtros
         </Button>
       </div>
 
-      {/* Filtros */}
-      {mostrarFiltros && (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar
-              </label>
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-2.5 text-gray-400" size={14} />
-                <Input
-                  type="text"
-                  value={filtros.busqueda}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                  placeholder="Buscar por nombre..."
-                  className="pl-10"
-                />
-              </div>
-            </div>
+      {/* Panel de filtros */}
+      <FilterPanel
+        isOpen={mostrarFiltros}
+        onClose={() => setMostrarFiltros(false)}
+        filters={filterConfig}
+        onFilterChange={handleFilterChange}
+        onClearFilters={limpiarFiltros}
+      />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo
-              </label>
-              <select
-                value={filtros.tipo}
-                onChange={(e) => setFiltros(prev => ({ ...prev, tipo: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="todos">Todos</option>
-                <option value="insumos">Solo Insumos</option>
-                <option value="productos">Solo Productos</option>
-              </select>
-            </div>
-
-            <div className="flex items-end">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={filtros.stockBajo}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, stockBajo: e.target.checked }))}
-                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Solo stock bajo</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={limpiarFiltros}
-              variant="outline"
-            >
-              Limpiar
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Tarjetas de resumen */}
+      {/* Tarjetas de estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FaBox className="text-blue-600" size={20} />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Insumos</p>
-              <p className="text-2xl font-bold text-gray-900">{totalInsumos}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FaCog className="text-green-600" size={20} />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Productos</p>
-              <p className="text-2xl font-bold text-gray-900">{totalProductos}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <FaChartLine className="text-yellow-600" size={20} />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Valor Insumos</p>
-              <p className="text-2xl font-bold text-gray-900">{formatPrice(totalValorInsumos)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FaChartLine className="text-purple-600" size={20} />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Valor Productos</p>
-              <p className="text-2xl font-bold text-gray-900">{formatPrice(totalValorProductos)}</p>
-            </div>
-          </div>
-        </div>
+        <StatCard
+          title="Insumos"
+          value={totalInsumos}
+          icon={<FaBox size={20} />}
+          color="primary"
+        />
+        <StatCard
+          title="Productos"
+          value={totalProductos}
+          icon={<FaCog size={20} />}
+          color="success"
+        />
+        <StatCard
+          title="Valor Insumos"
+          value={formatPrice(totalValorInsumos)}
+          icon={<FaChartLine size={20} />}
+          color="warning"
+        />
+        <StatCard
+          title="Valor Productos"
+          value={formatPrice(totalValorProductos)}
+          icon={<FaChartLine size={20} />}
+          color="purple"
+        />
       </div>
 
       {/* Tabla de insumos */}
       {(filtros.tipo === "todos" || filtros.tipo === "insumos") && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <Card>
+          <Card.Header>
+            <Card.Title className="flex items-center gap-2">
               <FaBox className="text-blue-600" size={16} />
               Insumos ({totalInsumos})
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Precio Unit.
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Valor Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {insumosFiltrados.map((insumo) => (
-                  <tr key={insumo.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{insumo.nombre}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        insumo.tipo === 'COMPUESTO' 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatQuantity(insumo.stockActual, getAbreviaturaByValue(insumo.unidadMedida))}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatPrice(insumo.precioDeCompra)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatPrice(insumo.stockActual * insumo.precioDeCompra)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+            </Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <DataTable
+              data={formatearInsumos(insumosFiltrados)}
+              columns={columnasInsumos}
+              emptyMessage="No hay insumos registrados"
+            />
+          </Card.Body>
+        </Card>
       )}
 
       {/* Tabla de productos */}
       {(filtros.tipo === "todos" || filtros.tipo === "productos") && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <Card>
+          <Card.Header>
+            <Card.Title className="flex items-center gap-2">
               <FaCog className="text-green-600" size={16} />
               Productos ({totalProductos})
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Precio Inversión
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Precio Venta
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Valor Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {productosFiltrados.map((producto) => (
-                  <tr key={producto.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{producto.nombre}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatQuantity(producto.stockActual, 'unidades')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatPrice(producto.precioInversion)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatPrice(producto.precioVenta)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatPrice(producto.stockActual * producto.precioInversion)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+            </Card.Title>
+          </Card.Header>
+          <Card.Body>
+            <DataTable
+              data={formatearProductos(productosFiltrados)}
+              columns={columnasProductos}
+              emptyMessage="No hay productos registrados"
+            />
+          </Card.Body>
+        </Card>
       )}
 
       {/* Información adicional */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <FaChartLine className="text-blue-600 mt-0.5" size={16} />
-          <div className="text-sm text-blue-700">
-            <p className="font-medium mb-1">💡 Información del Resumen de Stock</p>
-            <ul className="space-y-1 text-xs">
-              <li><strong>📊 Valores:</strong> Calculados como stock actual × precio unitario</li>
-              <li><strong>🔍 Filtros:</strong> Puedes buscar por nombre y filtrar por tipo</li>
-              <li><strong>⚠️ Stock Bajo:</strong> Insumos ≤ 10 unidades, Productos ≤ 5 unidades</li>
-              <li><strong>🔄 Actualización:</strong> Los valores se actualizan automáticamente con cada movimiento</li>
-            </ul>
+      <Card variant="outlined" className="bg-blue-50 border-blue-200">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <FaChartLine className="text-blue-600" size={16} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">💡 Información del Resumen de Stock</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">📊 Valores:</span>
+                  <span className="ml-1">Calculados como stock actual × precio unitario</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">🔍 Filtros:</span>
+                  <span className="ml-1">Puedes buscar por nombre y filtrar por tipo</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">⚠️ Stock Bajo:</span>
+                  <span className="ml-1">Insumos ≤ 10 unidades, Productos ≤ 5 unidades</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">🔄 Actualización:</span>
+                  <span className="ml-1">Los valores se actualizan automáticamente con cada movimiento</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

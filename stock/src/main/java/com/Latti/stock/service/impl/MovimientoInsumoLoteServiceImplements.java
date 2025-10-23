@@ -342,9 +342,9 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 
                 // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
                 boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
-                
-                if (hayProduccionPosterior) {
-                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                    
+                    if (hayProduccionPosterior) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                         "' ha sido usado en la producción de productos después de este movimiento");
                 }
             }

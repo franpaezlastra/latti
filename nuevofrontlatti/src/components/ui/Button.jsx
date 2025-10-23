@@ -1,33 +1,34 @@
 import React from 'react';
 import { FaSpinner } from 'react-icons/fa';
+import { BUTTON_VARIANTS, BUTTON_SIZES } from '../../constants/design';
 
 const Button = ({ 
   children, 
   variant = "primary", 
-  size = "medium",
+  size = "md",
   loading = false,
   disabled = false,
+  leftIcon,
+  rightIcon,
   className = "",
+  fullWidth = false,
   ...props 
 }) => {
-  const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed border";
   
-  const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-    secondary: "bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-    success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
-    ghost: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500"
-  };
-
-  const sizes = {
-    small: "px-3 py-1.5 text-sm",
-    medium: "px-4 py-2 text-sm",
-    large: "px-6 py-3 text-base"
-  };
-
-  const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`;
+  const variantClasses = BUTTON_VARIANTS[variant] || BUTTON_VARIANTS.primary;
+  const sizeClasses = BUTTON_SIZES[size] || BUTTON_SIZES.md;
+  
+  const classes = [
+    baseClasses,
+    variantClasses.base,
+    variantClasses.hover,
+    variantClasses.focus,
+    variantClasses.disabled,
+    sizeClasses,
+    fullWidth ? 'w-full' : '',
+    className
+  ].filter(Boolean).join(' ');
 
   return (
     <button 
@@ -38,9 +39,15 @@ const Button = ({
       {loading && (
         <FaSpinner className="animate-spin mr-2" size={16} />
       )}
+      {leftIcon && !loading && (
+        <span className="mr-2">{leftIcon}</span>
+      )}
       {children}
+      {rightIcon && !loading && (
+        <span className="ml-2">{rightIcon}</span>
+      )}
     </button>
   );
 };
 
-export default Button; 
+export default Button;

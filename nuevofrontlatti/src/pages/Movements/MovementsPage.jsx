@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaBox, FaCog, FaChartLine } from "react-icons/fa";
+import { FaPlus, FaBox, FaCog, FaChartLine, FaFilter } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loadMovimientosInsumo, deleteMovimientoInsumo } from "../../store/actions/movimientoInsumoActions";
 import { loadMovimientosProducto, deleteMovimientoProducto } from "../../store/actions/movimientoProductoActions";
@@ -9,10 +9,16 @@ import { useGlobalUpdate } from "../../hooks/useGlobalUpdate";
 
 // Componentes UI
 import PageHeader from "../../components/ui/PageHeader";
-import Tabla from "../../components/ui/Tabla";
-import DeleteConfirmationModal from "../../components/ui/DeleteConfirmationModal";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import Tabs from "../../components/ui/Tabs";
+import DataTable from "../../components/ui/DataTable";
+import FilterPanel from "../../components/ui/FilterPanel";
+import StatCard from "../../components/ui/StatCard";
+import Badge from "../../components/ui/Badge";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ErrorMessage from "../../components/ui/ErrorMessage";
+import DeleteConfirmationModal from "../../components/ui/DeleteConfirmationModal";
 
 // Modales
 import MovimientoSeleccionModal from "../../components/features/movements/modals/MovimientoSeleccionModal";
@@ -63,6 +69,7 @@ const MovementsPage = () => {
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
@@ -80,6 +87,27 @@ const MovementsPage = () => {
     dispatch(loadInsumos());
     dispatch(loadProductos());
   }, [dispatch]);
+
+  // Configuración de tabs
+  const tabs = [
+    {
+      id: "insumos",
+      label: "Insumos",
+      icon: <FaBox size={14} />,
+      badge: movimientosInsumo?.length || 0
+    },
+    {
+      id: "productos", 
+      label: "Productos",
+      icon: <FaCog size={14} />,
+      badge: movimientosProducto?.length || 0
+    },
+    {
+      id: "stock",
+      label: "Resumen de Stock",
+      icon: <FaChartLine size={14} />
+    }
+  ];
 
   // Handlers de modales
   const openModal = (modalName) => {
@@ -212,7 +240,7 @@ const MovementsPage = () => {
   }
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <PageHeader
         title="Gestión de Movimientos"
@@ -224,47 +252,20 @@ const MovementsPage = () => {
         }}
       />
 
-      {/* Tabs */}
-      <div className="px-4 pt-2">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          <button
-            onClick={() => setActiveTab("insumos")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "insumos"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <FaBox className="inline mr-2" size={14} />
-            Insumos
-          </button>
-          <button
-            onClick={() => setActiveTab("productos")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "productos"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <FaCog className="inline mr-2" size={14} />
-            Productos
-          </button>
-          <button
-            onClick={() => setActiveTab("stock")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "stock"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <FaChartLine className="inline mr-2" size={14} />
-            Resumen de Stock
-          </button>
+      {/* Contenido principal */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Tabs */}
+        <div className="mb-6">
+          <Tabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            variant="default"
+            className="bg-white p-1 rounded-lg shadow-sm"
+          />
         </div>
-      </div>
 
-      {/* Contenido */}
-      <div className="flex-1 p-4">
+        {/* Contenido de tabs */}
         {activeTab === "insumos" && (
           <InsumosMovementsSection
             movimientos={movimientosInsumo || []}

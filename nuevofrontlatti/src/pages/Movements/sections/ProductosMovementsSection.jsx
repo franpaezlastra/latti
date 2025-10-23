@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { FaPlus, FaEye, FaTrash, FaCog, FaFilter, FaSearch } from "react-icons/fa";
-import Tabla from "../../../components/ui/Tabla";
+import DataTable from "../../../components/ui/DataTable";
 import Button from "../../../components/ui/Button";
-import Input from "../../../components/ui/Input";
+import Card from "../../../components/ui/Card";
+import Badge from "../../../components/ui/Badge";
+import FilterPanel from "../../../components/ui/FilterPanel";
 import { formatQuantity, formatPrice } from "../../../utils/formatters";
 
 const ProductosMovementsSection = ({
@@ -20,6 +22,40 @@ const ProductosMovementsSection = ({
   });
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
+  // Configuración de filtros para FilterPanel
+  const filterConfig = [
+    {
+      key: 'busqueda',
+      label: 'Buscar',
+      type: 'search',
+      placeholder: 'Buscar por descripción o producto...',
+      value: filtros.busqueda
+    },
+    {
+      key: 'tipoMovimiento',
+      label: 'Tipo de Movimiento',
+      type: 'select',
+      placeholder: 'Todos',
+      value: filtros.tipoMovimiento,
+      options: [
+        { value: 'ENTRADA', label: 'Producción' },
+        { value: 'SALIDA', label: 'Venta' }
+      ]
+    },
+    {
+      key: 'fechaDesde',
+      label: 'Fecha Desde',
+      type: 'date',
+      value: filtros.fechaDesde
+    },
+    {
+      key: 'fechaHasta',
+      label: 'Fecha Hasta',
+      type: 'date',
+      value: filtros.fechaHasta
+    }
+  ];
 
   // Filtrar movimientos
   const movimientosFiltrados = movimientos.filter(movimiento => {
@@ -47,13 +83,12 @@ const ProductosMovementsSection = ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: (
-        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-          movimiento.tipoMovimiento === 'ENTRADA' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
+        <Badge 
+          variant={movimiento.tipoMovimiento === 'ENTRADA' ? 'success' : 'primary'}
+          size="sm"
+        >
           {movimiento.tipoMovimiento === 'ENTRADA' ? 'Producción' : 'Venta'}
-        </span>
+        </Badge>
       ),
       detalles: (
         <div className="space-y-1">
@@ -90,17 +125,23 @@ const ProductosMovementsSection = ({
   const acciones = [
     {
       label: 'Ver detalles',
-      icon: <FaEye />,
+      icon: <FaEye size={14} />,
       onClick: (mov) => onVerDetalles(mov),
-      className: 'text-green-600 hover:bg-green-200'
+      variant: 'ghost',
+      className: 'text-blue-600 hover:text-blue-800'
     },
     {
       label: 'Eliminar',
-      icon: <FaTrash />,
+      icon: <FaTrash size={14} />,
       onClick: (mov) => onEliminar(mov),
-      className: 'text-red-600 hover:bg-red-200'
+      variant: 'ghost',
+      className: 'text-red-600 hover:text-red-800'
     }
   ];
+
+  const handleFilterChange = (key, value) => {
+    setFiltros(prev => ({ ...prev, [key]: value }));
+  };
 
   const limpiarFiltros = () => {
     setFiltros({
@@ -122,119 +163,83 @@ const ProductosMovementsSection = ({
         
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={() => setMostrarFiltros(!mostrarFiltros)}
             variant="outline"
-            className="flex items-center gap-2"
+            size="sm"
+            onClick={() => setMostrarFiltros(!mostrarFiltros)}
+            leftIcon={<FaFilter size={14} />}
           >
-            <FaFilter size={14} />
             Filtros
           </Button>
           
           <Button
             onClick={onNuevoProducto}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            variant="success"
+            size="sm"
+            leftIcon={<FaCog size={14} />}
           >
-            <FaCog size={14} />
             Nuevo Producto
           </Button>
         </div>
       </div>
 
-      {/* Filtros */}
-      {mostrarFiltros && (
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar
-              </label>
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-2.5 text-gray-400" size={14} />
-                <Input
-                  type="text"
-                  value={filtros.busqueda}
-                  onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
-                  placeholder="Buscar por descripción o producto..."
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de Movimiento
-              </label>
-              <select
-                value={filtros.tipoMovimiento}
-                onChange={(e) => setFiltros(prev => ({ ...prev, tipoMovimiento: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">Todos</option>
-                <option value="ENTRADA">Producción</option>
-                <option value="SALIDA">Venta</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha Desde
-              </label>
-              <Input
-                type="date"
-                value={filtros.fechaDesde}
-                onChange={(e) => setFiltros(prev => ({ ...prev, fechaDesde: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha Hasta
-              </label>
-              <Input
-                type="date"
-                value={filtros.fechaHasta}
-                onChange={(e) => setFiltros(prev => ({ ...prev, fechaHasta: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={limpiarFiltros}
-              variant="outline"
-              className="mr-2"
-            >
-              Limpiar
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Panel de filtros */}
+      <FilterPanel
+        isOpen={mostrarFiltros}
+        onClose={() => setMostrarFiltros(false)}
+        filters={filterConfig}
+        onFilterChange={handleFilterChange}
+        onClearFilters={limpiarFiltros}
+      />
 
       {/* Tabla */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <Tabla
-          datos={formatearMovimientos(movimientosFiltrados)}
-          columnas={columnas}
-          columnasAcciones={acciones}
-          mensajeVacio="No hay movimientos de productos registrados"
-        />
-      </div>
+      <DataTable
+        data={formatearMovimientos(movimientosFiltrados)}
+        columns={columnas}
+        actions={acciones}
+        emptyMessage="No hay movimientos de productos registrados"
+      />
 
       {/* Información adicional */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <FaCog className="text-green-600 mt-0.5" size={16} />
-          <div className="text-sm text-green-700">
-            <p className="font-medium mb-1">💡 Tipos de Movimientos de Productos</p>
-            <ul className="space-y-1 text-xs">
-              <li><strong>🏭 Producción:</strong> Creación de productos usando insumos (descuenta automáticamente)</li>
-              <li><strong>💰 Venta:</strong> Venta de productos terminados</li>
-              <li><strong>🔄 Restauración:</strong> Al eliminar una producción, se restauran automáticamente los insumos usados</li>
-              <li><strong>📊 Costos:</strong> Los precios de inversión se calculan automáticamente basados en los insumos</li>
-            </ul>
+      <Card variant="outlined" className="bg-green-50 border-green-200">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <FaCog className="text-green-600" size={16} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-green-900 mb-2">💡 Tipos de Movimientos de Productos</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-green-700">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">🏭 Producción:</span>
+                  <span className="ml-1">Creación de productos usando insumos (descuenta automáticamente)</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">💰 Venta:</span>
+                  <span className="ml-1">Venta de productos terminados</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">🔄 Restauración:</span>
+                  <span className="ml-1">Al eliminar una producción, se restauran automáticamente los insumos usados</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
+                <div>
+                  <span className="font-medium">📊 Costos:</span>
+                  <span className="ml-1">Los precios de inversión se calculan automáticamente basados en los insumos</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
