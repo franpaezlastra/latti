@@ -84,15 +84,17 @@ const InsumosMovementsSection = ({
   const formatearMovimientos = (movimientos) => {
     console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
     const formateados = movimientos.map(movimiento => ({
-      ...movimiento,
+      id: movimiento.id,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
+      descripcion: movimiento.descripcion || 'Sin descripción',
       detalles: movimiento.insumos?.map(insumo => {
-        console.log('🔍 Insumo individual:', insumo);
-        return `${insumo.nombreInsumo || insumo.nombre || 'Sin nombre'} • ${formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida))}${insumo.precioTotal > 0 ? ` • ${formatPrice(insumo.precioTotal)}` : ''}`;
+        const nombre = insumo.nombreInsumo || insumo.nombre || insumo.insumo?.nombre || 'Sin nombre';
+        const cantidad = formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida));
+        const precio = insumo.precioTotal > 0 ? formatPrice(insumo.precioTotal) : '';
+        return `${nombre} • ${cantidad}${precio ? ` • ${precio}` : ''}`;
       }).join('\n') || 'Sin detalles',
-      total: movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0,
-      totalFormateado: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0)
+      total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0)
     }));
     console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
     return formateados;
@@ -103,8 +105,8 @@ const InsumosMovementsSection = ({
     { key: 'fecha', label: 'Fecha', sortable: true },
     { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
     { key: 'descripcion', label: 'Descripción', sortable: true },
-    { key: 'detalles', label: 'Insumos', sortable: false },
-    { key: 'totalFormateado', label: 'Total', sortable: true }
+    { key: 'detalles', label: 'Detalles', sortable: false },
+    { key: 'total', label: 'Total', sortable: true }
   ];
 
   // Acciones de la tabla
