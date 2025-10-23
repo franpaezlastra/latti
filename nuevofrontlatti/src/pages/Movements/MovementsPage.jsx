@@ -8,17 +8,19 @@ import { loadProductos } from "../../store/actions/productosActions";
 import { useGlobalUpdate } from "../../hooks/useGlobalUpdate";
 
 // Componentes UI
-import PageHeader from "../../components/ui/PageHeader";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import Tabs from "../../components/ui/Tabs";
-import DataTable from "../../components/ui/DataTable";
-import FilterPanel from "../../components/ui/FilterPanel";
-import StatCard from "../../components/ui/StatCard";
-import Badge from "../../components/ui/Badge";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import ErrorMessage from "../../components/ui/ErrorMessage";
-import DeleteConfirmationModal from "../../components/ui/DeleteConfirmationModal";
+import { 
+  PageHeader, 
+  Card, 
+  Button, 
+  Tabs, 
+  DataTable, 
+  FilterPanel, 
+  StatCard, 
+  Badge, 
+  LoadingSpinner, 
+  ErrorMessage, 
+  DeleteConfirmationModal 
+} from "../../components/ui";
 
 // Modales
 import MovimientoSeleccionModal from "../../components/features/movements/modals/MovimientoSeleccionModal";

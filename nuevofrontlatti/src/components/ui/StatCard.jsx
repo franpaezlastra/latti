@@ -1,6 +1,4 @@
 import React from 'react';
-import Card from './Card';
-import Badge from './Badge';
 
 const StatCard = ({
   title,
@@ -44,7 +42,7 @@ const StatCard = ({
   const colors = colorClasses[color] || colorClasses.primary;
 
   return (
-    <Card className={`hover:shadow-md transition-shadow duration-200 ${className}`} {...props}>
+    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow duration-200 ${className}`} {...props}>
       <div className="flex items-center">
         <div className={`p-3 rounded-lg ${colors.bg}`}>
           <div className={`${colors.icon}`}>
@@ -59,17 +57,18 @@ const StatCard = ({
           )}
           {trend && (
             <div className="mt-2">
-              <Badge
-                variant={trend === 'up' ? 'success' : trend === 'down' ? 'danger' : 'default'}
-                size="sm"
-              >
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                trend === 'up' ? 'bg-green-100 text-green-800' : 
+                trend === 'down' ? 'bg-red-100 text-red-800' : 
+                'bg-gray-100 text-gray-800'
+              }`}>
                 {trend === 'up' ? '↗' : trend === 'down' ? '↘' : '→'} {trendValue}
-              </Badge>
+              </span>
             </div>
           )}
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 

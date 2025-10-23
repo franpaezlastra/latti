@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { FaBox, FaCog, FaChartLine, FaSearch, FaFilter } from "react-icons/fa";
-import Card from "../../../../components/ui/Card";
-import Button from "../../../../components/ui/Button";
-import DataTable from "../../../../components/ui/DataTable";
-import StatCard from "../../../../components/ui/StatCard";
-import FilterPanel from "../../../../components/ui/FilterPanel";
-import Badge from "../../../../components/ui/Badge";
+import { Card, Button, DataTable, StatCard, FilterPanel, Badge } from "../../../../components/ui";
 import { formatQuantity, formatPrice } from "../../../../utils/formatters";
 import { getAbreviaturaByValue } from "../../../../constants/unidadesMedida";
 

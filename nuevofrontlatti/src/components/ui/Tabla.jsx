@@ -23,4 +23,4 @@ const Tabla = ({
   return <DataTable {...dataTableProps} />;
 };
 
-export default Tabla;
+export default Tabla; 

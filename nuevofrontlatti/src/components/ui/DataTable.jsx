@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { FaSort, FaSortUp, FaSortDown, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
-import Button from './Button';
-import Badge from './Badge';
 
-const DataTable = ({
-  data = [],
-  columns = [],
-  actions = [],
-  emptyMessage = "No hay datos disponibles",
+const DataTable = ({ 
+  data = [], 
+  columns = [], 
+  actions = [], 
+  emptyMessage = "No hay datos disponibles", 
   loading = false,
-  className = "",
+  className = "", 
   ...props
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -97,15 +95,15 @@ const DataTable = ({
                     <span>{column.label}</span>
                     {column.sortable && getSortIcon(column.key)}
                   </div>
-                </th>
-              ))}
-              {actions.length > 0 && (
+                  </th>
+                ))}
+                {actions.length > 0 && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
-              )}
-            </tr>
-          </thead>
+                )}
+              </tr>
+            </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedData.length > 0 ? (
               sortedData.map((row, rowIndex) => (
@@ -116,33 +114,35 @@ const DataTable = ({
                   {columns.map((column, colIndex) => (
                     <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
                       {row[column.key]}
-                    </td>
-                  ))}
-                  {actions.length > 0 && (
+                      </td>
+                    ))}
+                    {actions.length > 0 && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {actions.map((action, actionIndex) => (
-                          <Button
+                          <button
                             key={actionIndex}
-                            variant={action.variant || "ghost"}
-                            size="sm"
                             onClick={() => action.onClick(row)}
                             disabled={action.disabled && action.disabled(row)}
-                            className={action.className}
+                            className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded transition-colors ${
+                              action.variant === 'ghost' 
+                                ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                                : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                            } ${action.className || ''}`}
                             title={action.label}
                           >
                             {action.icon}
-                          </Button>
+                          </button>
                         ))}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={columns.length + (actions.length > 0 ? 1 : 0)}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={columns.length + (actions.length > 0 ? 1 : 0)}
                   className="px-6 py-12 text-center text-gray-500"
                 >
                   <div className="flex flex-col items-center gap-2">
@@ -151,14 +151,14 @@ const DataTable = ({
                     </div>
                     <p className="text-sm font-medium">{emptyMessage}</p>
                   </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
     </div>
   );
 };
 
-export default DataTable;
+export default DataTable; 

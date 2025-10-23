@@ -51,7 +51,7 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
     if (field === 'nombre') {
       setFormData(prev => ({ ...prev, [field]: capitalizarPrimeraLetra(value) }));
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     }
     
     // Si cambia el tipo a BASE, limpiar receta

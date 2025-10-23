@@ -112,4 +112,4 @@ const MovimientoSeleccionModal = ({
   );
 };
 
-export default MovimientoSeleccionModal;
+export default MovimientoSeleccionModal; 

@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import { FaPlus, FaEye, FaTrash, FaCog, FaFilter, FaSearch } from "react-icons/fa";
-import DataTable from "../../../components/ui/DataTable";
-import Button from "../../../components/ui/Button";
-import Card from "../../../components/ui/Card";
-import Badge from "../../../components/ui/Badge";
-import FilterPanel from "../../../components/ui/FilterPanel";
+import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
 import { formatQuantity, formatPrice } from "../../../utils/formatters";
 
 const ProductosMovementsSection = ({
