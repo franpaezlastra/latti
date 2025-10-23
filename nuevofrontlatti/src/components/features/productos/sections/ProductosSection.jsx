@@ -19,17 +19,17 @@ const ProductosSection = ({
   const actions = [
     {
       label: 'Ver',
-      icon: <FaEye size={14} />,
+      icon: <FaEye />,
       onClick: onView
     },
     {
       label: 'Editar',
-      icon: <FaEdit size={14} />,
+      icon: <FaEdit />,
       onClick: onEdit
     },
     {
       label: 'Eliminar',
-      icon: <FaTrash size={14} />,
+      icon: <FaTrash />,
       onClick: onDelete
     }
   ];

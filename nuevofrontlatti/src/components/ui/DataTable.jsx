@@ -101,7 +101,13 @@ const DataTable = ({
                               disabled={isDisabled}
                               className={`inline-flex items-center justify-center px-1.5 py-1 text-xs font-medium rounded transition-colors ${
                                 action.variant === 'ghost' 
-                                  ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' 
+                                  ? (action.label === 'Eliminar' || action.label === 'Delete' || action.label === 'Eliminar movimiento')
+                                    ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                                    : (action.label === 'Editar' || action.label === 'Edit' || action.label === 'Editar movimiento')
+                                    ? 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'
+                                    : (action.label === 'Ver detalles' || action.label === 'Ver' || action.label === 'View' || action.label === 'Ver movimiento')
+                                    ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                                   : action.label === 'Eliminar'
                                   ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
                                   : action.label === 'Editar'
