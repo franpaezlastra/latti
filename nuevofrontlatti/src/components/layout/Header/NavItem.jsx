@@ -41,7 +41,7 @@ const NavItem = ({ to, icon: Icon, text }) => {
   return (
     <Link to={to} className={className} onClick={handleLogout}>
       {Icon && <Icon size={20} />}
-      <p className="text-sm font-medium mt-2">{text}</p>
+      <span className="text-sm font-medium">{text}</span>
     </Link>
   );
 };
