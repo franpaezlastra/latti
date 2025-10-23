@@ -11,7 +11,7 @@ import NumberInput from '../../../ui/NumberInput';
 
 const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   const dispatch = useDispatch();
-  const { insumos, status } = useSelector((state) => state.insumos);
+  const { insumos, loading, error } = useSelector((state) => state.insumos);
   const { updateAfterInsumoMovement } = useGlobalUpdate();
   
   // Estados del formulario
@@ -31,7 +31,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   useEffect(() => {
     if (isOpen) {
       console.log("🔄 Abriendo modal de movimiento de insumos");
-      console.log("📊 Estado actual de insumos:", { insumos, status });
+      console.log("📊 Estado actual de insumos:", { insumos, loading, error });
       
       // Cargar insumos siempre para asegurar datos actualizados
       dispatch(fetchInsumos());
@@ -49,15 +49,15 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
 
   // Debug: Log cuando cambie el estado de insumos
   useEffect(() => {
-    console.log("📊 Estado de insumos actualizado:", { insumos, status });
+    console.log("📊 Estado de insumos actualizado:", { insumos, loading, error });
     if (insumos && insumos.length > 0) {
       console.log("✅ Insumos disponibles:", insumos);
-    } else if (status === 'succeeded') {
+    } else if (!loading && !error) {
       console.log("⚠️ No hay insumos disponibles");
-    } else if (status === 'failed') {
-      console.log("❌ Error cargando insumos");
+    } else if (error) {
+      console.log("❌ Error cargando insumos:", error);
     }
-  }, [insumos, status]);
+  }, [insumos, loading, error]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
@@ -392,12 +392,12 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                         onChange={(e) => handleInsumoChange(index, 'insumoId', e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                         required
-                        disabled={isSubmitting || status === 'loading'}
+                        disabled={isSubmitting || loading}
                       >
                         <option value="">
-                          {status === 'loading' ? 'Cargando insumos...' : 'Seleccionar insumo'}
+                          {loading ? 'Cargando insumos...' : 'Seleccionar insumo'}
                         </option>
-                        {status === 'succeeded' && insumos && insumos.length > 0 ? insumos.map((i) => {
+                        {!loading && !error && insumos && insumos.length > 0 ? insumos.map((i) => {
                           // Verificar si este insumo está seleccionado en otra fila
                           const insumosSeleccionados = formData.insumos
                             .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
@@ -427,8 +427,8 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                           );
                         }) : (
                           <option value="" disabled>
-                            {status === 'failed' ? 'Error al cargar insumos' : 
-                             status === 'loading' ? 'Cargando...' : 
+                            {error ? 'Error al cargar insumos' : 
+                             loading ? 'Cargando...' : 
                              'No hay insumos disponibles. Crea insumos primero.'}
                           </option>
                         )}
