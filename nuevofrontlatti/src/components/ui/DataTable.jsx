@@ -7,7 +7,8 @@ const DataTable = ({
   actions = [], 
   emptyMessage = "No hay datos disponibles", 
   loading = false,
-  className = "", 
+  className = "",
+  itemsPerPage, // Extraer para evitar que se pase al DOM
   ...props
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });

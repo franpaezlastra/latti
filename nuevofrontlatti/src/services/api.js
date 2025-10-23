@@ -103,8 +103,16 @@ api.interceptors.response.use(
           // Forbidden - Sin permisos o token expirado
           // Verificar si el error es por token expirado
           const errorMessage = response.data?.message || response.data?.error || '';
-          if (errorMessage.includes('token') || errorMessage.includes('expired') || errorMessage.includes('invalid') || errorMessage.includes('permisos')) {
+          const isAuthError = errorMessage.includes('token') || 
+                             errorMessage.includes('expired') || 
+                             errorMessage.includes('invalid') || 
+                             errorMessage.includes('permisos') ||
+                             errorMessage.includes('unauthorized') ||
+                             errorMessage.includes('access denied');
+          
+          if (isAuthError) {
             // Es un error de autenticación, cerrar sesión
+            console.warn('🔒 Token inválido o expirado, cerrando sesión...');
             clearSessionAndRedirect();
           } else {
             // Es realmente un error de permisos

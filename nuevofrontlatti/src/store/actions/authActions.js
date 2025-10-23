@@ -69,12 +69,31 @@ export const checkAuthStatus = createAsyncThunk(
         throw new Error('No hay sesión activa');
       }
       
-      return {
-        token,
-        user: JSON.parse(user)
-      };
+      // Validar token con el servidor
+      try {
+        const response = await api.get('/auth/validate');
+        return {
+          token,
+          user: JSON.parse(user),
+          isValid: true
+        };
+      } catch (serverError) {
+        // Si el servidor responde con 401 o 403, el token es inválido
+        if (serverError.response?.status === 401 || serverError.response?.status === 403) {
+          // Limpiar sesión local
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          throw new Error('Token expirado o inválido');
+        }
+        // Para otros errores, asumir que el token es válido pero hay problemas de conectividad
+        return {
+          token,
+          user: JSON.parse(user),
+          isValid: false
+        };
+      }
     } catch (error) {
-      return rejectWithValue("Sesión no válida");
+      return rejectWithValue(error.message || "Sesión no válida");
     }
   }
 );
