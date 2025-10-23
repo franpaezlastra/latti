@@ -94,19 +94,27 @@ const InsumosMovementsSection = ({
       return fechaB - fechaA; // Descendente (más nuevo primero)
     });
     
-    const formateados = movimientosOrdenados.map(movimiento => ({
-      id: movimiento.id,
-      fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
-      tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
-      descripcion: movimiento.descripcion || 'Sin descripción',
-      total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0),
-      // Mantener datos originales para el modal
-      insumos: movimiento.insumos || [],
-      // Mantener el tipoMovimiento original para el modal
-      tipoMovimientoOriginal: movimiento.tipoMovimiento,
-      // Mantener la fecha original para el modal
-      fechaOriginal: movimiento.fecha
-    }));
+    const formateados = movimientosOrdenados.map(movimiento => {
+      // Verificar si es un movimiento de ensamble
+      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId) || false;
+      
+      return {
+        id: movimiento.id,
+        fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
+        tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
+        tipoEnsamble: esEnsamble ? '🔨 Ensamble' : '📦 Normal',
+        descripcion: movimiento.descripcion || 'Sin descripción',
+        total: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0),
+        // Mantener datos originales para el modal
+        insumos: movimiento.insumos || [],
+        // Mantener el tipoMovimiento original para el modal
+        tipoMovimientoOriginal: movimiento.tipoMovimiento,
+        // Mantener la fecha original para el modal
+        fechaOriginal: movimiento.fecha,
+        // Mantener información de ensamble
+        esEnsamble: esEnsamble
+      };
+    });
     console.log('✅ formatearMovimientos - Movimientos formateados y ordenados:', formateados);
     return formateados;
   };
@@ -115,6 +123,7 @@ const InsumosMovementsSection = ({
   const columnas = [
     { key: 'fecha', label: 'Fecha', sortable: true, width: 'w-32' },
     { key: 'tipoMovimiento', label: 'Tipo', sortable: true, width: 'w-24' },
+    { key: 'tipoEnsamble', label: 'Categoría', sortable: true, width: 'w-28' },
     { key: 'total', label: 'Total', sortable: true, width: 'w-32' }
   ];
 
@@ -259,6 +268,15 @@ const InsumosMovementsSection = ({
                 <div>
                   <span className="font-medium">🔨 Ensamble:</span>
                   <span className="ml-1">Creación de insumos compuestos usando componentes base</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-400 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">📦</span>
+                </div>
+                <div>
+                  <span className="font-medium">📦 Normal:</span>
+                  <span className="ml-1">Movimientos regulares de entrada/salida de insumos</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
