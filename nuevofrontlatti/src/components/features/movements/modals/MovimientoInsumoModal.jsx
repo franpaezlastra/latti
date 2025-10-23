@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaCalendarAlt, FaTag, FaDollarSign, FaBox, FaCog, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { createMovimientoInsumo } from '../../../../store/actions/movimientoInsumoActions';
-import { loadInsumos } from '../../../../store/actions/insumoActions';
+import { fetchInsumos } from '../../../../store/slices/insumoSlice';
 import { useGlobalUpdate } from '../../../../hooks/useGlobalUpdate';
 import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
@@ -30,8 +30,11 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   // Limpiar formulario cuando se abre/cierra el modal
   useEffect(() => {
     if (isOpen) {
+      console.log("🔄 Abriendo modal de movimiento de insumos");
+      console.log("📊 Estado actual de insumos:", { insumos, status });
+      
       // Cargar insumos siempre para asegurar datos actualizados
-      dispatch(loadInsumos());
+      dispatch(fetchInsumos());
       
       setFormData({
         tipoMovimiento: '',
@@ -43,6 +46,18 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       setTextoError('');
     }
   }, [isOpen, dispatch]);
+
+  // Debug: Log cuando cambie el estado de insumos
+  useEffect(() => {
+    console.log("📊 Estado de insumos actualizado:", { insumos, status });
+    if (insumos && insumos.length > 0) {
+      console.log("✅ Insumos disponibles:", insumos);
+    } else if (status === 'succeeded') {
+      console.log("⚠️ No hay insumos disponibles");
+    } else if (status === 'failed') {
+      console.log("❌ Error cargando insumos");
+    }
+  }, [insumos, status]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
