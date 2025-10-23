@@ -281,7 +281,7 @@ const MovementsPage = () => {
             productos={productos || []}
             onVerDetalles={handleVerDetalles}
             onEliminar={handleEliminarMovimiento}
-            onNuevoProducto={() => openModal('producto')}
+            onNuevoProducto={() => openModal('seleccion')}
           />
         )}
 
