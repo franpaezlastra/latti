@@ -11,7 +11,7 @@ import NumberInput from '../../../ui/NumberInput';
 
 const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   const dispatch = useDispatch();
-  const insumos = useSelector((state) => state.insumos.insumos);
+  const { insumos, status } = useSelector((state) => state.insumos);
   const { updateAfterInsumoMovement } = useGlobalUpdate();
   
   // Estados del formulario
@@ -30,10 +30,8 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   // Limpiar formulario cuando se abre/cierra el modal
   useEffect(() => {
     if (isOpen) {
-      // Cargar insumos si están vacíos
-      if (!insumos || insumos.length === 0) {
-        dispatch(loadInsumos());
-      }
+      // Cargar insumos siempre para asegurar datos actualizados
+      dispatch(loadInsumos());
       
       setFormData({
         tipoMovimiento: '',
@@ -379,10 +377,12 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                         onChange={(e) => handleInsumoChange(index, 'insumoId', e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                         required
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || status === 'loading'}
                       >
-                        <option value="">Seleccionar insumo</option>
-                        {insumos.map((i) => {
+                        <option value="">
+                          {status === 'loading' ? 'Cargando insumos...' : 'Seleccionar insumo'}
+                        </option>
+                        {status === 'succeeded' && insumos && insumos.length > 0 ? insumos.map((i) => {
                           // Verificar si este insumo está seleccionado en otra fila
                           const insumosSeleccionados = formData.insumos
                             .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
@@ -410,7 +410,11 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                               {i.nombre}{tipoTexto}{stockInfo}{yaSeleccionado}
                             </option>
                           );
-                        })}
+                        }) : (
+                          <option value="" disabled>
+                            {status === 'failed' ? 'Error al cargar insumos' : 'No hay insumos disponibles'}
+                          </option>
+                        )}
                       </select>
                     </div>
 

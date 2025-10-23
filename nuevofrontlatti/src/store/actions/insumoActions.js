@@ -4,13 +4,13 @@ import { API_BASE_URL } from "../../constants/api.js";
 
 const BASE_URL = "/insumos"; // Removido /api ya que está en la baseURL
 
-// Obtener insumos
+// Obtener insumos (todos: base + compuestos)
 export const loadInsumos = createAsyncThunk(
   "insumos/loadInsumos",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("🔄 Intentando cargar insumos desde:", `${API_BASE_URL}${BASE_URL}`);
-      const response = await api.get(BASE_URL);
+      console.log("🔄 Intentando cargar insumos desde:", `${API_BASE_URL}/insumos/todos`);
+      const response = await api.get('/insumos/todos');
       console.log("✅ Insumos cargados:", response.data);
       return response.data;
     } catch (error) {
