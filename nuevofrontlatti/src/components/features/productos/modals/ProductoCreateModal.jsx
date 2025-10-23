@@ -3,7 +3,7 @@ import { FaPlus, FaTrash } from 'react-icons/fa';
 import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
 import Input from '../../../ui/Input';
-import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
+import NumberInput from '../../../ui/NumberInput';
 
 const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const [formData, setFormData] = useState({
@@ -14,9 +14,17 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Función para capitalizar primera letra
+  const capitalizarPrimeraLetra = (texto) => {
+    if (!texto) return texto;
+    return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+  };
+
   // Función para limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Capitalizar primera letra para el nombre
+    const valorFinal = field === 'nombre' ? capitalizarPrimeraLetra(value) : value;
+    setFormData(prev => ({ ...prev, [field]: valorFinal }));
     // Limpiar errores cuando el usuario empieza a escribir
     if (error) {
       setError(false);
@@ -193,17 +201,13 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
             <p className="text-xs mt-1">Haz clic en "Agregar Insumo" para comenzar</p>
           </div>
         ) : (
-          <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
-            {formData.insumos.map((insumo, index) => {
-              const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
-              const esCompuesto = insumoSeleccionado?.tipo === 'COMPUESTO';
-              const unidadAbreviatura = insumoSeleccionado ? getAbreviaturaByValue(insumoSeleccionado.unidadMedida) : '';
-
-              return (
-                <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="max-h-48 overflow-y-auto space-y-3 pr-2">
+            {formData.insumos.map((insumo, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="grid grid-cols-12 gap-3 items-end">
                   {/* Selector de insumo */}
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="col-span-7">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Insumo
                     </label>
                     <select
@@ -224,6 +228,10 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                         const estaSeleccionadoEnOtra = insumoIdsSeleccionados.includes(String(i.id));
                         const esSeleccionActual = String(insumo.insumoId) === String(i.id);
                         
+                        // Determinar el tipo de insumo
+                        const tipoInsumo = i.tipoOriginal || i.tipo || 'BASE';
+                        const esCompuesto = tipoInsumo === 'COMPUESTO';
+                        
                         return (
                           <option 
                             key={i.id} 
@@ -234,46 +242,37 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                               fontStyle: estaSeleccionadoEnOtra && !esSeleccionActual ? 'italic' : 'normal'
                             }}
                           >
-                            {i.nombre} {estaSeleccionadoEnOtra && !esSeleccionActual ? '(ya seleccionado)' : ''}
+                            {i.nombre} - {esCompuesto ? 'Compuesto' : 'Base'} {estaSeleccionadoEnOtra && !esSeleccionActual ? '(ya seleccionado)' : ''}
                           </option>
                         );
                       })}
                     </select>
-                    
-                    {/* Mostrar tipo de insumo si está seleccionado */}
-                    {insumoSeleccionado && (
-                      <div className="mt-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          esCompuesto 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {esCompuesto ? 'Compuesto' : 'Base'}
-                        </span>
-                      </div>
-                    )}
                   </div>
-
+                  
                   {/* Campo de cantidad */}
-                  <div className="w-32">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cantidad {unidadAbreviatura && `(${unidadAbreviatura})`}
+                  <div className="col-span-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cantidad
+                      {insumo.insumoId && (() => {
+                        const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
+                        return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
+                      })()}
                     </label>
                     <input
                       type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
+                      placeholder="0"
                       value={insumo.cantidad}
                       onChange={(e) => updateInsumo(index, 'cantidad', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                      min="0"
+                      step="0.01"
                       required
                       disabled={isSubmitting}
                     />
                   </div>
-
+                  
                   {/* Botón eliminar */}
-                  <div className="flex items-end">
+                  <div className="col-span-1 flex justify-center">
                     <button
                       type="button"
                       onClick={() => removeInsumo(index)}
@@ -285,8 +284,8 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
