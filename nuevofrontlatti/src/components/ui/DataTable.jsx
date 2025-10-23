@@ -114,7 +114,7 @@ const DataTable = ({
                 >
                   {columns.map((column, colIndex) => (
                     <td key={colIndex} className="px-6 py-4 whitespace-nowrap">
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                      {row[column.key]}
                       </td>
                     ))}
                     {actions.length > 0 && (

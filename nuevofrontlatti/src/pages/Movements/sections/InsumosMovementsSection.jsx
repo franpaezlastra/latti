@@ -86,8 +86,7 @@ const InsumosMovementsSection = ({
     const formateados = movimientos.map(movimiento => ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
-      tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? 'Entrada' : 'Salida',
-      tipoMovimientoClass: movimiento.tipoMovimiento === 'ENTRADA' ? 'success' : 'danger',
+      tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
       detalles: movimiento.detalles?.map(detalle => 
         `${detalle.nombreInsumo} • ${formatQuantity(detalle.cantidad, getAbreviaturaByValue(detalle.unidadMedida))}${detalle.precioTotal > 0 ? ` • ${formatPrice(detalle.precioTotal)}` : ''}`
       ).join('\n') || 'Sin detalles',
@@ -101,31 +100,9 @@ const InsumosMovementsSection = ({
   // Columnas de la tabla
   const columnas = [
     { key: 'fecha', label: 'Fecha', sortable: true },
-    { 
-      key: 'tipoMovimiento', 
-      label: 'Tipo', 
-      sortable: true,
-      render: (value, row) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          row.tipoMovimientoClass === 'success' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {value}
-        </span>
-      )
-    },
+    { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
     { key: 'descripcion', label: 'Descripción', sortable: true },
-    { 
-      key: 'detalles', 
-      label: 'Insumos', 
-      sortable: false,
-      render: (value) => (
-        <div className="text-xs text-gray-600 whitespace-pre-line">
-          {value}
-        </div>
-      )
-    },
+    { key: 'detalles', label: 'Insumos', sortable: false },
     { key: 'totalFormateado', label: 'Total', sortable: true }
   ];
 
