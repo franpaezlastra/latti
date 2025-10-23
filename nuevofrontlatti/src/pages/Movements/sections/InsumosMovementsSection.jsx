@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { FaPlus, FaEye, FaTrash, FaEdit, FaBox, FaCog, FaFilter, FaSearch } from "react-icons/fa";
 import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
-import { formatQuantity, formatPrice } from "../../../utils/formatters";
-import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
+import { formatQuantity, formatPrice } from "../../../../utils/formatters";
+import { getAbreviaturaByValue } from "../../../../constants/unidadesMedida";
 
 const InsumosMovementsSection = ({
   movimientos = [],

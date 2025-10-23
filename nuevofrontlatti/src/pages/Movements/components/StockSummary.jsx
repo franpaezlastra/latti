@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { FaBox, FaCog, FaChartLine, FaSearch, FaFilter } from "react-icons/fa";
 import { Card, Button, DataTable, StatCard, FilterPanel, Badge } from "../../../components/ui";
-import { formatQuantity, formatPrice } from "../../../../utils/formatters";
-import { getAbreviaturaByValue } from "../../../../constants/unidadesMedida";
+import { formatQuantity, formatPrice } from "../../../utils/formatters";
+import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
 
 const StockSummary = ({ insumos = [], productos = [] }) => {
   const [filtros, setFiltros] = useState({
