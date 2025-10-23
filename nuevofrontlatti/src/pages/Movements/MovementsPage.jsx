@@ -40,13 +40,13 @@ const MovementsPage = () => {
   
   // Estados de Redux
   const {
-    movimientosInsumo,
+    movimientos: movimientosInsumo,
     loading: loadingInsumos,
     error: errorInsumos
   } = useSelector((state) => state.movimientosInsumo);
 
   const {
-    movimientosProducto,
+    movimientos: movimientosProducto,
     loading: loadingProductos,
     error: errorProductos
   } = useSelector((state) => state.movimientosProducto);
