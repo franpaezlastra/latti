@@ -248,17 +248,18 @@ const MovementsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
-      {/* Header */}
-      <div className="px-8 py-8 bg-white border-b border-gray-200 shadow-sm">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col">
+      {/* Header fijo */}
+      <div className="px-8 py-8 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Gestión de Movimientos</h1>
           <p className="text-xl text-gray-600">Administra entradas y salidas de stock de insumos y productos</p>
         </div>
       </div>
 
-      {/* Contenido principal */}
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      {/* Contenido principal con scroll */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
         {/* Tabs */}
         <div className="mb-8">
           <Tabs
@@ -293,6 +294,7 @@ const MovementsPage = () => {
           />
         )}
 
+        </div>
       </div>
 
       {/* Modales */}
