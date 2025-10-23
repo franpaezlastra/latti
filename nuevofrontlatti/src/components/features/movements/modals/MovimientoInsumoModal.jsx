@@ -427,7 +427,9 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
                           );
                         }) : (
                           <option value="" disabled>
-                            {status === 'failed' ? 'Error al cargar insumos' : 'No hay insumos disponibles'}
+                            {status === 'failed' ? 'Error al cargar insumos' : 
+                             status === 'loading' ? 'Cargando...' : 
+                             'No hay insumos disponibles. Crea insumos primero.'}
                           </option>
                         )}
                       </select>
