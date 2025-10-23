@@ -19,30 +19,26 @@ const InsumosSection = ({
     { key: 'precioDeCompra', label: 'Precio/u', sortable: true }
   ];
 
-  const getActions = (insumo) => {
-    const actions = [
-      {
-        label: 'Ver detalles',
-        icon: <FaEye />,
-        onClick: () => onDetails(insumo),
-        className: 'text-green-600 hover:bg-green-200'
-      },
-      {
-        label: 'Editar',
-        icon: <FaEdit />,
-        onClick: () => onEdit(insumo),
-        className: 'text-blue-600 hover:bg-blue-200'
-      },
-      {
-        label: 'Eliminar',
-        icon: <FaTrash />,
-        onClick: () => onDelete(insumo.id),
-        className: 'text-red-600 hover:bg-red-200'
-      }
-    ];
-
-    return actions;
-  };
+  const actions = [
+    {
+      label: 'Ver detalles',
+      icon: <FaEye />,
+      onClick: (insumo) => onDetails(insumo),
+      className: 'text-green-600 hover:bg-green-200'
+    },
+    {
+      label: 'Editar',
+      icon: <FaEdit />,
+      onClick: (insumo) => onEdit(insumo),
+      className: 'text-blue-600 hover:bg-blue-200'
+    },
+    {
+      label: 'Eliminar',
+      icon: <FaTrash />,
+      onClick: (insumo) => onDelete(insumo.id),
+      className: 'text-red-600 hover:bg-red-200'
+    }
+  ];
 
   const formatData = (insumos) => {
     // Ordenar insumos: primero BASE, luego COMPUESTO, alfabéticamente
@@ -106,7 +102,7 @@ const InsumosSection = ({
         <DataTable
           data={formatData(insumos)}
           columns={columns}
-          actions={getActions}
+          actions={actions}
           emptyMessage="No hay insumos registrados"
           className="h-full"
           itemsPerPage={10}
