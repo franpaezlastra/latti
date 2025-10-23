@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://api.lattituc.site/api';
+export const API_BASE_URL = 'https://lattibackend-mkxnm2-158d88-72-60-11-86.traefik.me/api';
 
 export const API_ENDPOINTS = {
   // Autenticación
