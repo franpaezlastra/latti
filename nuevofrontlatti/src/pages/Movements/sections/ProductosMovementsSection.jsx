@@ -152,10 +152,18 @@ const ProductosMovementsSection = ({
     <div className="space-y-6">
       {/* Header con botones */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold text-gray-900">Movimientos de Productos</h2>
-          <p className="text-gray-600">Gestiona producción y ventas de productos terminados</p>
+          <button
+            onClick={onNuevoProducto}
+            className="flex items-center gap-1 p-2 text-white bg-green-600 rounded-full shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
+            aria-label="Nuevo movimiento de producto"
+            title="Nuevo movimiento de producto"
+          >
+            <FaPlus size={14} />
+          </button>
         </div>
+        <p className="text-gray-600">Gestiona producción y ventas de productos terminados</p>
         
         <div className="flex flex-wrap gap-2">
           <Button
@@ -165,15 +173,6 @@ const ProductosMovementsSection = ({
             leftIcon={<FaFilter size={14} />}
           >
             Filtros
-          </Button>
-          
-          <Button
-            onClick={onNuevoProducto}
-            variant="success"
-            size="sm"
-            leftIcon={<FaCog size={14} />}
-          >
-            Nuevo Producto
           </Button>
         </div>
       </div>

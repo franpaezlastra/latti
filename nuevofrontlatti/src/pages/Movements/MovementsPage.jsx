@@ -244,15 +244,10 @@ const MovementsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <PageHeader
-        title="Gestión de Movimientos"
-        subtitle="Administra entradas y salidas de stock de insumos y productos"
-        actionButton={{
-          icon: <FaPlus size={16} />,
-          onClick: () => openModal('seleccion'),
-          label: "Nuevo movimiento"
-        }}
-      />
+      <div className="px-8 py-6 bg-white border-b border-gray-200">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Movimientos</h1>
+        <p className="text-lg text-gray-600">Administra entradas y salidas de stock de insumos y productos</p>
+      </div>
 
       {/* Contenido principal */}
       <div className="container mx-auto px-4 py-6">

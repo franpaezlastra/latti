@@ -268,20 +268,10 @@ const ProductosPage = () => {
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-blue-50 via-white to-blue-100 h-screen">
-      <PageHeader
-        title="Gestión de Productos e Insumos"
-        subtitle="Administra tu inventario de productos y materias primas"
-        actionButton={{
-          icon: <FaPlus size={16} />,
-          onClick: () => openModal('productoCreate'),
-          label: "Agregar producto"
-        }}
-        secondaryActionButton={{
-          icon: <FaBox size={16} />,
-          onClick: () => openModal('insumoCreate'),
-          label: "Agregar insumo"
-        }}
-      />
+      <div className="px-8 py-6 bg-white border-b border-gray-200">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Gestión de Productos e Insumos</h1>
+        <p className="text-lg text-gray-600">Administra tu inventario de productos y materias primas</p>
+      </div>
 
       <div className="flex-1 overflow-y-auto p-4 pt-2">
         {/* Sección de Productos */}
