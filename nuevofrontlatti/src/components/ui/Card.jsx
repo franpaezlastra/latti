@@ -1,5 +1,4 @@
 import React from 'react';
-import { CARD_VARIANTS } from '../../constants/design';
 
 const Card = ({ 
   children, 
@@ -10,7 +9,12 @@ const Card = ({
 }) => {
   const baseClasses = "rounded-xl transition-all duration-200";
   
-  const variantClasses = CARD_VARIANTS[variant] || CARD_VARIANTS.default;
+  const variantClasses = {
+    default: 'bg-white border border-gray-200 shadow-sm',
+    elevated: 'bg-white border border-gray-200 shadow-md',
+    flat: 'bg-white border-0 shadow-none',
+    outlined: 'bg-transparent border border-gray-200 shadow-none',
+  }[variant] || 'bg-white border border-gray-200 shadow-sm';
   
   const paddingClasses = {
     none: '',

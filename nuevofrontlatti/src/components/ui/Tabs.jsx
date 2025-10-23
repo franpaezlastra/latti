@@ -1,5 +1,4 @@
 import React from 'react';
-import { TAB_VARIANTS } from '../../constants/design';
 
 const Tabs = ({ 
   tabs = [], 
@@ -9,7 +8,27 @@ const Tabs = ({
   className = "",
   ...props 
 }) => {
-  const variantClasses = TAB_VARIANTS[variant] || TAB_VARIANTS.default;
+  const variantClasses = {
+    default: {
+      base: 'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+      active: 'bg-white text-blue-600 shadow-sm',
+      inactive: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+    },
+    pills: {
+      base: 'px-4 py-2 text-sm font-medium rounded-full transition-colors',
+      active: 'bg-blue-600 text-white',
+      inactive: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+    },
+    underline: {
+      base: 'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+      active: 'border-blue-600 text-blue-600',
+      inactive: 'border-transparent text-gray-600 hover:text-gray-900',
+    },
+  }[variant] || {
+    base: 'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+    active: 'bg-white text-blue-600 shadow-sm',
+    inactive: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+  };
   
   return (
     <div className={`flex space-x-1 ${className}`} {...props}>
