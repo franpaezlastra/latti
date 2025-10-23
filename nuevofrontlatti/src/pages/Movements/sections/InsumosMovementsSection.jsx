@@ -86,7 +86,15 @@ const InsumosMovementsSection = ({
   // Formatear datos para la tabla
   const formatearMovimientos = (movimientos) => {
     console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
-    const formateados = movimientos.map(movimiento => ({
+    
+    // Ordenar movimientos del más nuevo al más viejo por fecha
+    const movimientosOrdenados = [...movimientos].sort((a, b) => {
+      const fechaA = new Date(a.fecha);
+      const fechaB = new Date(b.fecha);
+      return fechaB - fechaA; // Descendente (más nuevo primero)
+    });
+    
+    const formateados = movimientosOrdenados.map(movimiento => ({
       id: movimiento.id,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
@@ -99,7 +107,7 @@ const InsumosMovementsSection = ({
       // Mantener la fecha original para el modal
       fechaOriginal: movimiento.fecha
     }));
-    console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
+    console.log('✅ formatearMovimientos - Movimientos formateados y ordenados:', formateados);
     return formateados;
   };
 
