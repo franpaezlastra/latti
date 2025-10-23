@@ -13,6 +13,10 @@ const InsumosMovementsSection = ({
   onNuevoInsumo,
   onNuevoInsumoCompuesto
 }) => {
+  // Debug: Log de movimientos recibidos
+  console.log('📊 InsumosMovementsSection - Movimientos recibidos:', movimientos);
+  console.log('📊 InsumosMovementsSection - Cantidad de movimientos:', movimientos?.length || 0);
+  console.log('📊 InsumosMovementsSection - Primer movimiento:', movimientos?.[0]);
   const [filtros, setFiltros] = useState({
     busqueda: "",
     tipoMovimiento: "",
@@ -78,7 +82,8 @@ const InsumosMovementsSection = ({
 
   // Formatear datos para la tabla
   const formatearMovimientos = (movimientos) => {
-    return movimientos.map(movimiento => ({
+    console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
+    const formateados = movimientos.map(movimiento => ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: (
@@ -109,6 +114,8 @@ const InsumosMovementsSection = ({
       total: movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0,
       totalFormateado: formatPrice(movimiento.detalles?.reduce((sum, detalle) => sum + (detalle.precioTotal || 0), 0) || 0)
     }));
+    console.log('✅ formatearMovimientos - Movimientos formateados:', formateados);
+    return formateados;
   };
 
   // Columnas de la tabla
