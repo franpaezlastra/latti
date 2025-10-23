@@ -116,13 +116,13 @@ const InsumosMovementsSection = ({
   const acciones = [
     {
       label: 'Ver detalles',
-      icon: <FaEye size={14} />,
+      icon: <FaEye />,
       onClick: handleVerDetalles,
       variant: 'ghost'
     },
     {
       label: 'Editar',
-      icon: <FaEdit size={14} />,
+      icon: <FaEdit />,
       onClick: (mov) => onEditar(mov),
       variant: 'ghost',
       disabled: (mov) => {
@@ -132,7 +132,7 @@ const InsumosMovementsSection = ({
     },
     {
       label: 'Eliminar',
-      icon: <FaTrash size={14} />,
+      icon: <FaTrash />,
       onClick: (mov) => onEliminar(mov),
       variant: 'ghost',
       disabled: (mov) => {

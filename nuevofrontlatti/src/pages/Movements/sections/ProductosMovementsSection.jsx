@@ -121,13 +121,13 @@ const ProductosMovementsSection = ({
   const acciones = [
     {
       label: 'Ver detalles',
-      icon: <FaEye size={14} />,
+      icon: <FaEye />,
       onClick: (mov) => onVerDetalles(mov),
       variant: 'ghost'
     },
     {
       label: 'Eliminar',
-      icon: <FaTrash size={14} />,
+      icon: <FaTrash />,
       onClick: (mov) => onEliminar(mov),
       variant: 'ghost'
     }
