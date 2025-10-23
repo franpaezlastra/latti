@@ -34,7 +34,7 @@ const DataTable = ({
   try {
     return (
       <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`} {...props}>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-96 overflow-y-auto">
           <table className="w-full text-sm text-gray-700">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
