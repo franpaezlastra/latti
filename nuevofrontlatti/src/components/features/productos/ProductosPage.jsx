@@ -270,7 +270,7 @@ const ProductosPage = () => {
     <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col">
       {/* Header fijo */}
       <div className="px-6 py-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
-        <div className="max-w-7xl mx-auto">
+        <div>
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">Gestión de Productos e Insumos</h1>
           <p className="text-sm text-gray-600">Administra tu inventario de productos y materias primas</p>
         </div>
@@ -278,7 +278,7 @@ const ProductosPage = () => {
 
       {/* Contenido principal con scroll */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="px-6 py-4">
         {/* Sección de Productos */}
         <div className="mb-4">
           <ProductosSection

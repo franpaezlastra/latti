@@ -23,20 +23,17 @@ const InsumosSection = ({
     {
       label: 'Ver detalles',
       icon: <FaEye />,
-      onClick: (insumo) => onDetails(insumo),
-      className: 'text-green-600 hover:bg-green-200'
+      onClick: (insumo) => onDetails(insumo)
     },
     {
       label: 'Editar',
       icon: <FaEdit />,
-      onClick: (insumo) => onEdit(insumo),
-      className: 'text-blue-600 hover:bg-blue-200'
+      onClick: (insumo) => onEdit(insumo)
     },
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: (insumo) => onDelete(insumo),
-      className: 'text-red-600 hover:bg-red-200'
+      onClick: (insumo) => onDelete(insumo)
     }
   ];
 

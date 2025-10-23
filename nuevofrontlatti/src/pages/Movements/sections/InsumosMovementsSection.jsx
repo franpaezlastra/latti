@@ -118,15 +118,13 @@ const InsumosMovementsSection = ({
       label: 'Ver detalles',
       icon: <FaEye size={14} />,
       onClick: handleVerDetalles,
-      variant: 'ghost',
-      className: 'text-blue-600 hover:text-blue-800'
+      variant: 'ghost'
     },
     {
       label: 'Editar',
       icon: <FaEdit size={14} />,
       onClick: (mov) => onEditar(mov),
       variant: 'ghost',
-      className: 'text-gray-600 hover:text-gray-800',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
         return mov.insumos?.some(insumo => insumo.ensambleId) || false;
@@ -137,7 +135,6 @@ const InsumosMovementsSection = ({
       icon: <FaTrash size={14} />,
       onClick: (mov) => onEliminar(mov),
       variant: 'ghost',
-      className: 'text-red-600 hover:text-red-800',
       disabled: (mov) => {
         // Verificar si es un movimiento de ensamble
         return mov.insumos?.some(insumo => insumo.ensambleId) || false;

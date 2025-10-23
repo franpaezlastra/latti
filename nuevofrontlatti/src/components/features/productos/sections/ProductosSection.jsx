@@ -20,20 +20,17 @@ const ProductosSection = ({
     {
       label: 'Ver',
       icon: <FaEye />,
-      onClick: onView,
-      className: 'text-blue-600 hover:bg-blue-200'
+      onClick: onView
     },
     {
       label: 'Editar',
       icon: <FaEdit />,
-      onClick: onEdit,
-      className: 'text-green-600 hover:bg-green-200'
+      onClick: onEdit
     },
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: onDelete,
-      className: 'text-red-600 hover:bg-red-200'
+      onClick: onDelete
     }
   ];
 
