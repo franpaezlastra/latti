@@ -56,22 +56,7 @@ const InsumosSection = ({
       // Preservar el tipo original para la lógica
       tipoOriginal: insumo.tipo,
       // Formatear tipo con icono - centrado (solo para visualización)
-      tipo: (
-        <div className="flex items-center justify-center gap-2">
-          {insumo.tipo === 'COMPUESTO' ? (
-            <FaCog className="text-purple-600" size={12} />
-          ) : (
-            <FaBox className="text-blue-600" size={12} />
-          )}
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-            insumo.tipo === 'COMPUESTO' 
-              ? 'bg-purple-100 text-purple-800' 
-              : 'bg-blue-100 text-blue-800'
-          }`}>
-            {insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base'}
-          </span>
-        </div>
-      ),
+      tipo: insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base',
       // Formatear precio
       precioDeCompra: formatPrice(insumo.precioDeCompra || 0)
     }));
