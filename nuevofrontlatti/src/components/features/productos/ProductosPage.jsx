@@ -278,6 +278,7 @@ const ProductosPage = () => {
         <div className="mb-6">
           <ProductosSection
             productos={productos}
+            onCreate={() => openModal('productoCreate')}
             onEdit={handleEditProducto}
             onDelete={handleDeleteProducto}
             onDetails={(producto) => {
