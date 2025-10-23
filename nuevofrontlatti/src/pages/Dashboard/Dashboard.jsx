@@ -55,60 +55,6 @@ const Dashboard = () => {
   const movimientosProductosList = movimientosProductos || [];
   const movimientosInsumosList = movimientosInsumos || [];
 
-  // Datos de prueba si no hay datos reales
-  const datosPrueba = {
-    insumos: [
-      {
-        id: 1,
-        nombre: "Café en grano",
-        tipo: "BASE",
-        stockActual: 50,
-        unidadMedida: "GRAMOS",
-        precioDeCompra: 1500,
-        totalInvertido: 75000
-      },
-      {
-        id: 2,
-        nombre: "Azúcar",
-        tipo: "BASE", 
-        stockActual: 25,
-        unidadMedida: "GRAMOS",
-        precioDeCompra: 800,
-        totalInvertido: 20000
-      },
-      {
-        id: 3,
-        nombre: "Leche",
-        tipo: "BASE",
-        stockActual: 8,
-        unidadMedida: "LITROS",
-        precioDeCompra: 1200,
-        totalInvertido: 9600
-      },
-      {
-        id: 4,
-        nombre: "Vainilla",
-        tipo: "BASE",
-        stockActual: 2,
-        unidadMedida: "MILILITROS",
-        precioDeCompra: 2500,
-        totalInvertido: 5000
-      },
-      {
-        id: 5,
-        nombre: "Café preparado",
-        tipo: "COMPUESTO",
-        stockActual: 15,
-        unidadMedida: "UNIDADES",
-        precioDeCompra: 2000,
-        totalInvertido: 30000
-      }
-    ]
-  };
-
-  // Usar datos de prueba si no hay datos reales
-  const insumosParaMostrar = insumosList.length > 0 ? insumosList : datosPrueba.insumos;
-
   // Resetear página cuando cambien los movimientos
   useEffect(() => {
     setPaginaActual(1);
@@ -132,13 +78,13 @@ const Dashboard = () => {
   // Calcular estadísticas generales
   const calcularEstadisticas = () => {
     // Usar el totalInvertido calculado en el backend
-    const dineroInvertidoInsumos = insumosParaMostrar.reduce((total, insumo) => {
+    const dineroInvertidoInsumos = insumosList.reduce((total, insumo) => {
       return total + (insumo.totalInvertido || 0);
     }, 0);
 
     const totalProductos = productosList.length;
-    const totalInsumos = insumosParaMostrar.length;
-    const stockBajo = insumosParaMostrar.filter(insumo => (insumo.stockActual || 0) < 10).length;
+    const totalInsumos = insumosList.length;
+    const stockBajo = insumosList.filter(insumo => (insumo.stockActual || 0) < 10).length;
     const { totalVentas, ingresosTotales } = calcularEstadisticasVentas();
 
     return {
@@ -279,17 +225,6 @@ const Dashboard = () => {
 
   const stats = calcularEstadisticas();
 
-  // Debug logs
-  console.log('🔍 Dashboard Debug:');
-  console.log('- productosList:', productosList);
-  console.log('- insumosList:', insumosList);
-  console.log('- insumosParaMostrar:', insumosParaMostrar);
-  console.log('- movimientosProductosList:', movimientosProductosList);
-  console.log('- movimientosInsumosList:', movimientosInsumosList);
-  console.log('- stats:', stats);
-  console.log('- productosStatus:', productosStatus);
-  console.log('- insumosStatus:', insumosStatus);
-
   const isLoading = productosStatus === 'loading' || insumosStatus === 'loading' || movimientosProductosLoading || movimientosInsumosLoading || loading;
 
   if (isLoading) {
@@ -305,46 +240,50 @@ const Dashboard = () => {
 
   // Componente para la tabla de lotes
   const TablaLotes = () => {
-    const columnas = ["Lote", "Producto", "Cantidad Inicial", "Stock Actual", "Fecha de Producción", "Precio de Inversión", "Estado"];
+    const columnas = [
+      { key: 'numeroLote', label: 'Lote', sortable: true },
+      { key: 'producto', label: 'Producto', sortable: true },
+      { key: 'cantidadInicial', label: 'Cantidad Inicial', sortable: true },
+      { key: 'cantidadActual', label: 'Stock Actual', sortable: true },
+      { key: 'fechaProduccion', label: 'Fecha de Producción', sortable: true },
+      { key: 'precioInversion', label: 'Precio de Inversión', sortable: true },
+      { key: 'estado', label: 'Estado', sortable: false }
+    ];
 
-  return (
+    // Formatear datos para la tabla
+    const datosFormateados = lotesPaginados.map(lote => {
+      const porcentajeStock = (lote.cantidadActual / lote.cantidadInicial) * 100;
+      const estadoStock = porcentajeStock > 50 ? 'Alto' : porcentajeStock > 20 ? 'Medio' : 'Bajo';
+      
+      return {
+        ...lote,
+        numeroLote: (
+          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+            {lote.numeroLote}
+          </span>
+        ),
+        cantidadInicial: formatNumber(lote.cantidadInicial),
+        cantidadActual: formatNumber(lote.cantidadActual),
+        fechaProduccion: new Date(lote.fechaProduccion).toLocaleDateString(),
+        precioInversion: formatPrice(lote.precioInversion || 0),
+        estado: (
+          <span className={`px-2 py-1 text-xs rounded-full ${
+            estadoStock === 'Alto' ? 'bg-green-100 text-green-700' :
+            estadoStock === 'Medio' ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            {estadoStock} ({porcentajeStock.toFixed(0)}%)
+          </span>
+        )
+      };
+    });
+
+    return (
       <div>
         <Tabla
           columnas={columnas}
-          datos={lotesPaginados}
-          renderFila={(lote) => {
-            const porcentajeStock = (lote.cantidadActual / lote.cantidadInicial) * 100;
-            const estadoStock = porcentajeStock > 50 ? 'Alto' : porcentajeStock > 20 ? 'Medio' : 'Bajo';
-            
-            return (
-              <>
-                <td className="px-4 py-2">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    {lote.numeroLote}
-                  </span>
-                </td>
-                <td className="px-4 py-2 font-medium">{lote.producto}</td>
-                <td className="px-4 py-2 text-gray-600">{formatNumber(lote.cantidadInicial)}</td>
-                <td className="px-4 py-2 font-semibold">{formatNumber(lote.cantidadActual)}</td>
-                <td className="px-4 py-2">
-                  {new Date(lote.fechaProduccion).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-2">
-                  {formatPrice(lote.precioInversion || 0)}
-                </td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    estadoStock === 'Alto' ? 'bg-green-100 text-green-700' :
-                    estadoStock === 'Medio' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {estadoStock} ({porcentajeStock.toFixed(0)}%)
-                  </span>
-                </td>
-              </>
-            );
-          }}
-          mensajeVacio="No hay lotes con stock disponible"
+          datos={datosFormateados}
+          emptyMessage="No hay lotes con stock disponible"
         />
         
         {/* Paginador */}
@@ -395,67 +334,75 @@ const Dashboard = () => {
   // Componente para la tabla de ventas
   const TablaVentas = () => {
     const ventas = movimientosProductosList
-      .filter(mov => mov.tipoMovimiento === 'VENTA')
+      .filter(mov => mov.tipoMovimiento === 'SALIDA') // Cambiar de 'VENTA' a 'SALIDA'
       .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-    const columnas = ["Fecha", "Producto", "Cantidad", "Precio Unitario", "Total"];
+    const columnas = [
+      { key: 'fecha', label: 'Fecha', sortable: true },
+      { key: 'producto', label: 'Producto', sortable: true },
+      { key: 'cantidad', label: 'Cantidad', sortable: true },
+      { key: 'precioUnitario', label: 'Precio Unitario', sortable: true },
+      { key: 'total', label: 'Total', sortable: true }
+    ];
+
+    // Formatear datos para la tabla
+    const datosFormateados = ventas.map(venta => ({
+      ...venta,
+      fecha: new Date(venta.fecha).toLocaleDateString(),
+      producto: venta.producto?.nombre || 'N/A',
+      cantidad: formatNumber(venta.cantidad || 0),
+      precioUnitario: formatPrice(venta.precioVenta || 0),
+      total: formatPrice((venta.precioVenta || 0) * (venta.cantidad || 0))
+    }));
 
     return (
       <Tabla
         columnas={columnas}
-        datos={ventas}
-        renderFila={(venta) => (
-          <>
-            <td className="px-4 py-2">{new Date(venta.fecha).toLocaleDateString()}</td>
-            <td className="px-4 py-2">{venta.producto?.nombre || 'N/A'}</td>
-            <td className="px-4 py-2">{formatNumber(venta.cantidad || 0)}</td>
-            <td className="px-4 py-2">{formatPrice(venta.precioVenta || 0)}</td>
-            <td className="px-4 py-2">
-              {formatPrice((venta.precioVenta || 0) * (venta.cantidad || 0))}
-            </td>
-          </>
-        )}
-        mensajeVacio="No hay ventas registradas"
+        datos={datosFormateados}
+        emptyMessage="No hay ventas registradas"
       />
     );
   };
 
   // Componente para la tabla de insumos
   const TablaInsumos = () => {
-    const columnas = ["Insumo", "Cantidad", "Precio Unitario", "Total Invertido", "Estado"];
+    const columnas = [
+      { key: 'nombre', label: 'Insumo', sortable: true },
+      { key: 'cantidad', label: 'Cantidad', sortable: true },
+      { key: 'precioUnitario', label: 'Precio Unitario', sortable: true },
+      { key: 'totalInvertido', label: 'Total Invertido', sortable: true },
+      { key: 'estado', label: 'Estado', sortable: false }
+    ];
     
-    const insumosOrdenados = [...insumosParaMostrar].sort((a, b) => 
+    const insumosOrdenados = [...insumosList].sort((a, b) => 
       a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
     );
+
+    // Formatear datos para la tabla
+    const datosFormateados = insumosOrdenados.map(insumo => {
+      const stockBajo = (insumo.stockActual || 0) < 10;
+      const unidadAbreviatura = getAbreviaturaByValue(insumo.unidadMedida) || 'unidades';
+      
+      return {
+        ...insumo,
+        cantidad: `${formatNumber(insumo.stockActual || 0)} ${unidadAbreviatura}`,
+        precioUnitario: formatPrice(insumo.precioDeCompra || 0),
+        totalInvertido: formatPrice(insumo.totalInvertido || 0),
+        estado: (
+          <span className={`px-2 py-1 text-xs rounded-full ${
+            stockBajo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          }`}>
+            {stockBajo ? 'Stock Bajo' : 'Stock OK'}
+          </span>
+        )
+      };
+    });
 
     return (
       <Tabla
         columnas={columnas}
-        datos={insumosOrdenados}
-        renderFila={(insumo) => {
-          const stockBajo = (insumo.stockActual || 0) < 10;
-          // ✅ CAMBIADO: Usar abreviatura de la unidad de medida
-          const unidadAbreviatura = getAbreviaturaByValue(insumo.unidadMedida) || 'unidades';
-          
-          return (
-            <>
-              <td className="px-4 py-2">{insumo.nombre}</td>
-              <td className="px-4 py-2">
-                {formatNumber(insumo.stockActual || 0)} {unidadAbreviatura}
-              </td>
-              <td className="px-4 py-2">{formatPrice(insumo.precioDeCompra || 0)}</td>
-              <td className="px-4 py-2">{formatPrice(insumo.totalInvertido || 0)}</td>
-              <td className="px-4 py-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  stockBajo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                }`}>
-                  {stockBajo ? 'Stock Bajo' : 'Stock OK'}
-                </span>
-              </td>
-            </>
-          );
-        }}
-        mensajeVacio="No hay insumos registrados"
+        datos={datosFormateados}
+        emptyMessage="No hay insumos registrados"
       />
     );
   };
