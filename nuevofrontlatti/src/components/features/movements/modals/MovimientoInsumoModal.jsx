@@ -169,10 +169,14 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
     };
 
     try {
+      console.log('🚀 Enviando movimiento de insumo:', movimientoData);
       const result = await dispatch(createMovimientoInsumo(movimientoData)).unwrap();
+      console.log('✅ Movimiento creado exitosamente:', result);
       
       // Actualizar datos globalmente después del éxito
+      console.log('🔄 Actualizando datos globalmente...');
       await updateAfterInsumoMovement();
+      console.log('✅ Datos actualizados correctamente');
       
       // Limpiar formulario
       setFormData({
@@ -186,7 +190,7 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       
       if (onSubmit) onSubmit();
     } catch (err) {
-      console.log('MovimientoInsumoModal - catch error:', err);
+      console.error('❌ Error al crear movimiento de insumo:', err);
       setHasError(true);
       
       // Si err es directamente el string del error (viene de rejectWithValue)

@@ -9,9 +9,15 @@ export const createMovimientoInsumo = createAsyncThunk(
   "movimientosInsumo/create",
   async (data, { rejectWithValue }) => {
     try {
+      console.log('🚀 createMovimientoInsumo - Enviando datos:', data);
+      console.log('🚀 createMovimientoInsumo - URL:', BASE_URL);
       const response = await api.post(BASE_URL, data);
+      console.log('✅ createMovimientoInsumo - Respuesta del servidor:', response.data);
       return response.data;
     } catch (error) {
+      console.error('❌ createMovimientoInsumo - Error:', error);
+      console.error('❌ createMovimientoInsumo - Error response:', error.response?.data);
+      console.error('❌ createMovimientoInsumo - Error status:', error.response?.status);
       const errorMessage = error.response?.data?.error || "Error al registrar movimiento de insumo";
       return rejectWithValue(errorMessage);
     }
