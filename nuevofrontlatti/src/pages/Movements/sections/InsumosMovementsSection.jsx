@@ -87,9 +87,10 @@ const InsumosMovementsSection = ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
-      detalles: movimiento.insumos?.map(insumo => 
-        `${insumo.nombreInsumo} • ${formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida))}${insumo.precioTotal > 0 ? ` • ${formatPrice(insumo.precioTotal)}` : ''}`
-      ).join('\n') || 'Sin detalles',
+      detalles: movimiento.insumos?.map(insumo => {
+        console.log('🔍 Insumo individual:', insumo);
+        return `${insumo.nombreInsumo || insumo.nombre || 'Sin nombre'} • ${formatQuantity(insumo.cantidad, getAbreviaturaByValue(insumo.unidadMedida))}${insumo.precioTotal > 0 ? ` • ${formatPrice(insumo.precioTotal)}` : ''}`;
+      }).join('\n') || 'Sin detalles',
       total: movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0,
       totalFormateado: formatPrice(movimiento.insumos?.reduce((sum, insumo) => sum + (insumo.precioTotal || 0), 0) || 0)
     }));
