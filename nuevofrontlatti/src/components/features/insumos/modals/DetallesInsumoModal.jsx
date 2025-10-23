@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaBox, FaCog, FaEye, FaInfoCircle, FaList, FaTag, FaWeight } from 'react-icons/fa';
-import FormModal from '../../../ui/FormModal';
+import { Modal } from 'src/components/ui';
 import RecetaInsumoDisplay from '../components/RecetaInsumoDisplay';
 import { formatQuantity, formatPrice } from '../../../../utils/formatters';
 import { getAbreviaturaByValue } from '../../../../constants/unidadesMedida';
@@ -11,7 +11,7 @@ const DetallesInsumoModal = ({ isOpen, onClose, insumo }) => {
   const esCompuesto = insumo.tipoOriginal === 'COMPUESTO' || insumo.tipo === 'COMPUESTO';
 
   return (
-    <FormModal
+    <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={`Detalles del Insumo`}
@@ -127,7 +127,7 @@ const DetallesInsumoModal = ({ isOpen, onClose, insumo }) => {
           </div>
         )}
       </div>
-    </FormModal>
+    </Modal>
   );
 };
 
