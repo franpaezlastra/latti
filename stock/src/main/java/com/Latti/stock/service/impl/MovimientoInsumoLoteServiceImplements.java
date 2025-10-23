@@ -661,10 +661,11 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         // Para cada producto, verificar si tiene movimientos de entrada después de la fecha del movimiento de insumo
         for (Producto producto : productosQueUsanInsumo) {
             boolean tieneProduccionPosterior = producto.getMovimientos().stream()
-                    .anyMatch(movimientoProducto -> 
-                        movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
-                        movimientoProducto.getFecha().isAfter(fechaMovimiento)
-                    );
+                    .anyMatch(detalleMovimiento -> {
+                        MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
+                        return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
+                               movimientoProducto.getFecha().isAfter(fechaMovimiento);
+                    });
             
             if (tieneProduccionPosterior) {
                 return true; // El insumo se usó en producción después del movimiento
