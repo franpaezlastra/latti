@@ -69,14 +69,21 @@ export const updateInsumoCompuesto = createAsyncThunk(
       
       const response = await api.put(API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id), insumoData);
       console.log('✅ Respuesta del servidor:', response.data);
-      return response.data;
+      
+      // El backend devuelve { mensaje, insumo }, extraer solo el insumo
+      const insumoActualizado = response.data?.insumo || response.data;
+      return insumoActualizado;
     } catch (error) {
       console.error('❌ Error al actualizar insumo compuesto:', error);
       console.error('❌ Status:', error.response?.status);
       console.error('❌ Data:', error.response?.data);
-      return rejectWithValue(
-        error.response?.data?.error || 'Error al actualizar insumo compuesto'
-      );
+      
+      // Extraer el mensaje de error específico
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          'Error al actualizar insumo compuesto';
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -202,9 +209,15 @@ const insumoSlice = createSlice({
       })
       .addCase(updateInsumoCompuesto.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.insumos.findIndex(i => i.id === action.payload.id);
-        if (index !== -1) {
-          state.insumos[index] = action.payload;
+        const insumoActualizado = action.payload;
+        if (insumoActualizado && insumoActualizado.id) {
+          const index = state.insumos.findIndex(i => i.id === insumoActualizado.id);
+          if (index !== -1) {
+            state.insumos[index] = insumoActualizado;
+          } else {
+            // Si no existe, agregarlo (por si acaso)
+            state.insumos.push(insumoActualizado);
+          }
         }
         state.error = null;
       })

@@ -157,19 +157,37 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         return;
       }
 
+      // Preparar datos según el formato que espera el backend (CrearInsumoCompuestoDTO)
       const insumoData = {
-        id: insumo.id,
         nombre: capitalizarPrimeraLetra(formData.nombre.trim()),
-        unidadMedida: formData.unidadMedida.trim(),
+        unidadMedida: formData.unidadMedida, // Ya es un ENUM válido, no hacer trim()
         receta: formData.receta.map(c => ({
           insumoBaseId: parseInt(c.insumoBaseId),
           cantidad: parseFloat(c.cantidad)
         }))
       };
 
+      // Verificar autenticación antes de enviar
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      console.log('🔐 Token presente:', !!token);
+      console.log('👤 Usuario:', user ? (() => {
+        try {
+          return JSON.parse(user);
+        } catch (e) {
+          return user;
+        }
+      })() : 'No encontrado');
+
+      console.log('📤 Enviando datos al backend:', {
+        id: insumo.id,
+        insumoData
+      });
+
       const result = await dispatch(updateInsumoCompuesto({ id: insumo.id, insumoData }));
       
       if (updateInsumoCompuesto.fulfilled.match(result)) {
+        console.log('✅ Insumo compuesto actualizado exitosamente');
         // Llamar al callback del padre para manejar el éxito
         if (onSubmit) {
           await onSubmit(insumoData);
@@ -177,15 +195,20 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         handleClose();
       } else {
         // Extraer el error del backend
-        const errorMessage = result.payload?.error || "Error al actualizar insumo compuesto";
+        const errorMessage = result.payload || "Error al actualizar insumo compuesto";
+        console.error('❌ Error del backend:', errorMessage);
         setError(true);
-        setTextoError(errorMessage);
+        setTextoError(typeof errorMessage === 'string' ? errorMessage : "Error al actualizar insumo compuesto");
       }
       
     } catch (error) {
-      console.error('Error al editar insumo compuesto:', error);
+      console.error('❌ Error inesperado al editar insumo compuesto:', error);
       setError(true);
-      setTextoError('Error inesperado al editar insumo compuesto');
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message ||
+                          'Error inesperado al editar insumo compuesto';
+      setTextoError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
