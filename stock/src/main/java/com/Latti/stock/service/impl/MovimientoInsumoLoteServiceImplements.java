@@ -425,23 +425,16 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 insumoRepository.save(insumo);
             }
 
-            // ELIMINAR COMPLETAMENTE los detalles existentes de la base de datos
-            System.out.println("🗑️ Eliminando detalles existentes de la base de datos...");
+            // ELIMINAR COMPLETAMENTE los detalles existentes
+            // IMPORTANTE: No eliminar manualmente del repositorio, usar orphanRemoval
+            System.out.println("🗑️ Eliminando detalles existentes...");
             System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
-            try {
-                for (DetalleMovimientoInsumo detalleExistente : movimiento.getDetalles()) {
-                    System.out.println("  - Eliminando detalle ID: " + detalleExistente.getId());
-                    detalleMovimientoInsumoRepository.delete(detalleExistente);
-                    System.out.println("    ✅ Detalle eliminado exitosamente");
-                }
-                movimiento.getDetalles().clear();
-                System.out.println("✅ Todos los detalles eliminados exitosamente");
-            } catch (Exception e) {
-                System.err.println("❌ Error al eliminar detalles: " + e.getMessage());
-                System.err.println("❌ Stack trace:");
-                e.printStackTrace();
-                throw e;
-            }
+            // Simplemente limpiar la lista - orphanRemoval=true se encargará de eliminar los detalles
+            // cuando se guarde el movimiento
+            movimiento.getDetalles().clear();
+            // Forzar flush para que Hibernate elimine los detalles antes de crear nuevos
+            movimientoRepository.flush();
+            System.out.println("✅ Lista de detalles limpiada (orphanRemoval eliminará los detalles antiguos)");
 
             // Actualizar datos básicos del movimiento
             System.out.println("📝 Actualizando datos básicos del movimiento...");
@@ -488,19 +481,17 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
                 insumoRepository.save(insumo);
 
-                // Crear NUEVO detalle y guardarlo en la base de datos
-                System.out.println("    - Creando y guardando nuevo detalle...");
+                // Crear NUEVO detalle (NO guardar individualmente, el cascade se encargará)
+                System.out.println("    - Creando nuevo detalle...");
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
-                nuevoDetalle.setMovimiento(movimiento); // Asociar al movimiento
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
                 
-                // Guardar el detalle en la base de datos
-                DetalleMovimientoInsumo detalleGuardado = detalleMovimientoInsumoRepository.save(nuevoDetalle);
-                movimiento.addDetalle(detalleGuardado);
-                System.out.println("      - Detalle guardado con ID: " + detalleGuardado.getId());
+                // Agregar al movimiento (el cascade se encargará de guardarlo)
+                movimiento.addDetalle(nuevoDetalle);
+                System.out.println("      - Detalle agregado al movimiento");
             }
 
             // Guardar el movimiento actualizado
