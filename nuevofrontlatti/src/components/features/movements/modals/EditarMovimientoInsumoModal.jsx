@@ -223,13 +223,53 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
         }))
       };
 
-      console.log('📤 Objeto que se envía al backend:', JSON.stringify(movimientoData, null, 2));
-      console.log('🔢 Detalles ANTES de filtrar duplicados:', detalles.length);
-      console.log('🔢 Detalles DESPUÉS de filtrar duplicados:', detallesUnicos.length);
-      console.log('🔢 Detalles mapeados:', JSON.stringify(movimientoData.detalles, null, 2));
-      console.log('📅 Fecha formateada:', fechaFormateada);
-      console.log('🆔 ID:', movimientoData.id);
-      console.log('🔄 Tipo Movimiento:', movimientoData.tipoMovimiento);
+      // Logs detallados: objeto viejo vs objeto nuevo
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('📊 === COMPARACIÓN: OBJETO VIEJO vs OBJETO NUEVO ===');
+      console.log('═══════════════════════════════════════════════════════════');
+      
+      console.log('📦 OBJETO VIEJO (Movimiento Original):');
+      console.log(JSON.stringify({
+        id: movimiento.id,
+        fecha: movimiento.fecha,
+        descripcion: movimiento.descripcion,
+        tipoMovimiento: movimiento.tipoMovimiento,
+        detalles: (movimiento.detalles || movimiento.insumos || []).map(det => ({
+          id: det.id || det.insumoId,
+          insumoId: det.insumoId || det.id || det.insumo?.id,
+          cantidad: det.cantidad,
+          precio: det.precio || det.precioTotal,
+          nombreInsumo: det.nombre || det.nombreInsumo || det.insumo?.nombre
+        }))
+      }, null, 2));
+      
+      console.log('📦 OBJETO NUEVO (A enviar en PUT):');
+      console.log(JSON.stringify(movimientoData, null, 2));
+      
+      console.log('📊 RESUMEN:');
+      console.log('  - ID del movimiento:', movimientoData.id);
+      console.log('  - Fecha vieja:', movimiento.fecha);
+      console.log('  - Fecha nueva:', movimientoData.fecha);
+      console.log('  - Descripción vieja:', movimiento.descripcion);
+      console.log('  - Descripción nueva:', movimientoData.descripcion);
+      console.log('  - Tipo viejo:', movimiento.tipoMovimiento);
+      console.log('  - Tipo nuevo:', movimientoData.tipoMovimiento);
+      console.log('  - Cantidad detalles viejos:', (movimiento.detalles || movimiento.insumos || []).length);
+      console.log('  - Cantidad detalles nuevos:', movimientoData.detalles.length);
+      console.log('  - Detalles ANTES de filtrar duplicados:', detalles.length);
+      console.log('  - Detalles DESPUÉS de filtrar duplicados:', detallesUnicos.length);
+      
+      console.log('📋 DETALLES VIEJOS:');
+      (movimiento.detalles || movimiento.insumos || []).forEach((det, index) => {
+        console.log(`  [${index}] insumoId: ${det.insumoId || det.id || det.insumo?.id}, cantidad: ${det.cantidad}, precio: ${det.precio || det.precioTotal}`);
+      });
+      
+      console.log('📋 DETALLES NUEVOS:');
+      movimientoData.detalles.forEach((det, index) => {
+        console.log(`  [${index}] insumoId: ${det.insumoId}, cantidad: ${det.cantidad}, precio: ${det.precio}`);
+      });
+      
+      console.log('═══════════════════════════════════════════════════════════');
 
       // Usar la acción Redux en lugar de fetch directo
       const responseData = await dispatch(updateMovimientoInsumo(movimientoData)).unwrap();
