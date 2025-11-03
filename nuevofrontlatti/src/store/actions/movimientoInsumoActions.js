@@ -9,10 +9,7 @@ export const createMovimientoInsumo = createAsyncThunk(
   "movimientosInsumo/create",
   async (data, { rejectWithValue }) => {
     try {
-      console.log('🚀 createMovimientoInsumo - Enviando datos:', data);
-      console.log('🚀 createMovimientoInsumo - URL:', BASE_URL);
       const response = await api.post(BASE_URL, data);
-      console.log('✅ createMovimientoInsumo - Respuesta del servidor:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ createMovimientoInsumo - Error:', error);
@@ -29,9 +26,7 @@ export const loadMovimientosInsumo = createAsyncThunk(
   "movimientosInsumo/load",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("🔄 Intentando cargar movimientos de insumo desde:", `${API_BASE_URL}${BASE_URL}`);
       const response = await api.get(BASE_URL);
-      console.log("✅ Movimientos de insumo cargados:", response.data);
       return response.data;
     } catch (error) {
       console.error("❌ Error cargando movimientos de insumo:", error);
@@ -66,9 +61,7 @@ export const deleteMovimientoInsumo = createAsyncThunk(
   'movimientosInsumo/deleteMovimientoInsumo',
   async (id, { rejectWithValue }) => {
     try {
-      console.log("🗑️ Intentando eliminar movimiento de insumo ID:", id);
       const response = await api.delete(`${BASE_URL}/${id}`);
-      console.log("✅ Movimiento de insumo eliminado exitosamente");
       return response.data;
     } catch (error) {
       console.error("❌ Error eliminando movimiento de insumo:", error);
@@ -83,6 +76,61 @@ export const deleteMovimientoInsumo = createAsyncThunk(
                           error.response?.data?.message || 
                           error.message || 
                           "Error al eliminar el movimiento de insumo";
+      
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Validar si se puede editar un movimiento
+export const validarEdicionMovimiento = createAsyncThunk(
+  'movimientosInsumo/validarEdicion',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${BASE_URL}/${id}/validar-edicion`);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al validar edición";
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+// Actualizar movimiento de insumo
+export const updateMovimientoInsumo = createAsyncThunk(
+  'movimientosInsumo/update',
+  async (data, { rejectWithValue }) => {
+    try {
+      // Preparar el payload con el ID (el DTO lo requiere aunque el backend lo sobrescriba con el del path)
+      const payload = {
+        id: data.id, // El DTO lo requiere para deserialización
+        fecha: data.fecha,
+        descripcion: data.descripcion,
+        tipoMovimiento: data.tipoMovimiento,
+        detalles: data.detalles
+      };
+      
+      console.log('📤 Enviando PUT a:', `${BASE_URL}/${data.id}`);
+      console.log('📦 Payload completo:', JSON.stringify(payload, null, 2));
+      
+      const response = await api.put(`${BASE_URL}/${data.id}`, payload);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error actualizando movimiento de insumo:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Extraer el mensaje de error del backend
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al actualizar el movimiento de insumo";
       
       return rejectWithValue(errorMessage);
     }

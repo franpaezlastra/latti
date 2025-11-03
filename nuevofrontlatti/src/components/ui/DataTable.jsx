@@ -6,8 +6,17 @@ const DataTable = ({
   actions = [], 
   emptyMessage = "No hay datos disponibles",
   className = "",
+  itemsPerPage, // Prop no usada, pero la aceptamos para evitar warnings
   ...props
 }) => {
+  // Filtrar props que no son válidas para el DOM (React no las reconoce)
+  const domProps = Object.keys(props).reduce((acc, key) => {
+    // Solo incluir props que sean válidas para elementos DOM
+    if (!['itemsPerPage', 'onPageChange', 'currentPage'].includes(key)) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {});
   // Validaciones básicas
   if (!Array.isArray(data) || data.length === 0) {
     return (
@@ -25,21 +34,14 @@ const DataTable = ({
     );
   }
 
-  console.log('🔍 DataTable - Renderizando tabla con:', {
-    datos: data.length,
-    columnas: columns.length,
-    acciones: actions.length
-  });
-
   try {
     return (
-      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full ${className}`} {...props}>
+      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden w-full ${className}`} {...domProps}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-gray-700 table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {columns.map((column, index) => {
-                  console.log('🔍 DataTable - Renderizando columna:', column);
                   return (
                     <th
                       key={column.key || index}
@@ -66,7 +68,6 @@ const DataTable = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {data.map((row, rowIndex) => {
-                console.log('🔍 DataTable - Renderizando fila:', rowIndex, row);
                 return (
                   <tr
                     key={rowIndex}
@@ -75,8 +76,6 @@ const DataTable = ({
                     {columns.map((column, colIndex) => {
                       const cellValue = row[column.key];
                       const displayValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
-                      
-                      console.log('🔍 DataTable - Renderizando celda:', column.key, cellValue, displayValue);
                       
                       return (
                         <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-xs">
@@ -94,27 +93,48 @@ const DataTable = ({
                             
                             const isDisabled = action.disabled && typeof action.disabled === 'function' ? action.disabled(row) : false;
                             
+                            // Estilos base según el tipo de acción
+                            let baseStyles = '';
+                            if (isDisabled) {
+                              // Estilos para botones deshabilitados (grises y opacos)
+                              baseStyles = 'text-gray-300 cursor-not-allowed opacity-50';
+                            } else {
+                              // Estilos normales según el tipo de acción
+                              if (action.variant === 'ghost') {
+                                if (action.label === 'Eliminar' || action.label === 'Delete' || action.label === 'Eliminar movimiento') {
+                                  baseStyles = 'text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer';
+                                } else if (action.label === 'Editar' || action.label === 'Edit' || action.label === 'Editar movimiento') {
+                                  baseStyles = 'text-blue-500 hover:text-blue-700 hover:bg-blue-50 cursor-pointer';
+                                } else if (action.label === 'Ver detalles' || action.label === 'Ver' || action.label === 'View' || action.label === 'Ver movimiento') {
+                                  baseStyles = 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 cursor-pointer';
+                                } else {
+                                  baseStyles = 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 cursor-pointer';
+                                }
+                              } else {
+                                if (action.label === 'Eliminar') {
+                                  baseStyles = 'text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer';
+                                } else if (action.label === 'Editar') {
+                                  baseStyles = 'text-blue-500 hover:text-blue-700 hover:bg-blue-50 cursor-pointer';
+                                } else {
+                                  baseStyles = 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 cursor-pointer';
+                                }
+                              }
+                            }
+                            
                             return (
                             <button
                               key={actionIndex}
-                              onClick={() => action.onClick(row)}
+                              onClick={(e) => {
+                                if (!isDisabled && action.onClick) {
+                                  action.onClick(row);
+                                } else {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }}
                               disabled={isDisabled}
-                              className={`inline-flex items-center justify-center px-1.5 py-1 text-xs font-medium rounded transition-colors ${
-                                action.variant === 'ghost' 
-                                  ? (action.label === 'Eliminar' || action.label === 'Delete' || action.label === 'Eliminar movimiento')
-                                    ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                                    : (action.label === 'Editar' || action.label === 'Edit' || action.label === 'Editar movimiento')
-                                    ? 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'
-                                    : (action.label === 'Ver detalles' || action.label === 'Ver' || action.label === 'View' || action.label === 'Ver movimiento')
-                                    ? 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                                  : action.label === 'Eliminar'
-                                  ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                                  : action.label === 'Editar'
-                                  ? 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'
-                                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                              } ${action.className || ''}`}
-                              title={action.label || 'Acción'}
+                              className={`inline-flex items-center justify-center px-1.5 py-1 text-xs font-medium rounded transition-colors ${baseStyles} ${action.className || ''}`}
+                              title={isDisabled ? `${action.label || 'Acción'} (No disponible)` : action.label || 'Acción'}
                             >
                               {action.icon || '⚙️'}
                             </button>

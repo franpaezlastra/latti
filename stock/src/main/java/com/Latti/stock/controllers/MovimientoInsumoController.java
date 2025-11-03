@@ -73,20 +73,30 @@ public class MovimientoInsumoController {
         try {
             // Logs detallados para depuración
             System.out.println("🔍 === BACKEND: INICIO DE EDICIÓN ===");
-            System.out.println("📦 ID del movimiento: " + id);
+            System.out.println("📦 ID del movimiento (path): " + id);
             System.out.println("📝 DTO recibido: " + dto);
+            
+            // Verificar si el DTO es null
+            if (dto == null) {
+                System.err.println("❌ ERROR: DTO es null");
+                return ResponseEntity.badRequest().body(Map.of("error", "DTO es null"));
+            }
+            
             System.out.println("📅 Fecha: " + dto.fecha());
             System.out.println("📄 Descripción: " + dto.descripcion());
             System.out.println("🔄 Tipo: " + dto.tipoMovimiento());
             System.out.println("📋 Detalles: " + dto.detalles());
+            System.out.println("📋 Cantidad de detalles: " + (dto.detalles() != null ? dto.detalles().size() : "null"));
             
             // Asegurar que el ID del path coincida con el del DTO
+            System.out.println("🔄 Creando DTO con ID corregido...");
             EditarMovimientoDeInsumoDTO dtoConId = new EditarMovimientoDeInsumoDTO(
                 id, dto.fecha(), dto.descripcion(), dto.tipoMovimiento(), dto.detalles()
             );
             
-            System.out.println("✅ DTO con ID corregido: " + dtoConId);
+            System.out.println("✅ DTO con ID corregido creado exitosamente");
             
+            System.out.println("🔄 Llamando al servicio editarMovimientoInsumo...");
             MovimientoInsumoLote movimiento = movimientoInsumoLoteService.editarMovimientoInsumo(dtoConId);
             
             System.out.println("🎉 Movimiento editado exitosamente: " + movimiento.getId());
@@ -97,11 +107,15 @@ public class MovimientoInsumoController {
             ));
         } catch (IllegalArgumentException e) {
             System.err.println("❌ Error de validación: " + e.getMessage());
+            System.err.println("❌ Stack trace:");
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.err.println("💥 Error inesperado: " + e.getMessage());
+            System.err.println("💥 Error inesperado en el controlador: " + e.getMessage());
+            System.err.println("💥 Tipo de excepción: " + e.getClass().getName());
+            System.err.println("💥 Stack trace completo:");
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al editar el movimiento de insumo"));
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al editar el movimiento de insumo: " + e.getMessage()));
         }
     }
 }

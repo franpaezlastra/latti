@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaBox, FaCog, FaFilter } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { loadMovimientosInsumo, deleteMovimientoInsumo } from "../../store/actions/movimientoInsumoActions";
+import { loadMovimientosInsumo, deleteMovimientoInsumo, validarEdicionMovimiento } from "../../store/actions/movimientoInsumoActions";
 import { loadMovimientosProducto, deleteMovimientoProducto } from "../../store/actions/movimientoProductoActions";
 import { loadInsumos } from "../../store/actions/insumoActions";
 import { loadProductos } from "../../store/actions/productosActions";
@@ -83,23 +83,11 @@ const MovementsPage = () => {
 
   // Cargar datos al montar el componente
   useEffect(() => {
-    console.log('🔄 Cargando datos en MovementsPage...');
     dispatch(loadMovimientosInsumo());
     dispatch(loadMovimientosProducto());
     dispatch(loadInsumos());
     dispatch(loadProductos());
   }, [dispatch]);
-
-  // Debug: Log cuando cambien los movimientos
-  useEffect(() => {
-    console.log('📊 MovementsPage - Movimientos de insumos actualizados:', movimientosInsumo);
-    console.log('📊 MovementsPage - Cantidad de movimientos:', movimientosInsumo?.length || 0);
-    console.log('📊 MovementsPage - Tipo de datos:', typeof movimientosInsumo);
-    console.log('📊 MovementsPage - Es array:', Array.isArray(movimientosInsumo));
-    if (movimientosInsumo && movimientosInsumo.length > 0) {
-      console.log('📊 MovementsPage - Primer movimiento:', movimientosInsumo[0]);
-    }
-  }, [movimientosInsumo]);
 
   // Configuración de tabs
   const tabs = [
@@ -195,19 +183,61 @@ const MovementsPage = () => {
     openModal('delete');
   };
 
-  const handleEditarMovimiento = (movimiento) => {
-    if (movimiento.tipo === "Insumo") {
-      setMovimientoAEditar(movimiento);
-      openModal('edit');
+  const handleEditarMovimiento = async (movimiento) => {
+    // Buscar el movimiento original en los movimientos cargados
+    // porque el movimiento formateado puede no tener todos los datos
+    const movimientoOriginal = movimientosInsumo.find(m => m.id === movimiento.id);
+    
+    if (!movimientoOriginal) {
+      return;
     }
+
+    // Validar si el movimiento puede ser editado antes de abrir el modal
+    try {
+      const validacion = await dispatch(validarEdicionMovimiento(movimiento.id)).unwrap();
+      
+      // Si NO puede editarse, no abrir el modal
+      if (!validacion.puedeEditar) {
+        // El botón ya está deshabilitado visualmente, solo evitamos abrir el modal
+        return;
+      }
+    } catch (error) {
+      // Si hay error en la validación, por seguridad no abrir el modal
+      console.error('Error al validar edición:', error);
+      return;
+    }
+    
+    // Reconstruir el movimiento con la estructura que espera el modal
+    const fechaMovimiento = movimientoOriginal.fecha 
+      ? (movimientoOriginal.fecha instanceof Date 
+          ? movimientoOriginal.fecha 
+          : new Date(movimientoOriginal.fecha))
+      : new Date();
+    
+    const movimientoParaEditar = {
+      id: movimientoOriginal.id,
+      fecha: fechaMovimiento,
+      descripcion: movimientoOriginal.descripcion || '',
+      tipoMovimiento: movimientoOriginal.tipoMovimiento,
+      // Convertir insumos a detalles (formato que espera el modal)
+      // El backend devuelve los detalles como 'detalles' o 'insumos'
+      detalles: (movimientoOriginal.detalles || movimientoOriginal.insumos || []).map(detalle => ({
+        id: detalle.insumoId || detalle.id || detalle.insumo?.id,
+        insumoId: detalle.insumoId || detalle.id || detalle.insumo?.id,
+        nombre: detalle.nombreInsumo || detalle.nombre || detalle.insumo?.nombre,
+        nombreInsumo: detalle.nombreInsumo || detalle.nombre || detalle.insumo?.nombre,
+        cantidad: detalle.cantidad || 0,
+        precioTotal: detalle.precioTotal || detalle.precio || 0,
+        precio: detalle.precio || detalle.precioTotal || 0
+      }))
+    };
+    
+    setMovimientoAEditar(movimientoParaEditar);
+    openModal('edit');
   };
 
   const handleConfirmarEliminacion = async () => {
     if (!movimientoAEliminar) return;
-
-    console.log('🗑️ Intentando eliminar movimiento:', movimientoAEliminar);
-    console.log('🗑️ ID del movimiento:', movimientoAEliminar.id);
-    console.log('🗑️ Tipo del movimiento:', movimientoAEliminar.tipo);
 
     setEliminando(true);
     setErrorEliminacion("");
@@ -215,11 +245,9 @@ const MovementsPage = () => {
     
     try {
       if (movimientoAEliminar.tipo === "Insumo") {
-        console.log('🗑️ Eliminando movimiento de insumo con ID:', movimientoAEliminar.id);
         await dispatch(deleteMovimientoInsumo(movimientoAEliminar.id)).unwrap();
         await updateAfterDeletion('movimientoInsumo');
       } else {
-        console.log('🗑️ Eliminando movimiento de producto con ID:', movimientoAEliminar.id);
         await dispatch(deleteMovimientoProducto(movimientoAEliminar.id)).unwrap();
         await updateAfterDeletion('movimientoProducto');
       }

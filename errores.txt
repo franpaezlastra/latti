@@ -1,4 +1,4 @@
 no se actualizan los insumos compuestos
 si usamos algun insumo simpe para crear un insumo compuesto a la hora de crear un producto no aprarezac en la lista para crear el productio
 arreglar advertencia de los stocks
-se esta ordenando por ensamble o no no por fechas
+se esta ordenando por ensamble o no no por fechas 

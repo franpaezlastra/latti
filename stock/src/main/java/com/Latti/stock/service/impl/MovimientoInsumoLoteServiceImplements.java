@@ -393,14 +393,18 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             System.out.println("🔍 === SERVICIO: INICIO DE EDICIÓN ===");
             System.out.println("📦 ID del movimiento: " + dto.id());
             System.out.println("📋 Detalles a editar: " + dto.detalles());
+            System.out.println("📋 Cantidad de detalles: " + (dto.detalles() != null ? dto.detalles().size() : "null"));
             
             // Primero validar que se puede editar
+            System.out.println("🔄 Validando si se puede editar el movimiento...");
             ValidacionEdicionDTO validacion = validarEdicionMovimiento(dto.id());
+            System.out.println("✅ Validación completada. Puede editar: " + validacion.puedeEditar());
             if (!validacion.puedeEditar()) {
                 System.err.println("❌ No se puede editar: " + validacion.razon());
                 throw new IllegalArgumentException("No se puede editar el movimiento: " + validacion.razon());
             }
 
+            System.out.println("🔄 Buscando movimiento en la base de datos...");
             MovimientoInsumoLote movimiento = movimientoRepository.findById(dto.id())
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
@@ -423,11 +427,21 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
             // ELIMINAR COMPLETAMENTE los detalles existentes de la base de datos
             System.out.println("🗑️ Eliminando detalles existentes de la base de datos...");
-            for (DetalleMovimientoInsumo detalleExistente : movimiento.getDetalles()) {
-                System.out.println("  - Eliminando detalle: " + detalleExistente.getId());
-                detalleMovimientoInsumoRepository.delete(detalleExistente);
+            System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
+            try {
+                for (DetalleMovimientoInsumo detalleExistente : movimiento.getDetalles()) {
+                    System.out.println("  - Eliminando detalle ID: " + detalleExistente.getId());
+                    detalleMovimientoInsumoRepository.delete(detalleExistente);
+                    System.out.println("    ✅ Detalle eliminado exitosamente");
+                }
+                movimiento.getDetalles().clear();
+                System.out.println("✅ Todos los detalles eliminados exitosamente");
+            } catch (Exception e) {
+                System.err.println("❌ Error al eliminar detalles: " + e.getMessage());
+                System.err.println("❌ Stack trace:");
+                e.printStackTrace();
+                throw e;
             }
-            movimiento.getDetalles().clear();
 
             // Actualizar datos básicos del movimiento
             System.out.println("📝 Actualizando datos básicos del movimiento...");
@@ -504,8 +518,15 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             System.out.println("🎉 Edición completada exitosamente");
             return movimientoActualizado;
 
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación en editarMovimientoInsumo: " + e.getMessage());
+            System.err.println("❌ Stack trace:");
+            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
-            System.err.println("Error en editarMovimientoInsumo: " + e.getMessage());
+            System.err.println("💥 Error inesperado en editarMovimientoInsumo: " + e.getMessage());
+            System.err.println("💥 Tipo de excepción: " + e.getClass().getName());
+            System.err.println("💥 Stack trace completo:");
             e.printStackTrace();
             throw e;
         }

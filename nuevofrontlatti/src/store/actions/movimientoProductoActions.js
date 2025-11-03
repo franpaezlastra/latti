@@ -23,9 +23,7 @@ export const loadMovimientosProducto = createAsyncThunk(
   "movimientosProducto/load",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("🔄 Intentando cargar movimientos de productos desde:", `${API_BASE_URL}${BASE_URL}`);
       const response = await api.get(BASE_URL);
-      console.log("✅ Movimientos de productos cargados:", response.data);
       return response.data;
     } catch (error) {
       console.error("❌ Error cargando movimientos de productos:", error);
@@ -60,9 +58,7 @@ export const deleteMovimientoProducto = createAsyncThunk(
   'movimientosProducto/deleteMovimientoProducto',
   async (id, { rejectWithValue }) => {
     try {
-      console.log("🗑️ Intentando eliminar movimiento de producto ID:", id);
       const response = await api.delete(`${BASE_URL}/${id}`);
-      console.log("✅ Movimiento de producto eliminado exitosamente");
       return response.data;
     } catch (error) {
       console.error("❌ Error eliminando movimiento de producto:", error);

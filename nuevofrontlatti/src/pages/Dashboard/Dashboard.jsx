@@ -101,50 +101,18 @@ const Dashboard = () => {
   const obtenerLotes = () => {
     const lotes = [];
     
-    console.log("🔍 Debug: Productos disponibles:", productosList);
-    console.log("🔍 Debug: Movimientos de productos:", movimientosProductosList);
-    
-    // Log detallado de la estructura de datos
-    productosList.forEach(producto => {
-      console.log(`🔍 Debug: Producto ${producto.nombre} - ID: ${producto.id} - Tipo: ${typeof producto.id}`);
-    });
-    
-    movimientosProductosList.forEach(movimiento => {
-      console.log(`🔍 Debug: Movimiento ID: ${movimiento.id} - Tipo: ${movimiento.tipoMovimiento}`);
-      console.log(`🔍 Debug: Detalles del movimiento:`, movimiento.detalles);
-      if (movimiento.detalles && movimiento.detalles.length > 0) {
-        movimiento.detalles.forEach(detalle => {
-          console.log(`🔍 Debug: Detalle - Producto ID: ${detalle.id} - Tipo: ${typeof detalle.id} - Lote: ${detalle.lote}`);
-        });
-      }
-    });
-    
     productosList.forEach(producto => {
       const movimientosProducto = movimientosProductosList.filter(m => {
-        console.log(`🔍 Debug: Comparando movimiento ${m.id} con producto ${producto.id}`);
-        console.log(`🔍 Debug: Movimiento tiene detalles:`, m.detalles);
-        
         // Buscar si algún detalle del movimiento corresponde al producto
-        const tieneProducto = m.detalles?.some(det => {
-          console.log(`🔍 Debug: Comparando detalle ID ${det.id} con producto ID ${producto.id}`);
-          return det.id === producto.id;
-        });
-        
-        console.log(`🔍 Debug: Movimiento ${m.id} tiene producto ${producto.nombre}:`, tieneProducto);
+        const tieneProducto = m.detalles?.some(det => det.id === producto.id);
         return tieneProducto;
       });
       
-      console.log(`🔍 Debug: Movimientos para producto ${producto.nombre}:`, movimientosProducto);
-      
       // Agrupar por lotes
       const lotesProducto = movimientosProducto.reduce((acc, movimiento) => {
-        console.log(`🔍 Debug: Procesando movimiento ${movimiento.id}, tipo: ${movimiento.tipoMovimiento}`);
-        console.log(`🔍 Debug: Detalles del movimiento:`, movimiento.detalles);
-        
         if (movimiento.tipoMovimiento === 'ENTRADA') {
           // Buscar el detalle del movimiento que tenga lote
           const detalleConLote = movimiento.detalles?.find(det => det.lote);
-          console.log(`🔍 Debug: Detalle con lote encontrado:`, detalleConLote);
           
           if (detalleConLote) {
             const lote = acc.find(l => l.numeroLote === detalleConLote.lote);
@@ -168,7 +136,6 @@ const Dashboard = () => {
         } else if (movimiento.tipoMovimiento === 'SALIDA') {
           // Buscar el detalle del movimiento que tenga lote
           const detalleConLote = movimiento.detalles?.find(det => det.lote);
-          console.log(`🔍 Debug: Detalle con lote para SALIDA:`, detalleConLote);
           
           if (detalleConLote) {
             const lote = acc.find(l => l.numeroLote === detalleConLote.lote);
@@ -180,7 +147,6 @@ const Dashboard = () => {
         return acc;
       }, []);
       
-      console.log(`🔍 Debug: Lotes encontrados para ${producto.nombre}:`, lotesProducto);
       lotes.push(...lotesProducto);
     });
     
@@ -188,7 +154,6 @@ const Dashboard = () => {
       .filter(lote => lote.cantidadActual > 0)
       .sort((a, b) => new Date(b.fechaProduccion) - new Date(a.fechaProduccion));
     
-    console.log("🔍 Debug: Lotes finales con stock:", lotesFiltrados);
     return lotesFiltrados;
   };
 

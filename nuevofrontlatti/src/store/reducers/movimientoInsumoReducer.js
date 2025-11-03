@@ -3,7 +3,9 @@ import {
   loadMovimientosInsumo, 
   createMovimientoInsumo, 
   fetchMovimientosInsumo, 
-  deleteMovimientoInsumo 
+  deleteMovimientoInsumo,
+  validarEdicionMovimiento,
+  updateMovimientoInsumo
 } from "../actions/movimientoInsumoActions.js";
 
 const initialState = {
@@ -67,6 +69,36 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
       state.movimientos = state.movimientos.filter(mov => mov.id !== action.payload.id);
     })
     .addCase(deleteMovimientoInsumo.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload || action.error.message;
+    })
+
+    // Validar edición - NO cambiar el estado global para evitar re-renders
+    // Las validaciones se manejan completamente en el componente
+    .addCase(validarEdicionMovimiento.pending, (state) => {
+      // No cambiar loading para evitar re-renders innecesarios
+      // La validación es solo para el componente
+    })
+    .addCase(validarEdicionMovimiento.fulfilled, (state, action) => {
+      // No cambiar loading para evitar re-renders innecesarios
+      // La validación se maneja en el componente
+    })
+    .addCase(validarEdicionMovimiento.rejected, (state, action) => {
+      // No cambiar loading para evitar re-renders innecesarios
+      // El error se maneja en el componente
+    })
+
+    // Actualizar movimiento
+    .addCase(updateMovimientoInsumo.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(updateMovimientoInsumo.fulfilled, (state, action) => {
+      state.loading = false;
+      // No actualizamos directamente porque el backend puede devolver solo {mensaje}
+      // La lista se recargará desde el componente
+    })
+    .addCase(updateMovimientoInsumo.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload || action.error.message;
     });

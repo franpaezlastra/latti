@@ -9,9 +9,7 @@ export const loadProductos = createAsyncThunk(
   "productos/loadProductos",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("🔄 Intentando cargar productos desde:", `${API_BASE_URL}${BASE_URL}`);
       const response = await api.get(BASE_URL);
-      console.log("✅ Productos cargados:", response.data);
       return response.data;
     } catch (error) {
       console.error("❌ Error cargando productos:", error);

@@ -63,12 +63,7 @@ export const updateInsumoCompuesto = createAsyncThunk(
   'insumos/updateInsumoCompuesto',
   async ({ id, insumoData }, { rejectWithValue }) => {
     try {
-      console.log('🔄 Actualizando insumo compuesto ID:', id);
-      console.log('🔄 Datos:', insumoData);
-      console.log('🔄 Endpoint:', API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id));
-      
       const response = await api.put(API_ENDPOINTS.INSUMOS.COMPUESTO_BY_ID(id), insumoData);
-      console.log('✅ Respuesta del servidor:', response.data);
       
       // El backend devuelve { mensaje, insumo }, extraer solo el insumo
       const insumoActualizado = response.data?.insumo || response.data;
@@ -139,8 +134,6 @@ const insumoSlice = createSlice({
       })
       .addCase(fetchInsumos.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('📥 Insumos recibidos de la API:', action.payload);
-        console.log('📊 Total de insumos:', action.payload?.length);
         state.insumos = action.payload;
         state.error = null;
       })
@@ -156,8 +149,6 @@ const insumoSlice = createSlice({
       })
       .addCase(fetchInsumosSimples.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('📥 Insumos simples recibidos de la API:', action.payload);
-        console.log('📊 Total de insumos simples:', action.payload?.length);
         state.insumos = action.payload;
         state.error = null;
       })

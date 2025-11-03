@@ -27,20 +27,12 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
   // Obtener opciones de unidades de medida
   const unidadesMedidaOptions = getUnidadesMedidaOptions();
 
-  // Debug: ver cuando cambia error
-  useEffect(() => {
-    console.log('InsumoCreateModal - error changed:', error);
-    console.log('InsumoCreateModal - textoError changed:', textoError);
-  }, [error, textoError]);
 
   // Cargar insumos base disponibles al abrir el modal
   useEffect(() => {
     if (isOpen) {
-      console.log('🔍 Insumos disponibles:', insumos);
-      console.log('🔍 Cantidad de insumos:', insumos?.length);
       
       // Siempre cargar insumos para asegurar datos actualizados
-      console.log('📥 Cargando insumos...');
       dispatch(fetchInsumos());
     }
   }, [isOpen, dispatch]);
@@ -192,11 +184,6 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
     onClose();
   };
 
-  // Debug: mostrar el error que llega
-  console.log('InsumoCreateModal - error prop:', null);
-  console.log('InsumoCreateModal - error state:', error);
-  console.log('InsumoCreateModal - textoError:', textoError);
-  console.log('InsumoCreateModal - isOpen:', isOpen);
 
   // Si el modal se cierra, limpiar el estado
   useEffect(() => {
@@ -375,7 +362,6 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
                         <option value="">Seleccionar insumo base</option>
                         {insumos && insumos.filter(insumo => {
                           const esBase = !insumo.tipo || insumo.tipo === 'BASE';
-                          console.log(`🔍 Insumo ${insumo.nombre}: tipo=${insumo.tipo}, esBase=${esBase}`);
                           return esBase;
                         }).map((insumo) => {
                           // Verificar si este insumo ya está seleccionado en otro componente

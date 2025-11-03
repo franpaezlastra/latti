@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { FaTimes, FaExclamationTriangle, FaCheckCircle, FaBox, FaCog } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { loadInsumos } from "../../../../store/actions/insumoActions";
-import { loadMovimientosInsumo } from "../../../../store/actions/movimientoInsumoActions";
+import { 
+  loadMovimientosInsumo, 
+  validarEdicionMovimiento, 
+  updateMovimientoInsumo 
+} from "../../../../store/actions/movimientoInsumoActions";
 import Button from "../../../ui/Button";
 import Input from "../../../ui/Input";
 import LoadingSpinner from "../../../ui/LoadingSpinner";
@@ -25,30 +29,73 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
   // Inicializar formulario cuando se abre el modal
   useEffect(() => {
     if (isOpen && movimiento) {
-      setFecha(movimiento.fecha.toISOString().split('T')[0]);
+      // Manejar la fecha (puede venir como Date, string o LocalDate)
+      let fechaFormateada = '';
+      if (movimiento.fecha) {
+        if (movimiento.fecha instanceof Date) {
+          fechaFormateada = movimiento.fecha.toISOString().split('T')[0];
+        } else if (typeof movimiento.fecha === 'string') {
+          // Si viene como string, intentar parsearla
+          const fechaDate = new Date(movimiento.fecha);
+          if (!isNaN(fechaDate.getTime())) {
+            fechaFormateada = fechaDate.toISOString().split('T')[0];
+          } else {
+            // Si ya está en formato YYYY-MM-DD, usarla directamente
+            fechaFormateada = movimiento.fecha.split('T')[0];
+          }
+        }
+      }
+      
+      setFecha(fechaFormateada);
       setDescripcion(movimiento.descripcion || "");
-      setTipoMovimiento(movimiento.tipoMovimiento);
+      setTipoMovimiento(movimiento.tipoMovimiento || 'ENTRADA');
       
       // Convertir detalles del movimiento a formato del formulario
-      // Los detalles vienen como 'detalles' en el movimiento unificado
+      // Los detalles vienen como 'detalles' o 'insumos' en el movimiento unificado
       console.log('🔍 Movimiento recibido:', movimiento);
       console.log('📦 Detalles del movimiento:', movimiento.detalles);
+      console.log('📦 Insumos del movimiento:', movimiento.insumos);
       
-      const detallesDelMovimiento = movimiento.detalles || [];
+      const detallesDelMovimiento = movimiento.detalles || movimiento.insumos || [];
       const detallesFormateados = detallesDelMovimiento.map(detalle => ({
-        insumoId: detalle.id || detalle.insumoId,
-        cantidad: detalle.cantidad,
-        precio: detalle.precioTotal || 0,
-        nombreInsumo: detalle.nombre || detalle.nombreInsumo
+        insumoId: String(detalle.id || detalle.insumoId || ''),
+        cantidad: detalle.cantidad || 0,
+        precio: detalle.precio || detalle.precioTotal || 0,
+        nombreInsumo: detalle.nombre || detalle.nombreInsumo || ''
       }));
       
       console.log('✅ Detalles formateados:', detallesFormateados);
       setDetalles(detallesFormateados);
-      
-      // Validar si se puede editar
-      validarEdicion();
     }
   }, [isOpen, movimiento]);
+
+  // Validar edición cuando el movimiento cambie y tenga ID
+  useEffect(() => {
+    if (isOpen && movimiento?.id) {
+      const validar = async () => {
+        if (!movimiento?.id) return;
+        
+        setValidando(true);
+        try {
+          console.log('🔍 Validando edición para movimiento ID:', movimiento.id);
+          const data = await dispatch(validarEdicionMovimiento(movimiento.id)).unwrap();
+          console.log('✅ Validación completada:', data);
+          setValidacion(data);
+        } catch (error) {
+          console.error("❌ Error al validar edición:", error);
+          setValidacion({
+            puedeEditar: false,
+            razon: error || "Error al validar edición",
+            detallesValidacion: [error || "Error de conexión"]
+          });
+        } finally {
+          setValidando(false);
+        }
+      };
+      
+      validar();
+    }
+  }, [isOpen, movimiento?.id, dispatch]);
 
   // Cargar insumos al abrir el modal
   useEffect(() => {
@@ -65,36 +112,23 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
   }, [isOpen, dispatch]);
 
   const validarEdicion = async () => {
-    if (!movimiento) return;
+    if (!movimiento?.id) {
+      console.warn('⚠️ No se puede validar edición: movimiento sin ID');
+      return;
+    }
     
     setValidando(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://api.lattituc.site/api/movimiento-insumo/${movimiento.id}/validar-edicion`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error('No tienes permisos para editar este movimiento');
-        } else if (response.status === 401) {
-          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente');
-        } else {
-          throw new Error(`Error del servidor: ${response.status}`);
-        }
-      }
-      
-      const data = await response.json();
+      console.log('🔍 Validando edición para movimiento ID:', movimiento.id);
+      const data = await dispatch(validarEdicionMovimiento(movimiento.id)).unwrap();
+      console.log('✅ Validación completada:', data);
       setValidacion(data);
     } catch (error) {
-      console.error("Error al validar edición:", error);
+      console.error("❌ Error al validar edición:", error);
       setValidacion({
         puedeEditar: false,
-        razon: error.message || "Error al validar edición",
-        detallesValidacion: [error.message || "Error de conexión"]
+        razon: error || "Error al validar edición",
+        detallesValidacion: [error || "Error de conexión"]
       });
     } finally {
       setValidando(false);
@@ -145,42 +179,41 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       console.log('  - Tipo:', tipoMovimiento);
       console.log('  - Detalles:', detalles);
 
+      // Asegurar que la fecha esté en formato ISO (YYYY-MM-DD) para LocalDate
+      let fechaFormateada = fecha;
+      if (fecha) {
+        // Si es un objeto Date, convertir a ISO string
+        if (fecha instanceof Date) {
+          fechaFormateada = fecha.toISOString().split('T')[0];
+        } else if (typeof fecha === 'string') {
+          // Si ya es string, asegurar que esté en formato YYYY-MM-DD
+          const fechaDate = new Date(fecha);
+          if (!isNaN(fechaDate.getTime())) {
+            fechaFormateada = fechaDate.toISOString().split('T')[0];
+          }
+        }
+      }
+
       const movimientoData = {
-        id: movimiento.id,
-        fecha,
-        descripcion,
-        tipoMovimiento,
+        id: parseInt(movimiento.id), // Asegurar que sea número para Long
+        fecha: fechaFormateada,
+        descripcion: descripcion || '',
+        tipoMovimiento: tipoMovimiento,
         detalles: detalles.map(detalle => ({
-          insumoId: parseInt(detalle.insumoId),
-          cantidad: parseFloat(detalle.cantidad),
-          precio: parseFloat(detalle.precio)
+          insumoId: parseInt(detalle.insumoId), // Asegurar que sea Long
+          cantidad: parseFloat(detalle.cantidad) || 0,
+          precio: parseFloat(detalle.precio) || 0
         }))
       };
 
-      console.log('📤 Objeto que se envía al backend:', movimientoData);
-      console.log('🔢 Detalles mapeados:', movimientoData.detalles);
+      console.log('📤 Objeto que se envía al backend:', JSON.stringify(movimientoData, null, 2));
+      console.log('🔢 Detalles mapeados:', JSON.stringify(movimientoData.detalles, null, 2));
+      console.log('📅 Fecha formateada:', fechaFormateada);
+      console.log('🆔 ID:', movimientoData.id);
+      console.log('🔄 Tipo Movimiento:', movimientoData.tipoMovimiento);
 
-      const token = localStorage.getItem('token');
-      console.log('🔑 Token de autenticación:', token ? 'Presente' : 'Ausente');
-      
-      const response = await fetch(`https://api.lattituc.site/api/movimiento-insumo/${movimiento.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(movimientoData)
-      });
-
-      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Error del servidor:', errorData);
-        throw new Error(errorData.error || 'Error al editar el movimiento');
-      }
-
-      const responseData = await response.json();
+      // Usar la acción Redux en lugar de fetch directo
+      const responseData = await dispatch(updateMovimientoInsumo(movimientoData)).unwrap();
       console.log('✅ Respuesta exitosa:', responseData);
 
       // Recargar movimientos
@@ -192,7 +225,7 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       onClose();
     } catch (error) {
       console.error("💥 Error al editar movimiento:", error);
-      setError(error.message);
+      setError(error || "Error al editar el movimiento");
     } finally {
       setLoading(false);
     }

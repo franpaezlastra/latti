@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { FaPlus, FaEye, FaTrash, FaEdit, FaBox, FaCog, FaFilter, FaSearch } from "react-icons/fa";
 import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
 import { formatQuantity, formatPrice } from "../../../utils/formatters";
 import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
 import DetallesMovimientoModal from '../../../components/features/movements/modals/DetallesMovimientoModal';
+import { useDispatch } from "react-redux";
+import { validarEdicionMovimiento } from "../../../store/actions/movimientoInsumoActions";
 
 const InsumosMovementsSection = ({
   movimientos = [],
@@ -14,10 +16,8 @@ const InsumosMovementsSection = ({
   onNuevoInsumo,
   onNuevoInsumoCompuesto
 }) => {
-  // Debug: Log de movimientos recibidos
-  console.log('📊 InsumosMovementsSection - Movimientos recibidos:', movimientos);
-  console.log('📊 InsumosMovementsSection - Cantidad de movimientos:', movimientos?.length || 0);
-  console.log('📊 InsumosMovementsSection - Primer movimiento:', movimientos?.[0]);
+  const dispatch = useDispatch();
+  
   const [filtros, setFiltros] = useState({
     busqueda: "",
     tipoMovimiento: "",
@@ -28,6 +28,12 @@ const InsumosMovementsSection = ({
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [mostrarDetalles, setMostrarDetalles] = useState(false);
+  
+  // Estado para almacenar las validaciones de edición de cada movimiento
+  const [validacionesEdicion, setValidacionesEdicion] = useState({});
+  const [validacionesCargando, setValidacionesCargando] = useState(true); // Indica si se están cargando las validaciones
+  const idsMovimientosPrevios = useRef('[]'); // Inicializar como string vacío
+  const validandoEdicionesRef = useRef(false);
 
   // Configuración de filtros para FilterPanel
   const filterConfig = [
@@ -85,8 +91,6 @@ const InsumosMovementsSection = ({
 
   // Formatear datos para la tabla
   const formatearMovimientos = (movimientos) => {
-    console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
-    
     // Ordenar movimientos por fecha (más reciente primero) como criterio principal
     const movimientosOrdenados = [...movimientos].sort((a, b) => {
       const fechaA = new Date(a.fecha);
@@ -102,11 +106,6 @@ const InsumosMovementsSection = ({
       
       return diferenciaFecha;
     });
-    
-    console.log('✅ Movimientos ordenados por fecha (descendente):', movimientosOrdenados.map(m => ({ 
-      id: m.id, 
-      fecha: m.fecha 
-    })));
     
     const formateados = movimientosOrdenados.map(movimiento => {
       // Verificar si es un movimiento de ensamble
@@ -129,7 +128,6 @@ const InsumosMovementsSection = ({
         esEnsamble: esEnsamble
       };
     });
-    console.log('✅ formatearMovimientos - Movimientos formateados y ordenados:', formateados);
     return formateados;
   };
 
@@ -155,6 +153,89 @@ const InsumosMovementsSection = ({
     setMostrarDetalles(true);
   };
 
+  // Validar edición de todos los movimientos cuando se cargan
+  useEffect(() => {
+    // Extraer IDs de movimientos de forma estable
+    const idsActuales = movimientos?.map(m => m.id).filter(id => id != null).sort((a, b) => a - b) || [];
+    const idsStringActuales = JSON.stringify(idsActuales);
+    
+    // Comparar string de IDs actuales con los previos
+    const idsHanCambiado = idsStringActuales !== idsMovimientosPrevios.current;
+    
+    // Solo validar si hay movimientos, los IDs han cambiado, y no estamos validando actualmente
+    if (idsActuales.length > 0 && idsHanCambiado && !validandoEdicionesRef.current) {
+      // Actualizar referencia de string de IDs previos INMEDIATAMENTE para prevenir ejecuciones múltiples
+      idsMovimientosPrevios.current = idsStringActuales;
+      
+      // Marcar que estamos validando INMEDIATAMENTE
+      validandoEdicionesRef.current = true;
+      setValidacionesCargando(true); // Indicar que se están cargando validaciones
+      
+      // Validar todos los movimientos en paralelo SIN delay
+      const validacionesPromesas = idsActuales.map(async (id) => {
+        try {
+          const resultado = await dispatch(validarEdicionMovimiento(id)).unwrap();
+          return { id, puedeEditar: resultado.puedeEditar };
+        } catch (error) {
+          // Si hay error, asumir que no se puede editar por seguridad
+          return { id, puedeEditar: false };
+        }
+      });
+      
+      Promise.all(validacionesPromesas).then((resultados) => {
+        const validacionesMap = {};
+        resultados.forEach(({ id, puedeEditar }) => {
+          validacionesMap[id] = puedeEditar;
+        });
+        setValidacionesEdicion(validacionesMap);
+        setValidacionesCargando(false); // Indicar que las validaciones se completaron
+        validandoEdicionesRef.current = false;
+      }).catch((error) => {
+        setValidacionesCargando(false);
+        validandoEdicionesRef.current = false;
+      });
+    } else if (idsActuales.length === 0) {
+      // Si no hay movimientos, las validaciones están completas
+      setValidacionesCargando(false);
+    }
+    // Si los IDs no han cambiado y no estamos validando, las validaciones ya están completas
+    // (se maneja en el estado cuando se completan las promesas)
+  }, [movimientos, dispatch]); // Removido validacionesEdicion de dependencias para evitar loops
+
+  // Función para verificar si un movimiento puede ser editado
+  const puedeEditarMovimiento = useMemo(() => {
+    return (movimiento) => {
+      // Si las validaciones aún se están cargando, deshabilitar temporalmente
+      // para evitar que los botones aparezcan habilitados mientras se valida
+      if (validacionesCargando && !validacionesEdicion.hasOwnProperty(movimiento.id)) {
+        return true; // Disabled mientras se carga
+      }
+      
+      // Si ya tenemos la validación, usarla
+      if (validacionesEdicion.hasOwnProperty(movimiento.id)) {
+        return !validacionesEdicion[movimiento.id]; // true si NO puede editar (disabled)
+      }
+      
+      // Si aún no se ha validado después de que se completaron las validaciones,
+      // verificar si es un movimiento de ensamble como fallback
+      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
+      
+      // También verificar si el movimiento tiene la propiedad esEnsamble
+      if (movimiento.esEnsamble || esEnsamble) {
+        return true; // Disabled si es ensamble
+      }
+      
+      // Si las validaciones ya se completaron pero no tenemos esta validación,
+      // por seguridad, deshabilitar hasta que se valide
+      if (!validacionesCargando) {
+        return true; // Disabled por seguridad si no tenemos la validación
+      }
+      
+      // Por defecto, mientras se cargan, deshabilitar
+      return true;
+    };
+  }, [validacionesEdicion, validacionesCargando]);
+
   // Acciones de la tabla
   const acciones = [
     {
@@ -168,20 +249,14 @@ const InsumosMovementsSection = ({
       icon: <FaEdit />,
       onClick: (mov) => onEditar(mov),
       variant: 'ghost',
-      disabled: (mov) => {
-        // Verificar si es un movimiento de ensamble
-        return mov.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
-      }
+      disabled: (mov) => puedeEditarMovimiento(mov)
     },
     {
       label: 'Eliminar',
       icon: <FaTrash />,
       onClick: (mov) => onEliminar(mov),
       variant: 'ghost',
-      disabled: (mov) => {
-        // Verificar si es un movimiento de ensamble
-        return mov.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
-      }
+      disabled: (mov) => puedeEditarMovimiento(mov)
     }
   ];
 
