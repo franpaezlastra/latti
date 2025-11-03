@@ -267,13 +267,13 @@ const MovementsPage = () => {
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-4">
         {/* Tabs */}
-        <div className="mb-4">
+        <div className="mb-6">
           <Tabs
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             variant="default"
-            className="bg-white p-1 rounded-xl shadow-lg border border-gray-200"
+            className="bg-gradient-to-r from-gray-50 to-gray-100 p-1.5 rounded-xl shadow-sm border border-gray-200"
           />
         </div>
 
@@ -296,7 +296,7 @@ const MovementsPage = () => {
             productos={productos || []}
             onVerDetalles={handleVerDetalles}
             onEliminar={handleEliminarMovimiento}
-            onNuevoProducto={() => openModal('seleccion')}
+            onNuevoProducto={() => openModal('producto')}
           />
         )}
 

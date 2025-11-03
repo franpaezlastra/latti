@@ -14,6 +14,41 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Función para filtrar insumos: excluir componentes de insumos compuestos
+  const getInsumosDisponibles = () => {
+    // Obtener IDs de todos los insumos que son componentes de insumos compuestos
+    const idsComponentesDeCompuestos = new Set();
+    
+    insumos.forEach(insumo => {
+      const tipoInsumo = insumo.tipoOriginal || insumo.tipo || 'BASE';
+      const esCompuesto = tipoInsumo === 'COMPUESTO';
+      
+      // Si es un insumo compuesto y tiene receta, agregar sus componentes al Set
+      if (esCompuesto && insumo.receta && Array.isArray(insumo.receta)) {
+        insumo.receta.forEach(componente => {
+          if (componente.insumoBaseId) {
+            idsComponentesDeCompuestos.add(componente.insumoBaseId);
+          }
+        });
+      }
+    });
+
+    // Filtrar insumos: mostrar solo los que NO son componentes de compuestos
+    // O si son componentes, solo mostrarlos si son compuestos
+    return insumos.filter(insumo => {
+      const tipoInsumo = insumo.tipoOriginal || insumo.tipo || 'BASE';
+      const esCompuesto = tipoInsumo === 'COMPUESTO';
+      
+      // Si el insumo es compuesto, siempre mostrarlo
+      if (esCompuesto) {
+        return true;
+      }
+      
+      // Si es base, solo mostrarlo si NO es componente de ningún compuesto
+      return !idsComponentesDeCompuestos.has(insumo.id);
+    });
+  };
+
   // Función para capitalizar primera letra
   const capitalizarPrimeraLetra = (texto) => {
     if (!texto) return texto;
@@ -218,7 +253,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                       disabled={isSubmitting}
                     >
                       <option value="">Seleccionar insumo</option>
-                      {insumos.map((i) => {
+                      {getInsumosDisponibles().map((i) => {
                         // Verificar si este insumo está seleccionado en otra fila
                         const insumosSeleccionados = formData.insumos
                           .map((item, idx) => ({ id: String(item.insumoId), index: idx }))
@@ -254,6 +289,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Cantidad
                       {insumo.insumoId && (() => {
+                        // Buscar en la lista original (insumos) ya que el filtrado es solo visual
                         const insumoSeleccionado = insumos.find(i => i.id === parseInt(insumo.insumoId));
                         return insumoSeleccionado ? ` (${insumoSeleccionado.unidadMedida})` : '';
                       })()}

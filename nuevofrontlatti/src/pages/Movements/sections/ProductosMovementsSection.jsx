@@ -75,7 +75,30 @@ const ProductosMovementsSection = ({
 
   // Formatear datos para la tabla
   const formatearMovimientos = (movimientos) => {
-    return movimientos.map(movimiento => ({
+    console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
+    
+    // Ordenar movimientos por fecha (más reciente primero) como criterio principal
+    const movimientosOrdenados = [...movimientos].sort((a, b) => {
+      const fechaA = new Date(a.fecha);
+      const fechaB = new Date(b.fecha);
+      
+      // Ordenar por fecha de forma descendente (más reciente primero)
+      const diferenciaFecha = fechaB - fechaA;
+      
+      // Si las fechas son iguales, ordenar por ID descendente (más reciente primero)
+      if (diferenciaFecha === 0) {
+        return b.id - a.id;
+      }
+      
+      return diferenciaFecha;
+    });
+    
+    console.log('✅ Movimientos ordenados por fecha (descendente):', movimientosOrdenados.map(m => ({ 
+      id: m.id, 
+      fecha: m.fecha 
+    })));
+    
+    return movimientosOrdenados.map(movimiento => ({
       ...movimiento,
       fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
       tipoMovimiento: (
@@ -108,13 +131,13 @@ const ProductosMovementsSection = ({
     }));
   };
 
-  // Columnas de la tabla
+  // Columnas de la tabla (ordenadas por fecha de forma fija)
   const columnas = [
-    { key: 'fecha', label: 'Fecha', sortable: true },
-    { key: 'tipoMovimiento', label: 'Tipo', sortable: true },
-    { key: 'descripcion', label: 'Descripción', sortable: true },
-    { key: 'detalles', label: 'Productos', sortable: false },
-    { key: 'totalFormateado', label: 'Total', sortable: true }
+    { key: 'fecha', label: 'Fecha' },
+    { key: 'tipoMovimiento', label: 'Tipo' },
+    { key: 'descripcion', label: 'Descripción' },
+    { key: 'detalles', label: 'Productos' },
+    { key: 'totalFormateado', label: 'Total' }
   ];
 
   // Acciones de la tabla

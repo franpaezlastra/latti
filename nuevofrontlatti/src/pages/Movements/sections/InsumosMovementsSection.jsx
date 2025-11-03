@@ -87,12 +87,26 @@ const InsumosMovementsSection = ({
   const formatearMovimientos = (movimientos) => {
     console.log('🔄 formatearMovimientos - Movimientos a formatear:', movimientos);
     
-    // Ordenar movimientos del más nuevo al más viejo por fecha
+    // Ordenar movimientos por fecha (más reciente primero) como criterio principal
     const movimientosOrdenados = [...movimientos].sort((a, b) => {
       const fechaA = new Date(a.fecha);
       const fechaB = new Date(b.fecha);
-      return fechaB - fechaA; // Descendente (más nuevo primero)
+      
+      // Ordenar por fecha de forma descendente (más reciente primero)
+      const diferenciaFecha = fechaB - fechaA;
+      
+      // Si las fechas son iguales, ordenar por ID descendente (más reciente primero)
+      if (diferenciaFecha === 0) {
+        return b.id - a.id;
+      }
+      
+      return diferenciaFecha;
     });
+    
+    console.log('✅ Movimientos ordenados por fecha (descendente):', movimientosOrdenados.map(m => ({ 
+      id: m.id, 
+      fecha: m.fecha 
+    })));
     
     const formateados = movimientosOrdenados.map(movimiento => {
       // Verificar si es un movimiento de ensamble
@@ -119,12 +133,12 @@ const InsumosMovementsSection = ({
     return formateados;
   };
 
-  // Columnas de la tabla
+  // Columnas de la tabla (ordenadas por fecha de forma fija)
   const columnas = [
-    { key: 'fecha', label: 'Fecha', sortable: true, width: 'w-32' },
-    { key: 'tipoMovimiento', label: 'Tipo', sortable: true, width: 'w-24' },
-    { key: 'tipoEnsamble', label: 'Categoría', sortable: true, width: 'w-28' },
-    { key: 'total', label: 'Total', sortable: true, width: 'w-32' }
+    { key: 'fecha', label: 'Fecha', width: 'w-32' },
+    { key: 'tipoMovimiento', label: 'Tipo', width: 'w-24' },
+    { key: 'tipoEnsamble', label: 'Categoría', width: 'w-28' },
+    { key: 'total', label: 'Total', width: 'w-32' }
   ];
 
   // Función para ver detalles
