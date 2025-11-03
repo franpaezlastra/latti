@@ -438,62 +438,11 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // ELIMINAR todos los detalles antiguos directamente del repositorio
-            System.out.println("🗑️ === ELIMINANDO DETALLES ANTIGUOS ===");
-            System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
-            List<DetalleMovimientoInsumo> detallesAntiguos = new ArrayList<>(movimiento.getDetalles());
-            
-            System.out.println("  - Lista de detalles a eliminar:");
-            for (int i = 0; i < detallesAntiguos.size(); i++) {
-                DetalleMovimientoInsumo det = detallesAntiguos.get(i);
-                System.out.println("    [" + i + "] ID: " + det.getId() + 
-                                 ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
-            }
-            
-            System.out.println("  - Eliminando cada detalle del repositorio...");
-            for (DetalleMovimientoInsumo detalle : detallesAntiguos) {
-                System.out.println("    🗑️ Eliminando detalle ID: " + detalle.getId());
-                detalleMovimientoInsumoRepository.delete(detalle);
-                System.out.println("    ✅ Detalle ID " + detalle.getId() + " eliminado del repositorio");
-            }
-            
-            System.out.println("  - Limpiando lista de detalles del movimiento...");
-            movimiento.getDetalles().clear();
-            System.out.println("  - Lista limpiada. Cantidad de detalles en lista: " + movimiento.getDetalles().size());
-            
-            System.out.println("  - Guardando movimiento sin detalles (saveAndFlush)...");
-            movimientoRepository.saveAndFlush(movimiento);
-            System.out.println("  - ✅ Movimiento guardado sin detalles");
-            
-            // Verificar directamente en BD cuántos detalles quedan
-            Long movimientoId = movimiento.getId(); // Capturar ID para usar en lambda
-            System.out.println("  - 🔍 Verificando detalles en BD para movimiento ID: " + movimientoId);
-            List<DetalleMovimientoInsumo> detallesEnBD = detalleMovimientoInsumoRepository.findAll()
-                    .stream()
-                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimientoId))
-                    .toList();
-            System.out.println("  - 📊 Detalles encontrados en BD para este movimiento: " + detallesEnBD.size());
-            if (detallesEnBD.size() > 0) {
-                System.out.println("  - ⚠️ ADVERTENCIA: Aún hay detalles en BD:");
-                for (DetalleMovimientoInsumo det : detallesEnBD) {
-                    System.out.println("      - Detalle ID: " + det.getId() + 
-                                     ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
-                }
-            }
-            
-            // RECARGAR el movimiento desde la BD para asegurar que los detalles se eliminaron
-            System.out.println("🔄 Recargando movimiento desde BD después de eliminar detalles...");
-            movimiento = movimientoRepository.findById(movimiento.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado después de eliminar detalles"));
-            System.out.println("✅ Movimiento recargado. Detalles restantes en entidad: " + movimiento.getDetalles().size());
-            if (movimiento.getDetalles().size() > 0) {
-                System.out.println("  - ⚠️ ADVERTENCIA: La entidad aún tiene detalles:");
-                for (int i = 0; i < movimiento.getDetalles().size(); i++) {
-                    DetalleMovimientoInsumo det = movimiento.getDetalles().get(i);
-                    System.out.println("    [" + i + "] ID: " + det.getId() + 
-                                     ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
-                }
-            }
+            // REEMPLAZAR detalles: limpiar lista y agregar nuevos (orphanRemoval se encarga de eliminar los antiguos)
+            System.out.println("🔄 Reemplazando detalles antiguos por nuevos...");
+            System.out.println("  - Detalles antiguos: " + movimiento.getDetalles().size());
+            movimiento.getDetalles().clear(); // orphanRemoval=true eliminará automáticamente los detalles antiguos
+            movimientoRepository.flush(); // Forzar flush para que orphanRemoval elimine los detalles antiguos
 
             // CREAR nuevos detalles (reemplazo completo)
             System.out.println("➕ === CREANDO NUEVOS DETALLES ===");
