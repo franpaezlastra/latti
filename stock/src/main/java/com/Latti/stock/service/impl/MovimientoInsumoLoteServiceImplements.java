@@ -426,15 +426,17 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
 
             // ELIMINAR COMPLETAMENTE los detalles existentes
-            // IMPORTANTE: No eliminar manualmente del repositorio, usar orphanRemoval
+            // IMPORTANTE: Limpiar la lista y guardar el movimiento vacío para activar orphanRemoval
             System.out.println("🗑️ Eliminando detalles existentes...");
             System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
-            // Simplemente limpiar la lista - orphanRemoval=true se encargará de eliminar los detalles
-            // cuando se guarde el movimiento
+            
+            // Limpiar la lista de detalles - esto activará orphanRemoval cuando guardemos
             movimiento.getDetalles().clear();
-            // Forzar flush para que Hibernate elimine los detalles antes de crear nuevos
-            movimientoRepository.flush();
-            System.out.println("✅ Lista de detalles limpiada (orphanRemoval eliminará los detalles antiguos)");
+            
+            // Guardar el movimiento con la lista vacía para que orphanRemoval elimine los detalles
+            System.out.println("  - Guardando movimiento sin detalles para activar orphanRemoval...");
+            movimientoRepository.saveAndFlush(movimiento);
+            System.out.println("✅ Detalles eliminados exitosamente (orphanRemoval activado)");
 
             // Actualizar datos básicos del movimiento
             System.out.println("📝 Actualizando datos básicos del movimiento...");
