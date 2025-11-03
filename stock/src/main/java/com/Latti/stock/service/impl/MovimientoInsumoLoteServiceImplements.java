@@ -425,75 +425,55 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 insumoRepository.save(insumo);
             }
 
-            // ELIMINAR COMPLETAMENTE los detalles existentes
-            // IMPORTANTE: Limpiar la lista y guardar el movimiento vacío para activar orphanRemoval
-            System.out.println("🗑️ Eliminando detalles existentes...");
-            System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
-            
-            // Limpiar la lista de detalles - esto activará orphanRemoval cuando guardemos
-            movimiento.getDetalles().clear();
-            
-            // Guardar el movimiento con la lista vacía para que orphanRemoval elimine los detalles
-            System.out.println("  - Guardando movimiento sin detalles para activar orphanRemoval...");
-            movimientoRepository.saveAndFlush(movimiento);
-            System.out.println("✅ Detalles eliminados exitosamente (orphanRemoval activado)");
-
-            // Actualizar datos básicos del movimiento
-            System.out.println("📝 Actualizando datos básicos del movimiento...");
+            // ACTUALIZAR datos básicos del movimiento
             movimiento.setFecha(dto.fecha());
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // CREAR NUEVOS detalles (reemplazo completo)
-            System.out.println("➕ Creando nuevos detalles (reemplazo completo)...");
+            // ELIMINAR todos los detalles antiguos directamente del repositorio
+            List<DetalleMovimientoInsumo> detallesAntiguos = new ArrayList<>(movimiento.getDetalles());
+            for (DetalleMovimientoInsumo detalle : detallesAntiguos) {
+                detalleMovimientoInsumoRepository.delete(detalle);
+            }
+            movimiento.getDetalles().clear();
+            movimientoRepository.flush(); // Asegurar que se eliminen antes de crear nuevos
+
+            // CREAR nuevos detalles (reemplazo completo)
+            System.out.println("➕ Creando nuevos detalles...");
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
-                System.out.println("  - Creando detalle: insumoId=" + detalleDto.insumoId() + 
-                                 ", cantidad=" + detalleDto.cantidad() + ", precio=" + detalleDto.precio());
-                
                 Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
                         .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + detalleDto.insumoId()));
 
-                System.out.println("    - Insumo encontrado: " + insumo.getNombre());
-
-                // Validaciones básicas
+                // Validaciones
                 if (detalleDto.cantidad() <= 0) {
                     throw new IllegalArgumentException("La cantidad debe ser mayor a 0 para el insumo: " + insumo.getNombre());
                 }
 
-                if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
-                    if (detalleDto.precio() <= 0) {
-                        throw new IllegalArgumentException("El precio debe ser mayor a 0 para el insumo: " + insumo.getNombre());
-                    }
+                if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA && detalleDto.precio() <= 0) {
+                    throw new IllegalArgumentException("El precio debe ser mayor a 0 para el insumo: " + insumo.getNombre());
                 }
 
                 // Aplicar cambios al stock
-                System.out.println("    - Aplicando cambios al stock...");
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() + detalleDto.cantidad());
                     double precioPorUnidad = detalleDto.precio() / detalleDto.cantidad();
                     insumo.setPrecioDeCompra(precioPorUnidad);
                     insumosParaRecalcular.add(insumo.getId());
-                    System.out.println("      - Stock actualizado: " + insumo.getStockActual());
                 } else {
                     insumo.setStockActual(insumo.getStockActual() - detalleDto.cantidad());
-                    System.out.println("      - Stock actualizado: " + insumo.getStockActual());
                 }
-
                 insumoRepository.save(insumo);
 
-                // Crear NUEVO detalle (NO guardar individualmente, el cascade se encargará)
-                System.out.println("    - Creando nuevo detalle...");
+                // Crear nuevo detalle
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
-                
-                // Agregar al movimiento (el cascade se encargará de guardarlo)
+                // Usar addDetalle() para manejar la relación bidireccional correctamente
                 movimiento.addDetalle(nuevoDetalle);
-                System.out.println("      - Detalle agregado al movimiento");
             }
 
             // Guardar el movimiento actualizado
