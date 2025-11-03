@@ -466,10 +466,11 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             System.out.println("  - ✅ Movimiento guardado sin detalles");
             
             // Verificar directamente en BD cuántos detalles quedan
-            System.out.println("  - 🔍 Verificando detalles en BD para movimiento ID: " + movimiento.getId());
+            Long movimientoId = movimiento.getId(); // Capturar ID para usar en lambda
+            System.out.println("  - 🔍 Verificando detalles en BD para movimiento ID: " + movimientoId);
             List<DetalleMovimientoInsumo> detallesEnBD = detalleMovimientoInsumoRepository.findAll()
                     .stream()
-                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimiento.getId()))
+                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimientoId))
                     .toList();
             System.out.println("  - 📊 Detalles encontrados en BD para este movimiento: " + detallesEnBD.size());
             if (detallesEnBD.size() > 0) {
@@ -580,9 +581,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
             
             // Verificar directamente en BD
+            Long movimientoFinalId = movimientoFinal.getId(); // Capturar ID para usar en lambda
             List<DetalleMovimientoInsumo> detallesFinalesEnBD = detalleMovimientoInsumoRepository.findAll()
                     .stream()
-                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimientoFinal.getId()))
+                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimientoFinalId))
                     .toList();
             System.out.println("  - 📊 Detalles en BD para este movimiento: " + detallesFinalesEnBD.size());
             if (detallesFinalesEnBD.size() != movimientoFinal.getDetalles().size()) {
