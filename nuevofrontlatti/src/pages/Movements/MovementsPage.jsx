@@ -384,10 +384,14 @@ const MovementsPage = () => {
 
       <EditarMovimientoInsumoModal
         isOpen={showEditModal}
-        onClose={() => closeModal('edit')}
+        onClose={() => {
+          closeModal('edit');
+          // Recargar movimientos después de cerrar el modal para asegurar que la lista esté actualizada
+          dispatch(loadMovimientosInsumo());
+        }}
         movimiento={movimientoAEditar}
         onSuccess={() => {
-          closeModal('edit');
+          // El modal ya recarga los movimientos internamente, pero por si acaso lo hacemos aquí también
           dispatch(loadMovimientosInsumo());
         }}
       />

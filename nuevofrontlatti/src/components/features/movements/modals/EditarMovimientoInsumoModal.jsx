@@ -56,15 +56,27 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       console.log('📦 Detalles del movimiento:', movimiento.detalles);
       console.log('📦 Insumos del movimiento:', movimiento.insumos);
       
+      // Usar SOLO detalles o insumos, nunca ambos para evitar duplicados
       const detallesDelMovimiento = movimiento.detalles || movimiento.insumos || [];
-      const detallesFormateados = detallesDelMovimiento.map(detalle => ({
-        insumoId: String(detalle.id || detalle.insumoId || ''),
+      
+      // Filtrar duplicados por insumoId antes de formatear
+      const detallesSinDuplicados = detallesDelMovimiento.filter((detalle, index, self) => {
+        const insumoId = detalle.insumoId || detalle.id || detalle.insumo?.id;
+        return index === self.findIndex(d => 
+          (d.insumoId || d.id || d.insumo?.id) === insumoId
+        );
+      });
+      
+      const detallesFormateados = detallesSinDuplicados.map(detalle => ({
+        insumoId: String(detalle.id || detalle.insumoId || detalle.insumo?.id || ''),
         cantidad: detalle.cantidad || 0,
         precio: detalle.precio || detalle.precioTotal || 0,
-        nombreInsumo: detalle.nombre || detalle.nombreInsumo || ''
+        nombreInsumo: detalle.nombre || detalle.nombreInsumo || detalle.insumo?.nombre || ''
       }));
       
-      console.log('✅ Detalles formateados:', detallesFormateados);
+      console.log('✅ Detalles formateados (sin duplicados):', detallesFormateados);
+      console.log('📊 Cantidad de detalles originales:', detallesDelMovimiento.length);
+      console.log('📊 Cantidad de detalles sin duplicados:', detallesSinDuplicados.length);
       setDetalles(detallesFormateados);
     }
   }, [isOpen, movimiento]);
@@ -194,12 +206,17 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
         }
       }
 
+      // Filtrar detalles duplicados por insumoId antes de enviar
+      const detallesUnicos = detalles.filter((detalle, index, self) => 
+        index === self.findIndex(d => parseInt(d.insumoId) === parseInt(detalle.insumoId))
+      );
+
       const movimientoData = {
         id: parseInt(movimiento.id), // Asegurar que sea número para Long
         fecha: fechaFormateada,
         descripcion: descripcion || '',
         tipoMovimiento: tipoMovimiento,
-        detalles: detalles.map(detalle => ({
+        detalles: detallesUnicos.map(detalle => ({
           insumoId: parseInt(detalle.insumoId), // Asegurar que sea Long
           cantidad: parseFloat(detalle.cantidad) || 0,
           precio: parseFloat(detalle.precio) || 0
@@ -207,6 +224,8 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       };
 
       console.log('📤 Objeto que se envía al backend:', JSON.stringify(movimientoData, null, 2));
+      console.log('🔢 Detalles ANTES de filtrar duplicados:', detalles.length);
+      console.log('🔢 Detalles DESPUÉS de filtrar duplicados:', detallesUnicos.length);
       console.log('🔢 Detalles mapeados:', JSON.stringify(movimientoData.detalles, null, 2));
       console.log('📅 Fecha formateada:', fechaFormateada);
       console.log('🆔 ID:', movimientoData.id);
@@ -216,12 +235,18 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       const responseData = await dispatch(updateMovimientoInsumo(movimientoData)).unwrap();
       console.log('✅ Respuesta exitosa:', responseData);
 
-      // Recargar movimientos
-      console.log('🔄 Recargando movimientos...');
+      // Recargar movimientos para actualizar la lista
+      console.log('🔄 Recargando movimientos después de editar...');
       await dispatch(loadMovimientosInsumo());
       
       console.log('🎉 Edición completada exitosamente');
-      onSuccess();
+      
+      // Llamar onSuccess antes de cerrar para que el componente padre sepa que todo salió bien
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      // Cerrar el modal
       onClose();
     } catch (error) {
       console.error("💥 Error al editar movimiento:", error);

@@ -85,8 +85,18 @@ public class MovimientoInsumoController {
             System.out.println("📅 Fecha: " + dto.fecha());
             System.out.println("📄 Descripción: " + dto.descripcion());
             System.out.println("🔄 Tipo: " + dto.tipoMovimiento());
-            System.out.println("📋 Detalles: " + dto.detalles());
             System.out.println("📋 Cantidad de detalles: " + (dto.detalles() != null ? dto.detalles().size() : "null"));
+            System.out.println("📋 Detalles recibidos:");
+            if (dto.detalles() != null) {
+                for (int i = 0; i < dto.detalles().size(); i++) {
+                    var det = dto.detalles().get(i);
+                    System.out.println("  [" + i + "] insumoId=" + det.insumoId() + 
+                                     ", cantidad=" + det.cantidad() + 
+                                     ", precio=" + det.precio());
+                }
+            } else {
+                System.out.println("  - null");
+            }
             
             // Asegurar que el ID del path coincida con el del DTO
             System.out.println("🔄 Creando DTO con ID corregido...");

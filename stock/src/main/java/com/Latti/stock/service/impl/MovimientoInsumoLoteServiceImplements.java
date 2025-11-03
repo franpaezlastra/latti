@@ -409,7 +409,15 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
             System.out.println("📦 Movimiento encontrado: " + movimiento.getId());
-            System.out.println("📋 Detalles actuales: " + movimiento.getDetalles().size());
+            System.out.println("📋 Detalles actuales ANTES de editar: " + movimiento.getDetalles().size());
+            System.out.println("📋 Detalles actuales (detalle):");
+            for (int i = 0; i < movimiento.getDetalles().size(); i++) {
+                DetalleMovimientoInsumo det = movimiento.getDetalles().get(i);
+                System.out.println("  [" + i + "] ID: " + det.getId() + 
+                                 ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null") + 
+                                 ", Cantidad: " + det.getCantidad() + 
+                                 ", PrecioTotal: " + det.getPrecioTotal());
+            }
 
             // Revertir el movimiento original
             System.out.println("🔄 Revirtiendo movimiento original...");
@@ -431,20 +439,74 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
             // ELIMINAR todos los detalles antiguos directamente del repositorio
+            System.out.println("🗑️ === ELIMINANDO DETALLES ANTIGUOS ===");
+            System.out.println("  - Cantidad de detalles a eliminar: " + movimiento.getDetalles().size());
             List<DetalleMovimientoInsumo> detallesAntiguos = new ArrayList<>(movimiento.getDetalles());
-            for (DetalleMovimientoInsumo detalle : detallesAntiguos) {
-                detalleMovimientoInsumoRepository.delete(detalle);
+            
+            System.out.println("  - Lista de detalles a eliminar:");
+            for (int i = 0; i < detallesAntiguos.size(); i++) {
+                DetalleMovimientoInsumo det = detallesAntiguos.get(i);
+                System.out.println("    [" + i + "] ID: " + det.getId() + 
+                                 ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
             }
+            
+            System.out.println("  - Eliminando cada detalle del repositorio...");
+            for (DetalleMovimientoInsumo detalle : detallesAntiguos) {
+                System.out.println("    🗑️ Eliminando detalle ID: " + detalle.getId());
+                detalleMovimientoInsumoRepository.delete(detalle);
+                System.out.println("    ✅ Detalle ID " + detalle.getId() + " eliminado del repositorio");
+            }
+            
+            System.out.println("  - Limpiando lista de detalles del movimiento...");
             movimiento.getDetalles().clear();
-            movimientoRepository.flush(); // Asegurar que se eliminen antes de crear nuevos
+            System.out.println("  - Lista limpiada. Cantidad de detalles en lista: " + movimiento.getDetalles().size());
+            
+            System.out.println("  - Guardando movimiento sin detalles (saveAndFlush)...");
+            movimientoRepository.saveAndFlush(movimiento);
+            System.out.println("  - ✅ Movimiento guardado sin detalles");
+            
+            // Verificar directamente en BD cuántos detalles quedan
+            System.out.println("  - 🔍 Verificando detalles en BD para movimiento ID: " + movimiento.getId());
+            List<DetalleMovimientoInsumo> detallesEnBD = detalleMovimientoInsumoRepository.findAll()
+                    .stream()
+                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimiento.getId()))
+                    .toList();
+            System.out.println("  - 📊 Detalles encontrados en BD para este movimiento: " + detallesEnBD.size());
+            if (detallesEnBD.size() > 0) {
+                System.out.println("  - ⚠️ ADVERTENCIA: Aún hay detalles en BD:");
+                for (DetalleMovimientoInsumo det : detallesEnBD) {
+                    System.out.println("      - Detalle ID: " + det.getId() + 
+                                     ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
+                }
+            }
+            
+            // RECARGAR el movimiento desde la BD para asegurar que los detalles se eliminaron
+            System.out.println("🔄 Recargando movimiento desde BD después de eliminar detalles...");
+            movimiento = movimientoRepository.findById(movimiento.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado después de eliminar detalles"));
+            System.out.println("✅ Movimiento recargado. Detalles restantes en entidad: " + movimiento.getDetalles().size());
+            if (movimiento.getDetalles().size() > 0) {
+                System.out.println("  - ⚠️ ADVERTENCIA: La entidad aún tiene detalles:");
+                for (int i = 0; i < movimiento.getDetalles().size(); i++) {
+                    DetalleMovimientoInsumo det = movimiento.getDetalles().get(i);
+                    System.out.println("    [" + i + "] ID: " + det.getId() + 
+                                     ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null"));
+                }
+            }
 
             // CREAR nuevos detalles (reemplazo completo)
-            System.out.println("➕ Creando nuevos detalles...");
+            System.out.println("➕ === CREANDO NUEVOS DETALLES ===");
+            System.out.println("  - Cantidad de detalles nuevos a crear: " + dto.detalles().size());
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
-            for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
+            for (int i = 0; i < dto.detalles().size(); i++) {
+                DetalleMovimientoInsumoDTO detalleDto = dto.detalles().get(i);
+                System.out.println("  - [" + i + "] Procesando detalle: insumoId=" + detalleDto.insumoId() + 
+                                 ", cantidad=" + detalleDto.cantidad() + ", precio=" + detalleDto.precio());
+                
                 Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
                         .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado: " + detalleDto.insumoId()));
+                System.out.println("    ✅ Insumo encontrado: " + insumo.getNombre());
 
                 // Validaciones
                 if (detalleDto.cantidad() <= 0) {
@@ -456,31 +518,78 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
 
                 // Aplicar cambios al stock
+                System.out.println("    - Aplicando cambios al stock...");
+                double stockAnterior = insumo.getStockActual();
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() + detalleDto.cantidad());
                     double precioPorUnidad = detalleDto.precio() / detalleDto.cantidad();
                     insumo.setPrecioDeCompra(precioPorUnidad);
                     insumosParaRecalcular.add(insumo.getId());
+                    System.out.println("      - Stock: " + stockAnterior + " → " + insumo.getStockActual());
+                    System.out.println("      - Precio: " + insumo.getPrecioDeCompra());
                 } else {
                     insumo.setStockActual(insumo.getStockActual() - detalleDto.cantidad());
+                    System.out.println("      - Stock: " + stockAnterior + " → " + insumo.getStockActual());
                 }
                 insumoRepository.save(insumo);
+                System.out.println("    ✅ Insumo guardado");
 
                 // Crear nuevo detalle
+                System.out.println("    - Creando nuevo detalle...");
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
+                
+                System.out.println("    - Detalle creado: cantidad=" + nuevoDetalle.getCantidad() + 
+                                 ", precioTotal=" + nuevoDetalle.getPrecioTotal());
+                
                 // Usar addDetalle() para manejar la relación bidireccional correctamente
+                System.out.println("    - Agregando detalle al movimiento...");
                 movimiento.addDetalle(nuevoDetalle);
+                System.out.println("    ✅ Detalle agregado. Total detalles en movimiento: " + movimiento.getDetalles().size());
             }
 
             // Guardar el movimiento actualizado
-            System.out.println("💾 Guardando movimiento actualizado...");
+            System.out.println("💾 === GUARDANDO MOVIMIENTO ACTUALIZADO ===");
+            System.out.println("  - Detalles en movimiento ANTES de guardar: " + movimiento.getDetalles().size());
+            for (int i = 0; i < movimiento.getDetalles().size(); i++) {
+                DetalleMovimientoInsumo det = movimiento.getDetalles().get(i);
+                System.out.println("    [" + i + "] Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null") + 
+                                 ", Cantidad: " + det.getCantidad() + 
+                                 ", PrecioTotal: " + det.getPrecioTotal());
+            }
+            
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.save(movimiento);
             System.out.println("✅ Movimiento guardado con ID: " + movimientoActualizado.getId());
-            System.out.println("📋 Detalles finales: " + movimientoActualizado.getDetalles().size());
+            
+            // Recargar desde BD para ver el estado final
+            System.out.println("🔄 Recargando movimiento final desde BD...");
+            MovimientoInsumoLote movimientoFinal = movimientoRepository.findById(movimientoActualizado.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado después de guardar"));
+            
+            System.out.println("📋 === DETALLES FINALES ===");
+            System.out.println("  - Cantidad de detalles finales: " + movimientoFinal.getDetalles().size());
+            for (int i = 0; i < movimientoFinal.getDetalles().size(); i++) {
+                DetalleMovimientoInsumo det = movimientoFinal.getDetalles().get(i);
+                System.out.println("    [" + i + "] ID: " + det.getId() + 
+                                 ", Insumo: " + (det.getInsumo() != null ? det.getInsumo().getNombre() : "null") + 
+                                 ", Cantidad: " + det.getCantidad() + 
+                                 ", PrecioTotal: " + det.getPrecioTotal());
+            }
+            
+            // Verificar directamente en BD
+            List<DetalleMovimientoInsumo> detallesFinalesEnBD = detalleMovimientoInsumoRepository.findAll()
+                    .stream()
+                    .filter(d -> d.getMovimiento() != null && d.getMovimiento().getId().equals(movimientoFinal.getId()))
+                    .toList();
+            System.out.println("  - 📊 Detalles en BD para este movimiento: " + detallesFinalesEnBD.size());
+            if (detallesFinalesEnBD.size() != movimientoFinal.getDetalles().size()) {
+                System.out.println("  - ⚠️ ADVERTENCIA: Discrepancia entre entidad y BD!");
+                System.out.println("    - Entidad: " + movimientoFinal.getDetalles().size());
+                System.out.println("    - BD: " + detallesFinalesEnBD.size());
+            }
 
             // Recalcular precios de inversión de productos
             System.out.println("🔄 Recalculando precios de inversión...");
