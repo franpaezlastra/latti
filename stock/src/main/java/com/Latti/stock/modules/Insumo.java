@@ -22,6 +22,9 @@ public class Insumo {
     
     private double stockActual = 0;
     private double precioDeCompra = 0;
+    
+    // ✅ NUEVO: Stock mínimo para alertas de stock bajo
+    private double stockMinimo = 0;
 
     @OneToMany(mappedBy = "insumo")
     private List<InsumoReceta> detalles = new ArrayList<>();
@@ -75,6 +78,19 @@ public class Insumo {
 
     public void setPrecioDeCompra(double precioDeCompra) {
         this.precioDeCompra = precioDeCompra;
+    }
+
+    public double getStockMinimo() {
+        return stockMinimo;
+    }
+
+    public void setStockMinimo(double stockMinimo) {
+        this.stockMinimo = stockMinimo;
+    }
+
+    // ✅ NUEVO: Método para verificar si el stock está bajo
+    public boolean tieneStockBajo() {
+        return stockActual <= stockMinimo;
     }
 
     public void addDetalleReceta(InsumoReceta detalle) {

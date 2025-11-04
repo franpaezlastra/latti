@@ -14,13 +14,15 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     unidadMedida: '',
-    tipo: 'BASE'
+    tipo: 'BASE',
+    stockMinimo: 0
   });
   
   // Estados de error
   const [error, setError] = useState(false);
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [insumoEnUso, setInsumoEnUso] = useState(false);
 
   // Función para capitalizar la primera letra
   const capitalizarPrimeraLetra = (texto) => {
@@ -34,11 +36,13 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       setFormData({
         nombre: insumo.nombre || '',
         unidadMedida: insumo.unidadMedida || '',
-        tipo: insumo.tipoOriginal || insumo.tipo || 'BASE'
+        tipo: insumo.tipoOriginal || insumo.tipo || 'BASE',
+        stockMinimo: insumo.stockMinimo || 0
       });
       setError(false);
       setTextoError('');
       setIsSubmitting(false);
+      setInsumoEnUso(false);
     }
   }, [isOpen, insumo]);
 
@@ -48,11 +52,13 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       setFormData({
         nombre: '',
         unidadMedida: '',
-        tipo: 'BASE'
+        tipo: 'BASE',
+        stockMinimo: 0
       });
       setError(false);
       setTextoError('');
       setIsSubmitting(false);
+      setInsumoEnUso(false);
     }
   }, [isOpen]);
 
@@ -98,6 +104,7 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         id: insumo.id,
         nombre: capitalizarPrimeraLetra(formData.nombre.trim()),
         unidadMedida: formData.unidadMedida.trim(),
+        stockMinimo: parseFloat(formData.stockMinimo) || 0,
         tipo: formData.tipo
       };
 
@@ -114,6 +121,12 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       } else {
         // Extraer el error del backend
         const errorMessage = result.payload?.error || "Error al actualizar insumo";
+        
+        // Detectar si el insumo está en uso
+        if (errorMessage.includes("en uso") || errorMessage.includes("Solo puedes modificar")) {
+          setInsumoEnUso(true);
+        }
+        
         setError(true);
         setTextoError(errorMessage);
       }
@@ -131,11 +144,13 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
     setFormData({
       nombre: '',
       unidadMedida: '',
-      tipo: 'BASE'
+      tipo: 'BASE',
+      stockMinimo: 0
     });
     setError(false);
     setTextoError('');
     setIsSubmitting(false);
+    setInsumoEnUso(false);
     onClose();
   };
 
@@ -152,6 +167,22 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       maxWidth="max-w-md"
     >
       <div className="space-y-4">
+        {/* Advertencia si el insumo está en uso */}
+        {insumoEnUso && (
+          <div className="bg-red-50 border border-red-300 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <FaEdit className="text-red-600 mt-0.5" size={14} />
+              <div className="text-sm text-red-700">
+                <p className="font-bold">⚠️ Insumo en Uso</p>
+                <p className="mt-1">
+                  Este insumo ya está siendo utilizado en movimientos o recetas.
+                  Solo puedes modificar el <strong>Stock Mínimo</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Nombre */}
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -162,7 +193,7 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
             value={formData.nombre}
             onChange={(e) => handleInputChange('nombre', e.target.value)}
             placeholder="Ej: Botella, Tapa, Etiqueta"
-            disabled={isSubmitting}
+            disabled={isSubmitting || insumoEnUso}
             required
           />
         </div>
@@ -177,7 +208,7 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
             onChange={(e) => handleInputChange('unidadMedida', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
             required
-            disabled={isSubmitting}
+            disabled={isSubmitting || insumoEnUso}
           >
             <option value="">Seleccione una unidad</option>
             {getUnidadesMedidaOptions().map((option) => (
@@ -186,6 +217,26 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Stock Mínimo - SIEMPRE editable */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Stock Mínimo *
+          </label>
+          <Input
+            type="number"
+            value={formData.stockMinimo}
+            onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
+            placeholder="Ej: 10"
+            min="0"
+            step="0.01"
+            disabled={isSubmitting}
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Cuando el stock sea igual o menor a este valor, se mostrará una alerta de stock bajo
+          </p>
         </div>
 
         {/* Tipo de Insumo (solo lectura) */}
@@ -213,19 +264,21 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         </div>
 
         {/* Información sobre edición */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <FaEdit className="text-blue-600 mt-0.5" size={14} />
-            <div className="text-sm text-blue-700">
-              <p className="font-medium">Información sobre la edición</p>
-              <ul className="mt-1 space-y-1 text-xs">
-                <li>• Solo puedes editar el nombre y la unidad de medida</li>
-                <li>• El tipo de insumo no se puede modificar</li>
-                <li>• Los cambios no afectan el stock existente</li>
-              </ul>
+        {!insumoEnUso && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <FaEdit className="text-blue-600 mt-0.5" size={14} />
+              <div className="text-sm text-blue-700">
+                <p className="font-medium">Información sobre la edición</p>
+                <ul className="mt-1 space-y-1 text-xs">
+                  <li>• Puedes editar el nombre, unidad de medida y stock mínimo</li>
+                  <li>• El tipo de insumo no se puede modificar</li>
+                  <li>• Los cambios no afectan el stock existente</li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </FormModal>
   );

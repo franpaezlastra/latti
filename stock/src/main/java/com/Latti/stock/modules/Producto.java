@@ -13,6 +13,9 @@ public class Producto {
     private String nombre;
 
     private double stockActual = 0;
+    
+    // ✅ NUEVO: Stock mínimo para alertas de stock bajo
+    private double stockMinimo = 0;
 
     private double precioInversion = 0;
     private double precioVenta = 0;
@@ -52,5 +55,18 @@ public class Producto {
     public void addMovimiento(DetalleMovimientoProducto detalle) {
         detalle.setProducto(this);
         this.movimientos.add(detalle);
+    }
+
+    public double getStockMinimo() {
+        return stockMinimo;
+    }
+
+    public void setStockMinimo(double stockMinimo) {
+        this.stockMinimo = stockMinimo;
+    }
+
+    // ✅ NUEVO: Método para verificar si el stock está bajo
+    public boolean tieneStockBajo() {
+        return stockActual <= stockMinimo;
     }
 }

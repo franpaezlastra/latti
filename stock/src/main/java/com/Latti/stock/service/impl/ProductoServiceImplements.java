@@ -66,6 +66,7 @@ public class ProductoServiceImplements implements ProductoService {
         Producto producto = new Producto(nombre);
         producto.setReceta(receta);
         producto.setStockActual(0);
+        producto.setStockMinimo(crearProductoConRecetaDTO.stockMinimo());
         producto.setPrecioInversion(precioInversionTotal);
 
         return productoRepository.save(producto);
@@ -135,6 +136,10 @@ public class ProductoServiceImplements implements ProductoService {
 
         if (dto.stockActual() != null) {
             producto.setStockActual(dto.stockActual());
+        }
+
+        if (dto.stockMinimo() != null) {
+            producto.setStockMinimo(dto.stockMinimo());
         }
 
         if (dto.precioVenta() != null) {

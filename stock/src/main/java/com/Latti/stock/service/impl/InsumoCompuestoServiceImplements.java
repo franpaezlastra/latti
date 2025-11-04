@@ -43,6 +43,7 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
 
         // Crear el insumo compuesto
         Insumo insumoCompuesto = new Insumo(nombre, dto.unidadMedida(), TipoInsumo.COMPUESTO);
+        insumoCompuesto.setStockMinimo(dto.stockMinimo());
         insumoCompuesto = insumoRepository.save(insumoCompuesto);
 
         // Crear la receta

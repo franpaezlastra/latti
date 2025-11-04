@@ -9,6 +9,7 @@ import java.util.List;
 public record CrearInsumoCompuestoDTO(
     String nombre,
     UnidadMedida unidadMedida,
+    double stockMinimo,
     List<ComponenteRecetaDTO> receta
 ) {
     public record ComponenteRecetaDTO(

@@ -38,6 +38,7 @@ public class InsumoServiceImplements implements InsumoService {
         }
 
         Insumo nuevoInsumo = new Insumo(nombre, unidad);
+        nuevoInsumo.setStockMinimo(dto.stockMinimo());
         return insumoRepository.save(nuevoInsumo);
     }
 
@@ -92,16 +93,45 @@ public class InsumoServiceImplements implements InsumoService {
         String nombre = dto.nombre().trim();
         UnidadMedida unidad = dto.unidadMedida();
 
-        // Validación de nombre único (ignorando mayúsculas/minúsculas y el propio insumo)
-        if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
-            throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
+        // ✅ NUEVO: Verificar si el insumo está en uso
+        boolean estaEnUso = insumoEstaEnUso(insumo);
+
+        if (estaEnUso) {
+            // Si está en uso, solo permitir cambiar stockMinimo
+            if (!insumo.getNombre().equalsIgnoreCase(nombre) || !insumo.getUnidadMedida().equals(unidad)) {
+                throw new IllegalArgumentException("Este insumo ya está en uso. Solo puedes modificar el Stock Mínimo.");
+            }
+        } else {
+            // Si no está en uso, validar nombre único
+            if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+                throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
+            }
+            // Actualizar nombre y unidad solo si no está en uso
+            insumo.setNombre(nombre);
+            insumo.setUnidadMedida(unidad);
         }
 
-        // Actualizar los campos
-        insumo.setNombre(nombre);
-        insumo.setUnidadMedida(unidad);
+        // El stockMinimo SIEMPRE se puede actualizar
+        insumo.setStockMinimo(dto.stockMinimo());
 
         return insumoRepository.save(insumo);
+    }
+
+    // ✅ NUEVO: Método auxiliar para verificar si un insumo está en uso
+    private boolean insumoEstaEnUso(Insumo insumo) {
+        // Verificar si tiene movimientos
+        if (!insumo.getMovimientos().isEmpty()) {
+            return true;
+        }
+        // Verificar si está en recetas de productos
+        if (!insumo.getDetalles().isEmpty()) {
+            return true;
+        }
+        // Verificar si es parte de un insumo compuesto
+        if (!insumo.getComponenteEn().isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
     @Override
