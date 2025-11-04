@@ -424,10 +424,26 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // ✅ Vaciar la lista existente (orphanRemoval eliminará los antiguos)
-            movimiento.getDetalles().clear();
+            // ✅ PASO 1: Eliminar MANUALMENTE todos los detalles antiguos
+            System.out.println("🗑️ Eliminando " + movimiento.getDetalles().size() + " detalles antiguos...");
+            List<Long> idsDetallesAEliminar = movimiento.getDetalles().stream()
+                    .map(DetalleMovimientoInsumo::getId)
+                    .filter(id -> id != null)
+                    .toList();
             
-            // Crear nuevos detalles desde el DTO
+            // Vaciar la lista primero (para romper la relación)
+            movimiento.getDetalles().clear();
+            movimientoRepository.flush();
+            
+            // Eliminar físicamente de la BD
+            for (Long idDetalle : idsDetallesAEliminar) {
+                detalleMovimientoInsumoRepository.deleteById(idDetalle);
+            }
+            detalleMovimientoInsumoRepository.flush();
+            System.out.println("✅ Detalles antiguos eliminados");
+            
+            // ✅ PASO 2: Crear y agregar los nuevos detalles
+            System.out.println("➕ Agregando " + dto.detalles().size() + " detalles nuevos...");
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
@@ -451,19 +467,19 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
                 insumoRepository.save(insumo);
 
-                // Crear nuevo detalle y agregarlo directamente a la lista existente
+                // Crear nuevo detalle
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
-                nuevoDetalle.setMovimiento(movimiento); // Establecer la relación bidireccional
+                nuevoDetalle.setMovimiento(movimiento);
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
-                // Agregar a la lista existente, NO reemplazar la lista completa
                 movimiento.getDetalles().add(nuevoDetalle);
             }
 
-            // Guardar movimiento actualizado
+            // ✅ PASO 3: Guardar movimiento con nuevos detalles
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.saveAndFlush(movimiento);
+            System.out.println("✅ Movimiento actualizado con " + movimientoActualizado.getDetalles().size() + " detalles");
 
             // Recalcular precios de inversión de productos
             for (Long insumoId : insumosParaRecalcular) {
