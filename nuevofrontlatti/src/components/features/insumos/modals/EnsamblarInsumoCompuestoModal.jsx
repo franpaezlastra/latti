@@ -106,9 +106,34 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSub
       handleClose();
       
     } catch (error) {
-      console.error('Error al ensamblar insumo:', error);
+      console.error('❌ Error al ensamblar insumo:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error response data:', error.response?.data);
+      
       setError(true);
-      setTextoError(error.response?.data?.error || 'Error inesperado al ensamblar');
+      
+      // Intentar extraer el mensaje de error del backend
+      let errorMessage = 'Error inesperado al ensamblar';
+      
+      if (error.response?.data) {
+        // Si el backend devuelve un objeto con 'error'
+        if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } 
+        // Si el backend devuelve directamente el mensaje como string
+        else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+        // Si el backend devuelve un objeto con 'message'
+        else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.log('📝 Mensaje de error a mostrar:', errorMessage);
+      setTextoError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

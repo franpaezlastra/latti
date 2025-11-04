@@ -42,13 +42,20 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !config.headers.Authorization) {
+      // Solo agregar token si no está ya presente (para permitir override)
       config.headers.Authorization = `Bearer ${token}`;
     }
     
     // Agregar timestamp para evitar cache
     if (config.method === 'get') {
       config.params = { ...config.params, _t: Date.now() };
+    }
+    
+    // Preservar flags personalizados en la configuración
+    // Esto permite que el interceptor de respuesta acceda a flags como _skipAuthRedirect
+    if (config._skipAuthRedirect) {
+      config._skipAuthRedirect = true;
     }
     
     return config;

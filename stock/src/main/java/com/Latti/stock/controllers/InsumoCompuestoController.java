@@ -72,14 +72,25 @@ public class InsumoCompuestoController {
      * Ensamblar insumos compuestos
      */
     @PostMapping("/{id}/ensamblar")
-    public ResponseEntity<InsumoCompuestoResponseDTO> ensamblarInsumoCompuesto(
+    public ResponseEntity<?> ensamblarInsumoCompuesto(
             @PathVariable Long id,
             @RequestBody EnsamblarInsumoCompuestoDTO dto) {
         try {
+            System.out.println("🔍 Ensamblando insumo compuesto ID: " + id);
+            System.out.println("📋 Datos recibidos: cantidad=" + dto.cantidad() + ", fecha=" + dto.fecha());
+            
             InsumoCompuestoResponseDTO insumoCompuesto = insumoCompuestoService.ensamblarInsumoCompuesto(id, dto);
+            System.out.println("✅ Insumo compuesto ensamblado exitosamente");
+            
             return ResponseEntity.ok(insumoCompuesto);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            System.err.println("❌ Error de validación al ensamblar: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("❌ Error inesperado al ensamblar: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al ensamblar el insumo compuesto: " + e.getMessage()));
         }
     }
 
