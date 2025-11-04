@@ -22,13 +22,20 @@ const getStoredUser = () => {
 };
 
 const storedToken = localStorage.getItem('token');
+const storedUser = getStoredUser();
+
+// Si hay token y usuario en localStorage, asumir sesión válida inicialmente
+// Esto previene redirecciones innecesarias al login durante la carga inicial
+// La validación real se hará con checkAuthStatus
+const hasValidLocalStorage = storedToken && storedUser && storedUser.username;
 
 const initialState = {
-  user: getStoredUser(),
+  user: storedUser,
   token: storedToken || null,
-  // Importante: NO asumir autenticado solo por tener token en localStorage.
-  // Validamos con el backend primero para evitar redirecciones erróneas al dashboard.
-  isAuthenticated: false,
+  // Si hay token y usuario en localStorage, asumir autenticado temporalmente
+  // Esto evita la redirección al login durante la carga inicial
+  // checkAuthStatus validará con el backend y actualizará este estado
+  isAuthenticated: hasValidLocalStorage,
   // Si hay token, arrancamos en loading hasta validar con checkAuthStatus
   loading: !!storedToken,
   error: null,

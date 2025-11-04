@@ -190,39 +190,6 @@ public class InsumoCotroller {
         }
     }
 
-    /**
-     * 🔧 ENDPOINT TEMPORAL: Actualizar stockMinimo de todos los insumos que tienen 0
-     * Este endpoint puede eliminarse después de ejecutarlo una vez
-     */
-    @PostMapping("/fix-stock-minimo")
-    public ResponseEntity<?> fixStockMinimo() {
-        try {
-            System.out.println("🔧 Actualizando stockMinimo de todos los insumos...");
-            java.util.List<Insumo> insumos = insumoRepository.findAll();
-            int actualizados = 0;
-            
-            for (Insumo insumo : insumos) {
-                if (insumo.getStockMinimo() == 0) {
-                    // Establecer un valor por defecto razonable (10% del stock actual o 10, lo que sea mayor)
-                    double stockMinimoSugerido = Math.max(10, insumo.getStockActual() * 0.1);
-                    insumo.setStockMinimo(stockMinimoSugerido);
-                    insumoRepository.save(insumo);
-                    actualizados++;
-                    System.out.println("  ✅ Insumo '" + insumo.getNombre() + "': stockMinimo = " + stockMinimoSugerido);
-                }
-            }
-            
-            System.out.println("🎉 Actualización completada: " + actualizados + " insumos actualizados");
-            return ResponseEntity.ok(Map.of(
-                "mensaje", "Stock mínimo actualizado correctamente",
-                "insumosActualizados", actualizados
-            ));
-        } catch (Exception e) {
-            System.err.println("❌ Error al actualizar stock mínimo: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("error", "Error al actualizar stock mínimo: " + e.getMessage()));
-        }
-    }
 }
 
 

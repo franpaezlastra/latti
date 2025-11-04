@@ -11,11 +11,19 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await api.post(`${BASE_URL}/login`, credentials);
       
+      // El backend solo retorna el token, extraemos el username de las credenciales
+      const user = {
+        username: credentials.username
+      };
+      
       // Guardar token y usuario en localStorage
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', response.data.user);
+      localStorage.setItem('user', JSON.stringify(user));
       
-      return response.data;
+      return {
+        token: response.data.token,
+        user: user
+      };
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Error al iniciar sesión"
@@ -63,32 +71,66 @@ export const checkAuthStatus = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
+      const userStr = localStorage.getItem('user');
       
-      if (!token || !user) {
-        throw new Error('No hay sesión activa');
+      if (!token) {
+        throw new Error('No hay token en localStorage');
+      }
+      
+      // Si no hay user pero hay token, intentar extraer username del token
+      let user = null;
+      try {
+        if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+          user = JSON.parse(userStr);
+        }
+      } catch (parseError) {
+        console.warn('Error parsing user from localStorage:', parseError);
+      }
+      
+      // Si no hay user, intentar extraer del token (el JWT contiene el username)
+      if (!user || !user.username) {
+        try {
+          // Decodificar el payload del JWT (sin verificar firma)
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          user = { username: payload.sub || payload.username };
+        } catch (jwtError) {
+          console.warn('No se pudo extraer username del token:', jwtError);
+        }
       }
       
       // Validar token con el servidor
+      // Usamos una flag especial para evitar que el interceptor redirija
       try {
-        const response = await api.get('/auth/validate');
+        // Crear una petición especial que no active el interceptor de redirección
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          // Agregar flag para que el interceptor sepa que es una validación
+          _skipAuthRedirect: true
+        };
+        
+        const response = await api.get('/auth/validate', config);
+        
         return {
           token,
-          user: JSON.parse(user),
+          user: user || { username: 'Usuario' },
           isValid: true
         };
       } catch (serverError) {
         // Si el servidor responde con 401 o 403, el token es inválido
         if (serverError.response?.status === 401 || serverError.response?.status === 403) {
-          // Limpiar sesión local
+          // Limpiar sesión local solo si realmente es un error de autenticación
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           throw new Error('Token expirado o inválido');
         }
-        // Para otros errores, asumir que el token es válido pero hay problemas de conectividad
+        // Para otros errores (red, timeout, etc), mantener la sesión local
+        // pero marcar como no validado
+        console.warn('Error al validar token (posible problema de conectividad):', serverError.message);
         return {
           token,
-          user: JSON.parse(user),
+          user: user || { username: 'Usuario' },
           isValid: false
         };
       }

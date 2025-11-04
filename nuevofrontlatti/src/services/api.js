@@ -94,27 +94,39 @@ api.interceptors.response.use(
           
         case 401:
           // Unauthorized - Token expirado o inválido
-          clearSessionAndRedirect();
+          // NO redirigir si es una petición de validación (checkAuthStatus)
+          if (error.config?._skipAuthRedirect) {
+            console.warn('⚠️ Token inválido detectado en validación, no redirigiendo');
+            // No hacer nada, dejar que checkAuthStatus maneje el error
+          } else {
+            clearSessionAndRedirect();
+          }
           break;
           
         case 403:
           // Forbidden - Sin permisos o token expirado
-          // Verificar si el error es por token expirado
-          const errorMessage = response.data?.message || response.data?.error || '';
-          const isAuthError = errorMessage.includes('token') || 
-                             errorMessage.includes('expired') || 
-                             errorMessage.includes('invalid') || 
-                             errorMessage.includes('permisos') ||
-                             errorMessage.includes('unauthorized') ||
-                             errorMessage.includes('access denied');
-          
-          if (isAuthError) {
-            // Es un error de autenticación, cerrar sesión
-            console.warn('🔒 Token inválido o expirado, cerrando sesión...');
-            clearSessionAndRedirect();
+          // NO redirigir si es una petición de validación (checkAuthStatus)
+          if (error.config?._skipAuthRedirect) {
+            console.warn('⚠️ Error 403 en validación, no redirigiendo');
+            // No hacer nada, dejar que checkAuthStatus maneje el error
           } else {
-            // Es realmente un error de permisos
-            toast.error('No tienes permisos para realizar esta acción.');
+            // Verificar si el error es por token expirado
+            const errorMessage = response.data?.message || response.data?.error || '';
+            const isAuthError = errorMessage.includes('token') || 
+                               errorMessage.includes('expired') || 
+                               errorMessage.includes('invalid') || 
+                               errorMessage.includes('permisos') ||
+                               errorMessage.includes('unauthorized') ||
+                               errorMessage.includes('access denied');
+            
+            if (isAuthError) {
+              // Es un error de autenticación, cerrar sesión
+              console.warn('🔒 Token inválido o expirado, cerrando sesión...');
+              clearSessionAndRedirect();
+            } else {
+              // Es realmente un error de permisos
+              toast.error('No tienes permisos para realizar esta acción.');
+            }
           }
           break;
           
