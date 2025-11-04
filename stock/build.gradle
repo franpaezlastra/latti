@@ -21,6 +21,7 @@ dependencies {
     runtimeOnly  'io.jsonwebtoken:jjwt-impl:0.12.5'
     runtimeOnly  'io.jsonwebtoken:jjwt-jackson:0.12.5'
     runtimeOnly  'org.postgresql:postgresql'
+    runtimeOnly  'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly   'org.junit.platform:junit-platform-launcher'
 }
@@ -29,6 +30,6 @@ tasks.named('test') { useJUnitPlatform() }
 
 /* 👇 Esto asegura el nombre EXACTO del jar */
 tasks.named('bootJar') {
-    archiveBaseName.set('empresas')
-    archiveVersion.set('0.0.1-SNAPSHOT')
+    archiveBaseName.set('stock')
+    archiveVersion.set(version)
 }
