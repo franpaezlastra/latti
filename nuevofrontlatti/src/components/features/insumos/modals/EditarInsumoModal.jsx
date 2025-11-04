@@ -290,19 +290,19 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
 
         {/* Información sobre edición */}
         {!insumoEnUso && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <FaEdit className="text-blue-600 mt-0.5" size={14} />
-              <div className="text-sm text-blue-700">
-                <p className="font-medium">Información sobre la edición</p>
-                <ul className="mt-1 space-y-1 text-xs">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <FaEdit className="text-blue-600 mt-0.5" size={14} />
+            <div className="text-sm text-blue-700">
+              <p className="font-medium">Información sobre la edición</p>
+              <ul className="mt-1 space-y-1 text-xs">
                   <li>• Puedes editar el nombre, unidad de medida y stock mínimo</li>
-                  <li>• El tipo de insumo no se puede modificar</li>
-                  <li>• Los cambios no afectan el stock existente</li>
-                </ul>
-              </div>
+                <li>• El tipo de insumo no se puede modificar</li>
+                <li>• Los cambios no afectan el stock existente</li>
+              </ul>
             </div>
           </div>
+        </div>
         )}
       </div>
     </FormModal>

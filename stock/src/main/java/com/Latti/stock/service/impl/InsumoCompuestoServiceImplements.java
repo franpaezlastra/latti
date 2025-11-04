@@ -269,13 +269,16 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
 
             if (stockEnFecha < cantidadNecesaria) {
                 throw new IllegalArgumentException(
-                        String.format("❌ No puedes ensamblar en la fecha %s porque no tenías suficiente stock del insumo '%s'. " +
-                                        "Stock disponible en esa fecha: %.2f, Cantidad necesaria: %.2f. " +
-                                        "Debes comprar los insumos ANTES de poder ensamblarlos.",
+                        String.format("No es posible realizar el ensamble en la fecha %s. " +
+                                        "El insumo '%s' no tenía suficiente stock disponible en esa fecha. " +
+                                        "Stock disponible en la fecha seleccionada: %.2f %s, cantidad necesaria: %.2f %s. " +
+                                        "Por favor, asegúrate de que los insumos hayan sido adquiridos antes de la fecha de ensamble.",
                                 fechaEnsamble,
                                 insumoBase.getNombre(),
                                 stockEnFecha,
-                                cantidadNecesaria)
+                                insumoBase.getUnidadMedida().toString().toLowerCase(),
+                                cantidadNecesaria,
+                                insumoBase.getUnidadMedida().toString().toLowerCase())
                 );
             }
         }

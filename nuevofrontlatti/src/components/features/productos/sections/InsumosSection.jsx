@@ -12,6 +12,7 @@ const InsumosSection = ({
   onDetails
 }) => {
   const [filtroStockBajo, setFiltroStockBajo] = useState(false);
+  const [filtroTipo, setFiltroTipo] = useState('');
   const columns = [
     { key: 'nombre', label: 'Nombre', sortable: true },
     { key: 'tipo', label: 'Tipo', sortable: true },
@@ -40,13 +41,22 @@ const InsumosSection = ({
   ];
 
   const formatData = (insumos) => {
-    // Aplicar filtro de stock bajo si está activo
+    // Aplicar filtros combinados
     let insumosFiltrados = insumos;
+    
+    // Filtro de stock bajo
     if (filtroStockBajo) {
-      insumosFiltrados = insumos.filter(insumo => {
+      insumosFiltrados = insumosFiltrados.filter(insumo => {
         const stockActual = insumo.stockActual || 0;
         const stockMinimo = insumo.stockMinimo || 0;
         return stockActual <= stockMinimo;
+      });
+    }
+    
+    // Filtro de tipo (Base o Compuesto)
+    if (filtroTipo) {
+      insumosFiltrados = insumosFiltrados.filter(insumo => {
+        return insumo.tipo === filtroTipo;
       });
     }
     
@@ -66,7 +76,7 @@ const InsumosSection = ({
       const tieneStockBajo = stockActual <= stockMinimo;
       
       return {
-        ...insumo,
+      ...insumo,
         // Preservar el valor original de unidadMedida para el modal de edición
         unidadMedidaOriginal: insumo.unidadMedida,
         stockActualOriginal: stockActual,
@@ -82,14 +92,14 @@ const InsumosSection = ({
             {tieneStockBajo ? '⚠️ Stock Bajo' : '✓ Stock OK'}
           </span>
         ),
-        // Mostrar abreviatura de la unidad de medida
-        unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A',
-        // Preservar el tipo original para la lógica
-        tipoOriginal: insumo.tipo,
-        // Formatear tipo con icono - centrado (solo para visualización)
-        tipo: insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base',
-        // Formatear precio
-        precioDeCompra: formatPrice(insumo.precioDeCompra || 0)
+      // Mostrar abreviatura de la unidad de medida
+      unidadMedida: getAbreviaturaByValue(insumo.unidadMedida) || insumo.unidadMedida || 'N/A',
+      // Preservar el tipo original para la lógica
+      tipoOriginal: insumo.tipo,
+      // Formatear tipo con icono - centrado (solo para visualización)
+      tipo: insumo.tipo === 'COMPUESTO' ? 'Compuesto' : 'Base',
+      // Formatear precio
+      precioDeCompra: formatPrice(insumo.precioDeCompra || 0)
       };
     });
   };
@@ -99,32 +109,47 @@ const InsumosSection = ({
       {/* Header con botón de agregar y filtro */}
       <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-[TransformaSans_Trial-Bold] text-blue-700 tracking-tight">
-            Insumos
-          </h2>
-          <button
-            onClick={onCreate}
-            className="flex items-center gap-1 p-1.5 text-white bg-blue-600 rounded-full shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition text-xs"
-            aria-label="Agregar insumo"
-            tabIndex={0}
-          >
-            <FaPlus className="text-xs" />
+        <h2 className="text-base font-[TransformaSans_Trial-Bold] text-blue-700 tracking-tight">
+          Insumos
+        </h2>
+        <button
+          onClick={onCreate}
+          className="flex items-center gap-1 p-1.5 text-white bg-blue-600 rounded-full shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition text-xs"
+          aria-label="Agregar insumo"
+          tabIndex={0}
+        >
+          <FaPlus className="text-xs" />
           </button>
         </div>
         
-        {/* Filtro de Stock Bajo */}
-        <button
-          onClick={() => setFiltroStockBajo(!filtroStockBajo)}
-          className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-            filtroStockBajo
-              ? 'bg-red-600 text-white shadow-md'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-          title={filtroStockBajo ? 'Mostrar todos' : 'Filtrar stock bajo'}
-        >
-          <FaFilter className={filtroStockBajo ? 'text-white' : 'text-gray-600'} />
-          {filtroStockBajo ? '⚠️ Stock Bajo' : 'Filtrar'}
-        </button>
+        {/* Filtros: Stock Bajo y Tipo */}
+        <div className="flex items-center gap-2">
+          {/* Filtro de Tipo */}
+          <select
+            value={filtroTipo}
+            onChange={(e) => setFiltroTipo(e.target.value)}
+            className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            title="Filtrar por tipo de insumo"
+          >
+            <option value="">Todos los tipos</option>
+            <option value="BASE">Base</option>
+            <option value="COMPUESTO">Compuesto</option>
+          </select>
+          
+          {/* Filtro de Stock Bajo */}
+          <button
+            onClick={() => setFiltroStockBajo(!filtroStockBajo)}
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              filtroStockBajo
+                ? 'bg-red-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={filtroStockBajo ? 'Mostrar todos' : 'Filtrar stock bajo'}
+          >
+            <FaFilter className={filtroStockBajo ? 'text-white' : 'text-gray-600'} />
+            {filtroStockBajo ? '⚠️ Stock Bajo' : 'Filtrar'}
+          </button>
+        </div>
       </div>
 
       {/* Tabla con scroll interno */}

@@ -18,4 +18,8 @@ public interface DetalleMovimientoInsumoRepository extends JpaRepository<Detalle
     @Modifying
     @Query("DELETE FROM DetalleMovimientoInsumo d WHERE d.movimiento.id = :movimientoId")
     void deleteByMovimientoId(@Param("movimientoId") Long movimientoId);
+    
+    // ✅ NUEVO: Encontrar todos los movimientos relacionados por ensambleId
+    @Query("SELECT d FROM DetalleMovimientoInsumo d WHERE d.ensambleId = :ensambleId")
+    List<DetalleMovimientoInsumo> findByEnsambleId(@Param("ensambleId") String ensambleId);
 }

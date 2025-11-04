@@ -104,12 +104,12 @@ public class InsumoServiceImplements implements InsumoService {
             }
         } else {
             // Si no está en uso, validar nombre único
-            if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
-                throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
-            }
+        if (insumoRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+            throw new IllegalArgumentException("Ya existe un insumo con ese nombre.");
+        }
             // Actualizar nombre y unidad solo si no está en uso
-            insumo.setNombre(nombre);
-            insumo.setUnidadMedida(unidad);
+        insumo.setNombre(nombre);
+        insumo.setUnidadMedida(unidad);
         }
 
         // El stockMinimo SIEMPRE se puede actualizar

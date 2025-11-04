@@ -365,9 +365,40 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
             }
 
-            // Condición 4: No es un movimiento de ensamble (los movimientos de ensamble no se pueden editar)
+            // Condición 4: Validación especial para movimientos de ensamble
             if (esMovimientoDeEnsamble(movimientoId)) {
-                detallesValidacion.add("Este movimiento es parte de un ensamble de insumo compuesto y no se puede editar");
+                // Obtener el ensambleId del movimiento
+                String ensambleId = movimiento.getDetalles().stream()
+                        .filter(d -> d.getEnsambleId() != null && !d.getEnsambleId().trim().isEmpty())
+                        .map(DetalleMovimientoInsumo::getEnsambleId)
+                        .findFirst()
+                        .orElse(null);
+                
+                if (ensambleId != null) {
+                    // Si es un movimiento de SALIDA con ensambleId (insumo simple usado en ensamble)
+                    // NO se puede editar directamente (debe editarse desde el ensamble)
+                    if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                        detallesValidacion.add("Este movimiento es parte de un ensamble. " +
+                                "Para editarlo, debes editar el movimiento de ensamble del insumo compuesto relacionado.");
+                    } 
+                    // Si es un movimiento de ENTRADA con ensambleId (insumo compuesto ensamblado)
+                    // Permitir editar SOLO si no se ha usado para crear productos
+                    else if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                        // Verificar si el insumo compuesto se usó para crear productos DESPUÉS de este movimiento
+                        for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                            Insumo insumoCompuesto = detalle.getInsumo();
+                            
+                            // Verificar si es un insumo compuesto
+                            if (insumoCompuesto != null && insumoCompuesto.esCompuesto()) {
+                                boolean seUsoEnProduccion = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                                if (seUsoEnProduccion) {
+                                    detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                            "No se puede editar porque afectaría el historial de producción.");
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             boolean puedeEditar = detallesValidacion.isEmpty();
@@ -408,6 +439,24 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             MovimientoInsumoLote movimiento = movimientoRepository.findById(dto.id())
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
+            // ✅ NUEVO: Si es un movimiento de ENTRADA con ensambleId, guardar el ensambleId y la cantidad original
+            String ensambleId = null;
+            double cantidadOriginal = 0.0;
+            boolean esMovimientoEnsamble = esMovimientoDeEnsamble(dto.id()) && 
+                                         movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
+            
+            if (esMovimientoEnsamble) {
+                ensambleId = movimiento.getDetalles().stream()
+                        .filter(d -> d.getEnsambleId() != null && !d.getEnsambleId().trim().isEmpty())
+                        .map(DetalleMovimientoInsumo::getEnsambleId)
+                        .findFirst()
+                        .orElse(null);
+                
+                if (movimiento.getDetalles().size() > 0) {
+                    cantidadOriginal = movimiento.getDetalles().get(0).getCantidad();
+                }
+            }
+
             // Revertir stock del movimiento original
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
@@ -417,6 +466,23 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     insumo.setStockActual(insumo.getStockActual() + detalle.getCantidad());
                 }
                 insumoRepository.save(insumo);
+            }
+            
+            // ✅ NUEVO: Si es un movimiento de ensamble, revertir también los movimientos de salida relacionados
+            if (esMovimientoEnsamble && ensambleId != null) {
+                System.out.println("🔄 Revertiendo movimientos de salida relacionados con ensambleId: " + ensambleId);
+                List<DetalleMovimientoInsumo> movimientosRelacionados = detalleMovimientoInsumoRepository.findByEnsambleId(ensambleId);
+                
+                for (DetalleMovimientoInsumo detalleRelacionado : movimientosRelacionados) {
+                    // Solo revertir los movimientos de SALIDA (insumos simples usados en el ensamble)
+                    if (detalleRelacionado.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                        Insumo insumoSimple = detalleRelacionado.getInsumo();
+                        // Revertir el stock (devolver lo que se había quitado)
+                        insumoSimple.setStockActual(insumoSimple.getStockActual() + detalleRelacionado.getCantidad());
+                        insumoRepository.save(insumoSimple);
+                        System.out.println("  ✅ Revertido stock de " + insumoSimple.getNombre() + ": +" + detalleRelacionado.getCantidad());
+                    }
+                }
             }
 
             // Actualizar datos básicos
@@ -454,7 +520,17 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 // Aplicar nuevo stock
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     insumo.setStockActual(insumo.getStockActual() + detalleDto.cantidad());
-                    insumo.setPrecioDeCompra(detalleDto.precio() / detalleDto.cantidad());
+                    
+                    // ✅ NUEVO: Si es un insumo compuesto editando un ensamble, recalcular precio basado en componentes
+                    if (esMovimientoEnsamble && insumo.esCompuesto()) {
+                        // El precio ya viene calculado en el DTO, solo actualizar precio por unidad
+                        insumo.setPrecioDeCompra(detalleDto.precio() / detalleDto.cantidad());
+                        System.out.println("  💰 Precio actualizado para insumo compuesto " + insumo.getNombre() + 
+                                         ": $" + (detalleDto.precio() / detalleDto.cantidad()) + " por unidad");
+                    } else {
+                        insumo.setPrecioDeCompra(detalleDto.precio() / detalleDto.cantidad());
+                    }
+                    
                     insumosParaRecalcular.add(insumo.getId());
                 } else {
                     insumo.setStockActual(insumo.getStockActual() - detalleDto.cantidad());
@@ -468,12 +544,55 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
+                
+                // ✅ NUEVO: Si es un movimiento de ensamble, preservar el ensambleId
+                if (esMovimientoEnsamble && ensambleId != null) {
+                    nuevoDetalle.setEnsambleId(ensambleId);
+                    System.out.println("  ✅ Preservado ensambleId: " + ensambleId);
+                }
+                
                 movimiento.getDetalles().add(nuevoDetalle);
             }
 
             // ✅ PASO 3: Guardar movimiento con nuevos detalles
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.saveAndFlush(movimiento);
             System.out.println("✅ Movimiento actualizado con " + movimientoActualizado.getDetalles().size() + " detalles");
+            
+            // ✅ NUEVO: Si es un movimiento de ensamble, actualizar proporcionalmente los movimientos de salida relacionados
+            if (esMovimientoEnsamble && ensambleId != null && dto.detalles().size() > 0) {
+                double cantidadNueva = dto.detalles().get(0).cantidad();
+                double factorProporcion = cantidadNueva / cantidadOriginal;
+                
+                System.out.println("🔄 Actualizando movimientos de salida relacionados:");
+                System.out.println("  📊 Cantidad original: " + cantidadOriginal);
+                System.out.println("  📊 Cantidad nueva: " + cantidadNueva);
+                System.out.println("  📊 Factor de proporción: " + factorProporcion);
+                
+                List<DetalleMovimientoInsumo> movimientosRelacionados = detalleMovimientoInsumoRepository.findByEnsambleId(ensambleId);
+                
+                for (DetalleMovimientoInsumo detalleRelacionado : movimientosRelacionados) {
+                    // Solo actualizar los movimientos de SALIDA (insumos simples usados en el ensamble)
+                    if (detalleRelacionado.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                        Insumo insumoSimple = detalleRelacionado.getInsumo();
+                        double cantidadOriginalSalida = detalleRelacionado.getCantidad();
+                        double cantidadNuevaSalida = cantidadOriginalSalida * factorProporcion;
+                        
+                        // Actualizar la cantidad del detalle
+                        detalleRelacionado.setCantidad(cantidadNuevaSalida);
+                        
+                        // Actualizar el stock del insumo simple
+                        // Como ya revertimos el stock original (devolvimos cantidadOriginalSalida),
+                        // ahora solo necesitamos descontar la cantidad nueva
+                        insumoSimple.setStockActual(insumoSimple.getStockActual() - cantidadNuevaSalida);
+                        
+                        detalleMovimientoInsumoRepository.save(detalleRelacionado);
+                        insumoRepository.save(insumoSimple);
+                        
+                        System.out.println("  ✅ Actualizado movimiento de salida de " + insumoSimple.getNombre() + 
+                                         ": " + cantidadOriginalSalida + " → " + cantidadNuevaSalida);
+                    }
+                }
+            }
 
             // Recalcular precios de inversión de productos
             for (Long insumoId : insumosParaRecalcular) {
@@ -636,9 +755,25 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
     /**
      * Verifica si un insumo ha sido usado en producción de productos después de una fecha específica
+     * Funciona tanto para insumos simples (usados en recetas) como para insumos compuestos (usados directamente)
      */
     private boolean verificarUsoEnProduccionPosterior(Insumo insumo, LocalDate fechaMovimiento) {
-        // Obtener todos los productos que usan este insumo
+        // Si es un insumo compuesto, verificar si se usó directamente en producción
+        if (insumo.esCompuesto()) {
+            // Verificar si hay movimientos de salida de este insumo compuesto después de la fecha
+            // que indiquen que se usó para crear productos
+            List<DetalleMovimientoInsumo> salidasPosteriores = insumo.getMovimientos().stream()
+                    .filter(d -> d.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                               d.getMovimiento().getFecha().isAfter(fechaMovimiento))
+                    .collect(Collectors.toList());
+            
+            // Si hay salidas posteriores, es probable que se haya usado
+            // Pero también verificamos si hay movimientos de productos que usen este insumo compuesto
+            // (aunque esto es menos común, ya que los productos normalmente usan insumos simples)
+            return !salidasPosteriores.isEmpty();
+        }
+        
+        // Para insumos simples, verificar si se usaron en recetas de productos
         List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
                 .filter(producto -> producto.getReceta() != null && 
                         producto.getReceta().getDetalles().stream()

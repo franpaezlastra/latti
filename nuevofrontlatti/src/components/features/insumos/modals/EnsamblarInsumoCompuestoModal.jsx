@@ -184,20 +184,25 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSub
 
         {/* Fecha */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Fecha del Ensamble *
           </label>
           <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+              <FaCalendarAlt className="text-purple-500" size={16} />
+            </div>
             <input
               type="date"
               value={formData.fecha}
               onChange={(e) => handleInputChange('fecha', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-400"
               disabled={isSubmitting}
               required
             />
-            <FaCalendarAlt className="absolute right-3 top-2.5 text-gray-400" size={14} />
           </div>
+          <p className="text-xs text-gray-500 mt-1.5">
+            Selecciona la fecha en la que se realizará el ensamble
+          </p>
         </div>
 
         {/* Descripción */}
