@@ -1,4 +1,127 @@
-package com.Latti.stock.service.impl;
+nt
+See all the details of this deployment | 
+
+Show Extra Logs
+
+Initializing deployment
+Cloning into '/etc/dokploy/applications/lattibackend-mkxnm2/code'...
+remote: Enumerating objects: 319, done.
+Cloned github.com/franpaezlastra/latti.git to /etc/dokploy/applications/lattibackend-mkxnm2/code: ✅
+Building lattibackend-mkxnm2
+#0 building with "default" instance using docker driver
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 497B done
+#1 DONE 0.0s
+#2 [internal] load metadata for docker.io/library/gradle:8.13-jdk17-alpine
+#2 DONE 0.9s
+#3 [internal] load metadata for docker.io/library/eclipse-temurin:17-jre
+#3 DONE 1.0s
+#4 [internal] load .dockerignore
+#4 transferring context: 105B done
+#4 DONE 0.0s
+#5 [build 1/4] FROM docker.io/library/gradle:8.13-jdk17-alpine@sha256:849f12df262884668387cf463f02e104394fde950689cc9f644764cde22a2c13
+#5 DONE 0.0s
+#6 [stage-1 1/3] FROM docker.io/library/eclipse-temurin:17-jre@sha256:696817d4fb79b9c442e84e18483d8345dd2d0b6710546344e5eb182bd3153333
+#6 resolve docker.io/library/eclipse-temurin:17-jre@sha256:696817d4fb79b9c442e84e18483d8345dd2d0b6710546344e5eb182bd3153333 done
+#6 DONE 0.0s
+#7 [stage-1 2/3] WORKDIR /app
+#7 CACHED
+#8 [build 2/4] WORKDIR /app
+#8 CACHED
+#9 [internal] load build context
+#9 transferring context: 254.15kB 0.0s done
+#9 DONE 0.1s
+#10 [build 3/4] COPY . .
+#10 DONE 0.1s
+#11 [build 4/4] RUN gradle clean bootJar -x test --no-daemon
+#11 1.812 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+#11 4.112 Daemon will be stopped at the end of the build
+#11 29.91 > Task :clean UP-TO-DATE
+#11 36.51
+#11 36.51 > Task :compileJava
+#11 36.51 /app/src/main/java/com/Latti/stock/controllers/ProductoController.java:105: error: cannot find symbol
+#11 36.51             java.util.List<Producto> productos = productoRepository.findAll();
+#11 36.51                                                  ^
+#11 36.51   symbol:   variable productoRepository
+#11 36.51   location: class ProductoController
+#11 36.61 /app/src/main/java/com/Latti/stock/controllers/ProductoController.java:113: error: cannot find symbol
+#11 36.61                     productoRepository.save(producto);
+#11 36.61                     ^
+#11 36.61   symbol:   variable productoRepository
+#11 36.61   location: class ProductoController
+#11 36.81 /app/src/main/java/com/Latti/stock/controllers/InsumoCotroller.java:197: error: cannot find symbol
+#11 36.81             java.util.List<Insumo> insumos = insumoRepository.findAll();
+#11 36.81                                              ^
+#11 36.81   symbol:   variable insumoRepository
+#11 36.81   location: class InsumoCotroller
+#11 36.81 /app/src/main/java/com/Latti/stock/controllers/InsumoCotroller.java:205: error: cannot find symbol
+#11 36.81                     insumoRepository.save(insumo);
+#11 36.82                     ^
+#11 36.82   symbol:   variable insumoRepository
+#11 36.82   location: class InsumoCotroller
+#11 36.82 4 errors
+#11 36.91
+#11 36.91 > Task :compileJava FAILED
+#11 37.01
+#11 37.01 [Incubating] Problems report is available at: file:///app/build/reports/problems/problems-report.html
+#11 37.01
+#11 37.01 FAILURE: Build failed with an exception.
+#11 37.02
+#11 37.02 * What went wrong:
+#11 37.02 Execution failed for task ':compileJava'.
+#11 37.02 > Compilation failed; see the compiler output below.
+#11 37.02   /app/src/main/java/com/Latti/stock/controllers/ProductoController.java:105: error: cannot find symbol
+#11 37.02               java.util.List<Producto> productos = productoRepository.findAll();
+#11 37.02                                                    ^
+#11 37.02     symbol:   variable productoRepository
+#11 37.02     location: class ProductoController
+#11 37.02   /app/src/main/java/com/Latti/stock/controllers/ProductoController.java:113: error: cannot find symbol
+#11 37.02                       productoRepository.save(producto);
+#11 37.02                       ^
+#11 37.02     symbol:   variable productoRepository
+#11 37.02     location: class ProductoController
+#11 37.02   /app/src/main/java/com/Latti/stock/controllers/InsumoCotroller.java:197: error: cannot find symbol
+#11 37.02               java.util.List<Insumo> insumos = insumoRepository.findAll();
+#11 37.02                                                ^
+#11 37.02     symbol:   variable insumoRepository
+#11 37.02     location: class InsumoCotroller
+#11 37.02   /app/src/main/java/com/Latti/stock/controllers/InsumoCotroller.java:205: error: cannot find symbol
+#11 37.02                       insumoRepository.save(insumo);
+#11 37.02                       ^
+#11 37.02     symbol:   variable insumoRepository
+#11 37.02     location: class InsumoCotroller
+#11 37.02   4 errors
+#11 37.02
+#11 37.02 * Try:
+#11 37.02 > Check your code and dependencies to fix the compilation error(s)
+#11 37.02 > Run with --scan to get full insights.
+#11 37.02
+#11 37.02 BUILD FAILED in 36s
+#11 37.02 2 actionable tasks: 1 executed, 1 up-to-date
+#11 ERROR: process "/bin/sh -c gradle clean bootJar -x test --no-daemon" did not complete successfully: exit code: 1
+------
+> [build 4/4] RUN gradle clean bootJar -x test --no-daemon:
+37.02     symbol:   variable insumoRepository
+37.02     location: class InsumoCotroller
+37.02   4 errors
+37.02
+37.02 * Try:
+37.02 > Check your code and dependencies to fix the compilation error(s)
+37.02 > Run with --scan to get full insights.
+37.02
+37.02 BUILD FAILED in 36s
+37.02 2 actionable tasks: 1 executed, 1 up-to-date
+------
+Dockerfile:5
+--------------------
+|         WORKDIR /app
+|         COPY . .
+| >>>     RUN gradle clean bootJar -x test --no-daemon
+|
+|         # --- Runtime stage ---
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c gradle clean bootJar -x test --no-daemon" did not complete successfully: exit code: 1
+❌ Docker build failedpackage com.Latti.stock.service.impl;
 
 import com.Latti.stock.dtos.CrearMovimientoDeInsumoDTO;
 import com.Latti.stock.dtos.DetalleMovimientoInsumoDTO;

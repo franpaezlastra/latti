@@ -5,6 +5,7 @@ import com.Latti.stock.dtos.CrearProductoConRecetaDTO;
 import com.Latti.stock.dtos.ProductoResponseDTO;
 import com.Latti.stock.dtos.StockPorLoteDTO;
 import com.Latti.stock.modules.Producto;
+import com.Latti.stock.repositories.ProductoRepository;
 import com.Latti.stock.service.ProductoService;
 import com.Latti.stock.service.MovimientoProductoLoteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +21,13 @@ public class ProductoController {
 
     private final ProductoService productoService;
     private final MovimientoProductoLoteService movimientoProductoLoteService;
+    private final ProductoRepository productoRepository;
 
     @Autowired
-    public ProductoController(ProductoService productoService, MovimientoProductoLoteService movimientoProductoLoteService) {
+    public ProductoController(ProductoService productoService, MovimientoProductoLoteService movimientoProductoLoteService, ProductoRepository productoRepository) {
         this.productoService = productoService;
         this.movimientoProductoLoteService = movimientoProductoLoteService;
+        this.productoRepository = productoRepository;
     }
 
     @PostMapping

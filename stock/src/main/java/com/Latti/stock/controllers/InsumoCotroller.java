@@ -6,6 +6,7 @@ import com.Latti.stock.dtos.InsumoResponseDTO;
 import com.Latti.stock.dtos.InsumoCompuestoResponseDTO;
 import com.Latti.stock.dtos.InsumoDetalleDTO;
 import com.Latti.stock.modules.Insumo;
+import com.Latti.stock.repositories.InsumoRepository;
 import com.Latti.stock.service.InsumoService;
 import com.Latti.stock.service.InsumoCompuestoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class InsumoCotroller {
 
     @Autowired
     private InsumoCompuestoService insumoCompuestoService;
+
+    @Autowired
+    private InsumoRepository insumoRepository;
 
     @PostMapping
     public ResponseEntity<?> crearInsumoBase(@RequestBody CrearInsumoDTO dto) {
