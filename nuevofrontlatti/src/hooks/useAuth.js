@@ -1,18 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuthStatus } from '../store/actions/authActions.js';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth);
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
-    // Verificar si hay un token al cargar la aplicación
     const token = localStorage.getItem('token');
-    if (token && !auth.isAuthenticated) {
+    
+    // Si no hay token, no hacer nada - mostrar login inmediatamente
+    if (!token) {
+      return;
+    }
+    
+    // Solo verificar una vez si hay token
+    if (token && !hasCheckedRef.current) {
+      hasCheckedRef.current = true;
       dispatch(checkAuthStatus());
     }
-  }, [dispatch, auth.isAuthenticated]);
+  }, [dispatch]);
 
   return {
     user: auth.user,

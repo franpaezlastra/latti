@@ -74,7 +74,12 @@ export const checkAuthStatus = createAsyncThunk(
       const userStr = localStorage.getItem('user');
       
       if (!token) {
-        throw new Error('No hay token en localStorage');
+        // Si no hay token, no es un error, simplemente no hay sesión
+        return {
+          token: null,
+          user: null,
+          isValid: false
+        };
       }
       
       // Si no hay user pero hay token, intentar extraer username del token
@@ -98,8 +103,7 @@ export const checkAuthStatus = createAsyncThunk(
         }
       }
       
-      // Validar token con el servidor
-      // Usamos una flag especial para evitar que el interceptor redirija
+      // Validar token con el servidor con timeout
       try {
         // Crear una petición especial que no active el interceptor de redirección
         const config = {
@@ -107,7 +111,8 @@ export const checkAuthStatus = createAsyncThunk(
             'Authorization': `Bearer ${token}`
           },
           // Agregar flag para que el interceptor sepa que es una validación
-          _skipAuthRedirect: true
+          _skipAuthRedirect: true,
+          timeout: 5000 // ✅ Timeout de 5 segundos
         };
         
         const response = await api.get('/auth/validate', config);
@@ -126,8 +131,9 @@ export const checkAuthStatus = createAsyncThunk(
           throw new Error('Token expirado o inválido');
         }
         // Para otros errores (red, timeout, etc), mantener la sesión local
-        // pero marcar como no validado
+        // pero marcar como no validado - NO lanzar error para que loading se ponga en false
         console.warn('Error al validar token (posible problema de conectividad):', serverError.message);
+        // ✅ En lugar de lanzar error, retornar un resultado válido pero con isValid: false
         return {
           token,
           user: user || { username: 'Usuario' },
@@ -135,6 +141,10 @@ export const checkAuthStatus = createAsyncThunk(
         };
       }
     } catch (error) {
+      // ✅ Si hay un error crítico, limpiar y retornar estado no autenticado
+      console.error('Error en checkAuthStatus:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       return rejectWithValue(error.message || "Sesión no válida");
     }
   }

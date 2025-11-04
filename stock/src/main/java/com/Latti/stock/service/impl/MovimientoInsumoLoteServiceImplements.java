@@ -181,10 +181,78 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
         // ✅ NUEVA VALIDACIÓN: Verificar si es parte de un ensamble
         if (esMovimientoDeEnsamble(id)) {
-            throw new IllegalArgumentException(
-                "No se puede eliminar este movimiento porque es parte de un ensamble de insumo compuesto. " +
-                "Para deshacer un ensamble, debe eliminar el insumo compuesto resultante primero."
-            );
+            // Obtener el ensambleId del movimiento
+            String ensambleId = movimiento.getDetalles().stream()
+                    .filter(d -> d.getEnsambleId() != null && !d.getEnsambleId().trim().isEmpty())
+                    .map(DetalleMovimientoInsumo::getEnsambleId)
+                    .findFirst()
+                    .orElse(null);
+            
+            if (ensambleId != null) {
+                // Si es un movimiento de SALIDA con ensambleId (insumo simple usado en ensamble)
+                // NO se puede eliminar directamente (debe eliminarse desde el movimiento de entrada del ensamble)
+                if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                    throw new IllegalArgumentException(
+                        "Este movimiento es parte de un ensamble. " +
+                        "Para eliminarlo, debes eliminar el movimiento de ensamble del insumo compuesto relacionado."
+                    );
+                } 
+                // Si es un movimiento de ENTRADA con ensambleId (insumo compuesto ensamblado)
+                // Permitir eliminar SOLO si no se ha usado para crear productos
+                else if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    // Verificar si el insumo compuesto se usó para crear productos DESPUÉS de este movimiento
+                    for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                        Insumo insumoCompuesto = detalle.getInsumo();
+                        
+                        // Verificar si es un insumo compuesto
+                        if (insumoCompuesto != null && insumoCompuesto.esCompuesto()) {
+                            boolean seUsoEnProduccion = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                            if (seUsoEnProduccion) {
+                                throw new IllegalArgumentException(
+                                    "Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                    "No se puede eliminar porque afectaría el historial de producción."
+                                );
+                            }
+                        }
+                    }
+                    
+                    // ✅ Si se puede eliminar, también eliminar los movimientos de SALIDA relacionados
+                    System.out.println("🔄 Eliminando movimiento de ensamble con ensambleId: " + ensambleId);
+                    System.out.println("🗑️ Buscando movimientos relacionados...");
+                    
+                    List<DetalleMovimientoInsumo> movimientosRelacionados = detalleMovimientoInsumoRepository.findByEnsambleId(ensambleId);
+                    System.out.println("📋 Movimientos relacionados encontrados: " + movimientosRelacionados.size());
+                    
+                    // Primero revertir stocks de los movimientos de SALIDA relacionados (insumos simples)
+                    List<MovimientoInsumoLote> movimientosSalidaAEliminar = new ArrayList<>();
+                    
+                    for (DetalleMovimientoInsumo detalleRelacionado : movimientosRelacionados) {
+                        // Solo procesar los movimientos de SALIDA (insumos simples usados en el ensamble)
+                        if (detalleRelacionado.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                            Insumo insumoSimple = detalleRelacionado.getInsumo();
+                            // Revertir el stock (devolver lo que se había quitado)
+                            insumoSimple.setStockActual(insumoSimple.getStockActual() + detalleRelacionado.getCantidad());
+                            insumoRepository.save(insumoSimple);
+                            System.out.println("  ✅ Revertido stock de " + insumoSimple.getNombre() + ": +" + detalleRelacionado.getCantidad());
+                            
+                            // Guardar el movimiento para eliminarlo después
+                            MovimientoInsumoLote movimientoSalida = detalleRelacionado.getMovimiento();
+                            // Solo agregar si no es el mismo movimiento que estamos eliminando
+                            if (!movimientoSalida.getId().equals(id)) {
+                                movimientosSalidaAEliminar.add(movimientoSalida);
+                            }
+                        }
+                    }
+                    
+                    // Ahora eliminar los movimientos de salida relacionados
+                    for (MovimientoInsumoLote movimientoSalida : movimientosSalidaAEliminar) {
+                        System.out.println("  🗑️ Eliminando movimiento de salida relacionado ID: " + movimientoSalida.getId());
+                        movimientoRepository.delete(movimientoSalida);
+                    }
+                    
+                    System.out.println("✅ Movimientos relacionados eliminados: " + movimientosSalidaAEliminar.size());
+                }
+            }
         }
 
         // Lista para recalcular productos después de eliminar
@@ -322,7 +390,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             MovimientoInsumoLote movimiento = movimientoRepository.findById(movimientoId)
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
+            // ✅ NUEVO: Verificar si es un movimiento de ensamble ANTES de aplicar las validaciones generales
+            boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(movimientoId) && 
+                                                 movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
+            
             // Condición 1: No hay movimientos posteriores del mismo insumo
+            // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, permitir salidas posteriores del insumo compuesto
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
@@ -331,7 +404,11 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                         .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()))
                         .collect(Collectors.toList());
                 
-                if (!movimientosPosteriores.isEmpty()) {
+                // Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto, 
+                // permitir salidas posteriores normales (ej: botellas armadas rotas)
+                boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                
+                if (!movimientosPosteriores.isEmpty() && !esInsumoCompuestoEnsamble) {
                     detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                         "' tiene " + movimientosPosteriores.size() + " movimiento(s) posterior(es)");
                 }
@@ -351,6 +428,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
 
             // Condición 3: No hay movimientos de salida posteriores
+            // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, permitir salidas posteriores del insumo compuesto
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
@@ -359,7 +437,11 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                                    m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA)
                         .collect(Collectors.toList());
                 
-                if (!salidasPosteriores.isEmpty()) {
+                // Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
+                // permitir salidas posteriores normales (ej: botellas armadas rotas)
+                boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                
+                if (!salidasPosteriores.isEmpty() && !esInsumoCompuestoEnsamble) {
                     detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                         "' tiene " + salidasPosteriores.size() + " salida(s) posterior(es)");
                 }

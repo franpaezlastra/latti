@@ -36,8 +36,9 @@ const initialState = {
   // Esto evita la redirección al login durante la carga inicial
   // checkAuthStatus validará con el backend y actualizará este estado
   isAuthenticated: hasValidLocalStorage,
-  // Si hay token, arrancamos en loading hasta validar con checkAuthStatus
-  loading: !!storedToken,
+  // ✅ FIX: loading debe ser false por defecto para mostrar login inmediatamente
+  // Solo se pondrá en true cuando se inicie checkAuthStatus
+  loading: false, // ✅ SIEMPRE empezar en false
   error: null,
   loginStatus: "idle",
   loginError: null,
@@ -127,10 +128,16 @@ const authReducer = createReducer(initialState, (builder) => {
       state.error = null;
     })
     .addCase(checkAuthStatus.rejected, (state, action) => {
-      state.loading = false;
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
+      state.loading = false; // ✅ Asegurar que loading siempre se ponga en false
+      // Solo limpiar si el error es de autenticación (401, 403)
+      // Para otros errores (red, timeout), mantener la sesión local
+      if (action.payload && (action.payload.includes('expirado') || action.payload.includes('inválido'))) {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
       state.error = action.payload;
     });
 });
