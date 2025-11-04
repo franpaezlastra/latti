@@ -424,8 +424,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // Crear nueva lista de detalles desde el DTO
-            List<DetalleMovimientoInsumo> nuevosDetalles = new ArrayList<>();
+            // ✅ Vaciar la lista existente (orphanRemoval eliminará los antiguos)
+            movimiento.getDetalles().clear();
+            
+            // Crear nuevos detalles desde el DTO
             List<Long> insumosParaRecalcular = new ArrayList<>();
             
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
@@ -449,18 +451,16 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
                 insumoRepository.save(insumo);
 
-                // Crear nuevo detalle
+                // Crear nuevo detalle y agregarlo directamente a la lista existente
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
                 nuevoDetalle.setMovimiento(movimiento); // Establecer la relación bidireccional
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
-                nuevosDetalles.add(nuevoDetalle);
+                // Agregar a la lista existente, NO reemplazar la lista completa
+                movimiento.getDetalles().add(nuevoDetalle);
             }
-
-            // ✅ Reemplazar toda la lista usando setDetalles (orphanRemoval eliminará los antiguos)
-            movimiento.setDetalles(nuevosDetalles);
 
             // Guardar movimiento actualizado
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.saveAndFlush(movimiento);

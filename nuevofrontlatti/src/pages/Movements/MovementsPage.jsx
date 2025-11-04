@@ -233,7 +233,7 @@ const MovementsPage = () => {
     };
     
     setMovimientoAEditar(movimientoParaEditar);
-    openModal('edit');
+      openModal('edit');
   };
 
   const handleConfirmarEliminacion = async () => {

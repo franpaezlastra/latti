@@ -283,7 +283,7 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       
       // Llamar onSuccess antes de cerrar para que el componente padre sepa que todo salió bien
       if (onSuccess) {
-        onSuccess();
+      onSuccess();
       }
       
       // Cerrar el modal

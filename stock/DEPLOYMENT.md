@@ -14,14 +14,31 @@
 - **Usuario no-root** para seguridad
 - **Health check** en `/actuator/health`
 
-### Variables de Entorno Requeridas
+### Variables de Entorno Requeridas (CRÍTICAS)
+
 ```bash
-DB_HOST=tu-host-postgresql
-DB_PORT=5432
-DB_NAME=tu_nombre_base_datos
-DB_USERNAME=tu_usuario
-DB_PASSWORD=tu_password
+# 🔴 PERFIL DE SPRING (CRÍTICO - evita que se borre la BD)
+SPRING_PROFILES_ACTIVE=prod
+
+# 📊 BASE DE DATOS POSTGRESQL
+SPRING_DATASOURCE_URL=jdbc:postgresql://tu-host:5432/tu_base_datos
+SPRING_DATASOURCE_USERNAME=tu_usuario
+SPRING_DATASOURCE_PASSWORD=tu_password
+
+# 🔧 CONFIGURACIÓN JPA (primera vez usa 'update', después 'validate')
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+# 🔐 JWT
+JWT_SECRET=tu_clave_secreta_minimo_32_caracteres
+
+# 🌐 CORS
+CORS_ALLOWED_ORIGINS=https://tu-dominio-frontend.com
 ```
+
+⚠️ **MUY IMPORTANTE**: 
+- `SPRING_PROFILES_ACTIVE=prod` es CRÍTICO para que NO se borre la BD
+- `SPRING_JPA_HIBERNATE_DDL_AUTO=update` en la primera vez crea las tablas
+- Después puedes cambiar a `validate` para mayor seguridad
 
 ## 🚀 Despliegue en Dockploy
 
@@ -35,9 +52,14 @@ DB_PASSWORD=tu_password
 - **Port:** `8080`
 - **Build Type:** `Dockerfile`
 
-### 3. Variables de Entorno
-- Agregar todas las variables de base de datos
-- `SPRING_PROFILES_ACTIVE=prod`
+### 3. Variables de Entorno (REVISAR ARRIBA ⬆️)
+- ✅ `SPRING_PROFILES_ACTIVE=prod` (CRÍTICO)
+- ✅ `SPRING_DATASOURCE_URL` con PostgreSQL
+- ✅ `SPRING_DATASOURCE_USERNAME`
+- ✅ `SPRING_DATASOURCE_PASSWORD`
+- ✅ `SPRING_JPA_HIBERNATE_DDL_AUTO=update`
+- ✅ `JWT_SECRET`
+- ✅ `CORS_ALLOWED_ORIGINS`
 
 ### 4. Desplegar
 - Hacer clic en "Deploy"
