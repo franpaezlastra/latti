@@ -254,7 +254,7 @@ const InsumosMovementsSection = ({
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: (mov) => onEliminar(mov),
+      onClick: (mov) => onEliminar({ ...mov, tipo: 'Insumo' }),
       variant: 'ghost',
       disabled: (mov) => puedeEditarMovimiento(mov)
     }

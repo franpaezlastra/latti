@@ -145,13 +145,13 @@ const ProductosMovementsSection = ({
     {
       label: 'Ver detalles',
       icon: <FaEye />,
-      onClick: (mov) => onVerDetalles(mov),
+      onClick: (mov) => onVerDetalles({ ...mov, tipo: 'Producto' }),
       variant: 'ghost'
     },
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: (mov) => onEliminar(mov),
+      onClick: (mov) => onEliminar({ ...mov, tipo: 'Producto' }),
       variant: 'ghost'
     }
   ];
