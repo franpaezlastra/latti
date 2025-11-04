@@ -581,15 +581,16 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                         detalleRelacionado.setCantidad(cantidadNuevaSalida);
                         
                         // Actualizar el stock del insumo simple
-                        // Como ya revertimos el stock original (devolvimos cantidadOriginalSalida),
-                        // ahora solo necesitamos descontar la cantidad nueva
-                        insumoSimple.setStockActual(insumoSimple.getStockActual() - cantidadNuevaSalida);
+                        // La diferencia es: (cantidadNuevaSalida - cantidadOriginalSalida)
+                        double diferencia = cantidadNuevaSalida - cantidadOriginalSalida;
+                        insumoSimple.setStockActual(insumoSimple.getStockActual() - diferencia);
                         
                         detalleMovimientoInsumoRepository.save(detalleRelacionado);
                         insumoRepository.save(insumoSimple);
                         
                         System.out.println("  ✅ Actualizado movimiento de salida de " + insumoSimple.getNombre() + 
-                                         ": " + cantidadOriginalSalida + " → " + cantidadNuevaSalida);
+                                         ": " + cantidadOriginalSalida + " → " + cantidadNuevaSalida + 
+                                         " (diferencia: " + diferencia + ")");
                     }
                 }
             }
