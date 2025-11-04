@@ -424,23 +424,17 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // ✅ PASO 1: Eliminar MANUALMENTE todos los detalles antiguos
-            System.out.println("🗑️ Eliminando " + movimiento.getDetalles().size() + " detalles antiguos...");
-            List<Long> idsDetallesAEliminar = movimiento.getDetalles().stream()
-                    .map(DetalleMovimientoInsumo::getId)
-                    .filter(id -> id != null)
-                    .toList();
+            // ✅ PASO 1: Eliminar TODOS los detalles antiguos con query directa
+            int cantidadDetallesAntiguos = movimiento.getDetalles().size();
+            System.out.println("🗑️ Eliminando " + cantidadDetallesAntiguos + " detalles antiguos del movimiento " + dto.id() + "...");
             
-            // Vaciar la lista primero (para romper la relación)
+            // Vaciar la lista primero (para romper la relación en memoria)
             movimiento.getDetalles().clear();
-            movimientoRepository.flush();
             
-            // Eliminar físicamente de la BD
-            for (Long idDetalle : idsDetallesAEliminar) {
-                detalleMovimientoInsumoRepository.deleteById(idDetalle);
-            }
+            // Eliminar DIRECTAMENTE de la BD usando query personalizada
+            detalleMovimientoInsumoRepository.deleteByMovimientoId(dto.id());
             detalleMovimientoInsumoRepository.flush();
-            System.out.println("✅ Detalles antiguos eliminados");
+            System.out.println("✅ Detalles antiguos eliminados de la BD");
             
             // ✅ PASO 2: Crear y agregar los nuevos detalles
             System.out.println("➕ Agregando " + dto.detalles().size() + " detalles nuevos...");
