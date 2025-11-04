@@ -211,18 +211,10 @@ const InsumosMovementsSection = ({
         return true; // Disabled mientras se carga
       }
       
-      // Si ya tenemos la validación, usarla
+      // ✅ PRINCIPAL: Si ya tenemos la validación del backend, usarla siempre
+      // El backend es la fuente de verdad y sabe si un movimiento de ensamble puede editarse
       if (validacionesEdicion.hasOwnProperty(movimiento.id)) {
         return !validacionesEdicion[movimiento.id]; // true si NO puede editar (disabled)
-      }
-      
-      // Si aún no se ha validado después de que se completaron las validaciones,
-      // verificar si es un movimiento de ensamble como fallback
-      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
-      
-      // También verificar si el movimiento tiene la propiedad esEnsamble
-      if (movimiento.esEnsamble || esEnsamble) {
-        return true; // Disabled si es ensamble
       }
       
       // Si las validaciones ya se completaron pero no tenemos esta validación,
