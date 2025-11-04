@@ -4,6 +4,7 @@ package com.Latti.stock.controllers;
 import com.Latti.stock.dtos.CrearInsumoDTO;
 import com.Latti.stock.dtos.InsumoResponseDTO;
 import com.Latti.stock.dtos.InsumoCompuestoResponseDTO;
+import com.Latti.stock.dtos.InsumoDetalleDTO;
 import com.Latti.stock.modules.Insumo;
 import com.Latti.stock.service.InsumoService;
 import com.Latti.stock.service.InsumoCompuestoService;
@@ -51,7 +52,7 @@ public class InsumoCotroller {
     }
 
     /**
-     * Obtener un insumo base por ID
+     * Obtener un insumo base por ID (sin referencias circulares)
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerInsumoBasePorId(@PathVariable Long id) {
@@ -61,7 +62,19 @@ public class InsumoCotroller {
             if (insumo == null) {
                 return ResponseEntity.notFound().build();
             }
-            return ResponseEntity.ok(insumo);
+            
+            // ✅ Usar DTO para evitar referencias circulares
+            InsumoDetalleDTO dto = new InsumoDetalleDTO(
+                insumo.getId(),
+                insumo.getNombre(),
+                insumo.getUnidadMedida(),
+                insumo.getTipo(),
+                insumo.getStockActual(),
+                insumo.getStockMinimo(),
+                insumo.getPrecioDeCompra()
+            );
+            
+            return ResponseEntity.ok(dto);
         } catch (IllegalArgumentException e) {
             System.err.println("❌ Error: " + e.getMessage());
             return ResponseEntity.notFound().build();
@@ -97,6 +110,7 @@ public class InsumoCotroller {
                 insumoMap.put("unidadMedida", base.unidadMedida().toString());
                 insumoMap.put("tipo", base.tipo().toString());
                 insumoMap.put("stockActual", base.stockActual());
+                insumoMap.put("stockMinimo", base.stockMinimo());
                 insumoMap.put("precioDeCompra", base.precioDeCompra());
                 insumoMap.put("totalInvertido", base.totalInvertido());
                 insumoMap.put("receta", null); // Los insumos base no tienen receta
@@ -111,6 +125,7 @@ public class InsumoCotroller {
                 insumoMap.put("unidadMedida", compuesto.unidadMedida().toString());
                 insumoMap.put("tipo", compuesto.tipo().toString());
                 insumoMap.put("stockActual", compuesto.stockActual());
+                insumoMap.put("stockMinimo", compuesto.stockMinimo());
                 insumoMap.put("precioDeCompra", compuesto.precioDeCompra());
                 insumoMap.put("totalInvertido", 0.0); // Los compuestos no tienen total invertido directo
                 // Convertir receta a formato que el frontend espera
@@ -168,6 +183,40 @@ public class InsumoCotroller {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al eliminar el insumo"));
+        }
+    }
+
+    /**
+     * 🔧 ENDPOINT TEMPORAL: Actualizar stockMinimo de todos los insumos que tienen 0
+     * Este endpoint puede eliminarse después de ejecutarlo una vez
+     */
+    @PostMapping("/fix-stock-minimo")
+    public ResponseEntity<?> fixStockMinimo() {
+        try {
+            System.out.println("🔧 Actualizando stockMinimo de todos los insumos...");
+            java.util.List<Insumo> insumos = insumoRepository.findAll();
+            int actualizados = 0;
+            
+            for (Insumo insumo : insumos) {
+                if (insumo.getStockMinimo() == 0) {
+                    // Establecer un valor por defecto razonable (10% del stock actual o 10, lo que sea mayor)
+                    double stockMinimoSugerido = Math.max(10, insumo.getStockActual() * 0.1);
+                    insumo.setStockMinimo(stockMinimoSugerido);
+                    insumoRepository.save(insumo);
+                    actualizados++;
+                    System.out.println("  ✅ Insumo '" + insumo.getNombre() + "': stockMinimo = " + stockMinimoSugerido);
+                }
+            }
+            
+            System.out.println("🎉 Actualización completada: " + actualizados + " insumos actualizados");
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Stock mínimo actualizado correctamente",
+                "insumosActualizados", actualizados
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Error al actualizar stock mínimo: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error al actualizar stock mínimo: " + e.getMessage()));
         }
     }
 }

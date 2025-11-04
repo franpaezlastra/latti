@@ -96,6 +96,7 @@ public class ProductoServiceImplements implements ProductoService {
                     producto.getId(),
                     producto.getNombre(),
                     producto.getStockActual(),
+                    producto.getStockMinimo(),
                     producto.getPrecioInversion(),
                     producto.getPrecioVenta(),
                     receta

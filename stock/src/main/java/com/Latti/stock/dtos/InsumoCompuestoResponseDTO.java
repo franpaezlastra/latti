@@ -13,6 +13,7 @@ public record InsumoCompuestoResponseDTO(
     UnidadMedida unidadMedida,
     TipoInsumo tipo,
     double stockActual,
+    double stockMinimo,
     double precioDeCompra,
     List<ComponenteRecetaResponseDTO> receta
 ) {

@@ -55,6 +55,7 @@ public class InsumoServiceImplements implements InsumoService {
                             insumo.getUnidadMedida(),
                             insumo.getTipo(),
                             insumo.getStockActual(),
+                            insumo.getStockMinimo(),
                             insumo.getPrecioDeCompra(),
                             totalInvertido
                     );

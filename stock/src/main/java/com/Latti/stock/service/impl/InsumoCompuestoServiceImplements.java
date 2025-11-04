@@ -392,6 +392,7 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
                 insumo.getUnidadMedida(),
                 insumo.getTipo(),
                 insumo.getStockActual(),
+                insumo.getStockMinimo(),
                 insumo.getPrecioDeCompra(),
                 recetaDTO
         );

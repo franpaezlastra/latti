@@ -94,4 +94,38 @@ public class ProductoController {
         }
     }
 
+    /**
+     * 🔧 ENDPOINT TEMPORAL: Actualizar stockMinimo de todos los productos que tienen 0
+     * Este endpoint puede eliminarse después de ejecutarlo una vez
+     */
+    @PostMapping("/fix-stock-minimo")
+    public ResponseEntity<?> fixStockMinimo() {
+        try {
+            System.out.println("🔧 Actualizando stockMinimo de todos los productos...");
+            java.util.List<Producto> productos = productoRepository.findAll();
+            int actualizados = 0;
+            
+            for (Producto producto : productos) {
+                if (producto.getStockMinimo() == 0) {
+                    // Establecer un valor por defecto razonable (10% del stock actual o 5, lo que sea mayor)
+                    double stockMinimoSugerido = Math.max(5, producto.getStockActual() * 0.1);
+                    producto.setStockMinimo(stockMinimoSugerido);
+                    productoRepository.save(producto);
+                    actualizados++;
+                    System.out.println("  ✅ Producto '" + producto.getNombre() + "': stockMinimo = " + stockMinimoSugerido);
+                }
+            }
+            
+            System.out.println("🎉 Actualización completada: " + actualizados + " productos actualizados");
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Stock mínimo actualizado correctamente",
+                "productosActualizados", actualizados
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Error al actualizar stock mínimo: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error al actualizar stock mínimo: " + e.getMessage()));
+        }
+    }
+
 }
