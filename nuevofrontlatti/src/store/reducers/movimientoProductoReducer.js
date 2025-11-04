@@ -32,7 +32,7 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
     // Crear movimiento
     .addCase(createMovimientoProducto.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí para que la página no se actualice
     })
     .addCase(createMovimientoProducto.fulfilled, (state, action) => {
       state.loading = false;
@@ -41,7 +41,8 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(createMovimientoProducto.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el modal lo maneja localmente
+      // state.error = action.payload || action.error.message;
     })
 
     // Fetch movimientos
@@ -61,7 +62,7 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
     // Eliminar movimiento
     .addCase(deleteMovimientoProducto.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí
     })
     .addCase(deleteMovimientoProducto.fulfilled, (state, action) => {
       state.loading = false;
@@ -69,13 +70,14 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(deleteMovimientoProducto.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el componente lo maneja localmente
+      // state.error = action.payload || action.error.message;
     })
 
     // Crear venta por lotes
     .addCase(createVentaPorLotes.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí
     })
     .addCase(createVentaPorLotes.fulfilled, (state, action) => {
       state.loading = false;
@@ -84,7 +86,8 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(createVentaPorLotes.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el modal lo maneja localmente
+      // state.error = action.payload || action.error.message;
     });
 });
 

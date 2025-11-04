@@ -15,6 +15,7 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     unidadMedida: '',
+    stockMinimo: 0,
     receta: []
   });
   
@@ -44,9 +45,14 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         }));
       }
 
+      // Usar valores originales si existen (vienen de la tabla formateada)
+      const unidadMedida = insumo.unidadMedidaOriginal || insumo.unidadMedida || '';
+      const stockMinimo = insumo.stockMinimoOriginal !== undefined ? insumo.stockMinimoOriginal : (insumo.stockMinimo !== undefined ? insumo.stockMinimo : 0);
+
       setFormData({
         nombre: insumo.nombre || '',
-        unidadMedida: insumo.unidadMedida || '',
+        unidadMedida: unidadMedida,
+        stockMinimo: stockMinimo,
         receta: recetaFormateada
       });
       setError(false);
@@ -61,6 +67,7 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       setFormData({
         nombre: '',
         unidadMedida: '',
+        stockMinimo: 0,
         receta: []
       });
       setError(false);
@@ -161,6 +168,7 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
       const insumoData = {
         nombre: capitalizarPrimeraLetra(formData.nombre.trim()),
         unidadMedida: formData.unidadMedida, // Ya es un ENUM válido, no hacer trim()
+        stockMinimo: parseFloat(formData.stockMinimo) || 0,
         receta: formData.receta.map(c => ({
           insumoBaseId: parseInt(c.insumoBaseId),
           cantidad: parseFloat(c.cantidad)
@@ -279,6 +287,26 @@ const EditarInsumoCompuestoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Stock Mínimo */}
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Stock Mínimo *
+          </label>
+          <Input
+            type="number"
+            value={formData.stockMinimo}
+            onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
+            placeholder="Ej: 10"
+            min="0"
+            step="0.01"
+            disabled={isSubmitting}
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Cuando el stock sea igual o menor a este valor, se mostrará una alerta de stock bajo
+          </p>
         </div>
 
         {/* Receta del insumo compuesto */}

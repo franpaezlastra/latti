@@ -32,9 +32,17 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Limpiar formulario cuando se abre/cierra el modal
+  // Referencia para trackear si el modal acaba de abrirse
+  const wasOpenRef = React.useRef(false);
+
+  // Limpiar formulario SOLO cuando el modal pasa de cerrado a abierto
   useEffect(() => {
-    if (isOpen) {
+    const wasOpen = wasOpenRef.current;
+    
+    if (isOpen && !wasOpen) {
+      // ✅ El modal acaba de abrirse - limpiar formulario
+      console.log('🔄 Modal abriendo - limpiando formulario');
+      
       // Cargar productos si están vacíos
       if (!productos || productos.length === 0) {
         dispatch(loadProductos());
@@ -51,7 +59,10 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
       setError(false);
       setTextoError('');
     }
-  }, [isOpen, dispatch]);
+    
+    // Actualizar la referencia
+    wasOpenRef.current = isOpen;
+  }, [isOpen, productos, dispatch]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
@@ -319,21 +330,34 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
         setTextoError('');
         
         if (onSubmit) onSubmit();
+        onClose(); // Cerrar solo si es exitoso
       } catch (err) {
-        console.log('MovimientoProductoModal - catch error (venta por lotes):', err);
-        setError(true);
+        console.log('🔥 MovimientoProductoModal - CATCH ERROR (venta por lotes):', err);
+        console.log('🔥 Error type:', typeof err);
+        console.log('🔥 Error object:', JSON.stringify(err, null, 2));
         
+        // Determinar el mensaje de error
+        let errorMsg = 'Error inesperado al registrar la venta por lotes';
         if (typeof err === 'string') {
-          setTextoError(err);
+          console.log('✅ Setting error from string:', err);
+          errorMsg = err;
         } else if (err.response?.data?.error) {
-          setTextoError(err.response.data.error);
+          console.log('✅ Setting error from response.data.error:', err.response.data.error);
+          errorMsg = err.response.data.error;
         } else if (err.message) {
-          setTextoError(err.message);
-        } else {
-          setTextoError('Error inesperado al registrar la venta por lotes');
+          console.log('✅ Setting error from message:', err.message);
+          errorMsg = err.message;
         }
-      } finally {
+        
+        // ✅ Setear ambos estados juntos
+        setError(true);
+        setTextoError(errorMsg);
         setIsSubmitting(false);
+        
+        console.log('🔥 Estados seteados:', { error: true, textoError: errorMsg, isSubmitting: false });
+        console.log('🔥 Modal should stay OPEN - NOT closing');
+      } finally {
+        console.log('🔄 Finally block (venta por lotes) - already set isSubmitting to false in catch');
       }
       return;
     }
@@ -368,26 +392,38 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
       setTextoError('');
       
       if (onSubmit) onSubmit();
+      onClose(); // Cerrar solo si es exitoso
     } catch (err) {
-      console.log('MovimientoProductoModal - catch error:', err);
-      setError(true);
+      console.log('🔥 MovimientoProductoModal - CATCH ERROR:', err);
+      console.log('🔥 Error type:', typeof err);
+      console.log('🔥 Error object:', JSON.stringify(err, null, 2));
       
-      // Si err es directamente el string del error (viene de rejectWithValue)
+      // Determinar el mensaje de error
+      let errorMsg = 'Error inesperado al registrar el movimiento de producto';
       if (typeof err === 'string') {
-        console.log('MovimientoProductoModal - setting error from string:', err);
-        setTextoError(err);
+        console.log('✅ Setting error from string:', err);
+        errorMsg = err;
       } else if (err.response?.data?.error) {
-        console.log('MovimientoProductoModal - setting error from response:', err.response.data.error);
-        setTextoError(err.response.data.error);
+        console.log('✅ Setting error from response.data.error:', err.response.data.error);
+        errorMsg = err.response.data.error;
       } else if (err.message) {
-        console.log('MovimientoProductoModal - setting error from message:', err.message);
-        setTextoError(err.message);
-      } else {
-        console.log('MovimientoProductoModal - setting generic error');
-        setTextoError('Error inesperado al registrar el movimiento de producto');
+        console.log('✅ Setting error from message:', err.message);
+        errorMsg = err.message;
       }
-    } finally {
+      
+      // ✅ Setear ambos estados juntos
+      setError(true);
+      setTextoError(errorMsg);
       setIsSubmitting(false);
+      
+      console.log('🔥 Estados seteados:', { error: true, textoError: errorMsg, isSubmitting: false });
+      console.log('🔥 Modal should stay OPEN - NOT closing');
+      
+      // ⚠️ IMPORTANTE: NO cerrar el modal cuando hay error
+      // El modal debe permanecer abierto para mostrar el error
+      return; // Salir sin cerrar el modal
+    } finally {
+      console.log('🔄 Finally block - already set isSubmitting to false in catch');
     }
   };
 

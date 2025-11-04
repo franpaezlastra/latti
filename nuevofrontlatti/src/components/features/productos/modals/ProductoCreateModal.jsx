@@ -8,6 +8,7 @@ import NumberInput from '../../../ui/NumberInput';
 const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const [formData, setFormData] = useState({
     nombre: '',
+    stockMinimo: 0,
     insumos: []
   });
   const [error, setError] = useState(false);
@@ -109,6 +110,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
 
     const productoData = {
       nombre: formData.nombre.trim(),
+      stockMinimo: parseFloat(formData.stockMinimo) || 0,
       insumos: formData.insumos.map(insumo => ({
         insumoId: insumo.insumoId,
         cantidad: parseFloat(insumo.cantidad)
@@ -132,6 +134,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
   const handleClose = () => {
     setFormData({
       nombre: '',
+      stockMinimo: 0,
       insumos: []
     });
     setError(false);
@@ -145,6 +148,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
     if (!isOpen) {
       setFormData({
         nombre: '',
+        stockMinimo: 0,
         insumos: []
       });
       setError(false);
@@ -203,7 +207,7 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
       errorMessage={textoError}
       maxWidth="max-w-2xl"
     >
-      {/* Nombre del producto - FIJOS */}
+      {/* Nombre del producto */}
       <Input
         label="Nombre del Producto"
         placeholder="Ingrese el nombre del producto"
@@ -212,6 +216,26 @@ const ProductoCreateModal = ({ isOpen, onClose, onSubmit, insumos = [] }) => {
         required
         disabled={isSubmitting}
       />
+
+      {/* Stock Mínimo */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Stock Mínimo *
+        </label>
+        <Input
+          type="number"
+          value={formData.stockMinimo}
+          onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
+          placeholder="Ej: 10"
+          min="0"
+          step="0.01"
+          disabled={isSubmitting}
+          required
+        />
+        <p className="text-xs text-gray-500">
+          Cuando el stock sea igual o menor a este valor, se mostrará una alerta de stock bajo
+        </p>
+      </div>
 
       {/* Sección de insumos con scroll interno */}
       <div className="space-y-3">

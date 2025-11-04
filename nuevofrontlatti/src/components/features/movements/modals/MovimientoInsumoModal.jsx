@@ -27,10 +27,16 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Limpiar formulario cuando se abre/cierra el modal
+  // Referencia para trackear si el modal acaba de abrirse
+  const wasOpenRef = React.useRef(false);
+
+  // Limpiar formulario SOLO cuando el modal pasa de cerrado a abierto
   useEffect(() => {
-    if (isOpen) {
-      console.log("🔄 Abriendo modal de movimiento de insumos");
+    const wasOpen = wasOpenRef.current;
+    
+    if (isOpen && !wasOpen) {
+      // ✅ El modal acaba de abrirse - limpiar formulario
+      console.log("🔄 Modal abriendo - limpiando formulario de insumos");
       console.log("📊 Estado actual de insumos:", { insumos, loading, error });
       
       // Solo cargar insumos si no están cargados o hay error
@@ -50,7 +56,10 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       setHasError(false);
       setTextoError('');
     }
-  }, [isOpen, dispatch]);
+    
+    // Actualizar la referencia
+    wasOpenRef.current = isOpen;
+  }, [isOpen, insumos, loading, error, dispatch]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
@@ -207,24 +216,34 @@ const MovimientoInsumoModal = ({ isOpen, onClose, onSubmit }) => {
       if (onSubmit) onSubmit();
       onClose();
     } catch (err) {
-      console.error('❌ Error al crear movimiento de insumo:', err);
+      console.log('🔥 MovimientoInsumoModal - CATCH ERROR:', err);
+      console.log('🔥 Error type:', typeof err);
+      console.log('🔥 Error object:', JSON.stringify(err, null, 2));
       setHasError(true);
       
       // Si err es directamente el string del error (viene de rejectWithValue)
       if (typeof err === 'string') {
-        console.log('MovimientoInsumoModal - setting error from string:', err);
+        console.log('✅ Setting error from string:', err);
         setTextoError(err);
       } else if (err.response?.data?.error) {
-        console.log('MovimientoInsumoModal - setting error from response:', err.response.data.error);
+        console.log('✅ Setting error from response.data.error:', err.response.data.error);
         setTextoError(err.response.data.error);
       } else if (err.message) {
-        console.log('MovimientoInsumoModal - setting error from message:', err.message);
+        console.log('✅ Setting error from message:', err.message);
         setTextoError(err.message);
       } else {
-        console.log('MovimientoInsumoModal - setting generic error');
+        console.log('✅ Setting generic error');
         setTextoError('Error inesperado al registrar el movimiento de insumo');
       }
+      
+      console.log('🔥 Final error state:', { hasError: true, textoError: err.message || err });
+      console.log('🔥 Modal should stay OPEN - NOT closing');
+      
+      // ⚠️ IMPORTANTE: NO cerrar el modal cuando hay error
+      // El modal debe permanecer abierto para mostrar el error
+      return; // Salir sin cerrar el modal
     } finally {
+      console.log('🔄 Finally block - setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };

@@ -75,7 +75,13 @@ const DataTable = ({
                   >
                     {columns.map((column, colIndex) => {
                       const cellValue = row[column.key];
-                      const displayValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
+                      
+                      // Si es un elemento React válido (como JSX), renderizarlo directamente
+                      // Si es un valor primitivo, mostrarlo como texto
+                      const isReactElement = React.isValidElement(cellValue);
+                      const displayValue = isReactElement 
+                        ? cellValue 
+                        : (cellValue !== undefined && cellValue !== null ? String(cellValue) : '');
                       
                       return (
                         <td key={colIndex} className="px-3 py-2 whitespace-nowrap text-xs">

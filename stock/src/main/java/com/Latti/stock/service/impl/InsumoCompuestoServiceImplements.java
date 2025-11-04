@@ -103,7 +103,10 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
             throw new IllegalArgumentException("El insumo no es de tipo compuesto: " + insumoCompuestoId);
         }
 
-        // Validar stock suficiente
+        // ✅ NUEVA VALIDACIÓN: Verificar que los insumos existían en la fecha del ensamble
+        validarStockHistoricoParaEnsamblar(insumoCompuestoId, dto.cantidad(), dto.fecha());
+
+        // Validar stock suficiente ACTUAL (backup)
         validarStockSuficienteParaEnsamblar(insumoCompuestoId, dto.cantidad());
 
         // Generar UUID único para este ensamble
@@ -243,6 +246,67 @@ public class InsumoCompuestoServiceImplements implements InsumoCompuestoService 
                 );
             }
         }
+    }
+
+    /**
+     * ✅ NUEVA VALIDACIÓN: Verifica que en la fecha del ensamble ya existían los insumos con stock suficiente
+     */
+    private void validarStockHistoricoParaEnsamblar(Long insumoCompuestoId, double cantidad, java.time.LocalDate fechaEnsamble) {
+        Insumo insumoCompuesto = insumoRepository.findById(insumoCompuestoId)
+                .orElseThrow(() -> new IllegalArgumentException("Insumo compuesto no encontrado: " + insumoCompuestoId));
+
+        System.out.println("🕐 Validando stock histórico para ensamble en fecha: " + fechaEnsamble);
+
+        for (RecetaInsumo componente : insumoCompuesto.getReceta()) {
+            Insumo insumoBase = componente.getInsumoBase();
+            double cantidadNecesaria = componente.getCantidad() * cantidad;
+
+            // Calcular el stock que había en la fecha del ensamble
+            double stockEnFecha = calcularStockEnFecha(insumoBase, fechaEnsamble);
+
+            System.out.println(String.format("  📦 Insumo '%s': Stock en %s = %.2f, Necesario: %.2f",
+                    insumoBase.getNombre(), fechaEnsamble, stockEnFecha, cantidadNecesaria));
+
+            if (stockEnFecha < cantidadNecesaria) {
+                throw new IllegalArgumentException(
+                        String.format("❌ No puedes ensamblar en la fecha %s porque no tenías suficiente stock del insumo '%s'. " +
+                                        "Stock disponible en esa fecha: %.2f, Cantidad necesaria: %.2f. " +
+                                        "Debes comprar los insumos ANTES de poder ensamblarlos.",
+                                fechaEnsamble,
+                                insumoBase.getNombre(),
+                                stockEnFecha,
+                                cantidadNecesaria)
+                );
+            }
+        }
+
+        System.out.println("✅ Validación de stock histórico exitosa");
+    }
+
+    /**
+     * Calcula el stock que tenía un insumo en una fecha específica
+     * sumando/restando todos los movimientos hasta esa fecha
+     */
+    private double calcularStockEnFecha(Insumo insumo, java.time.LocalDate fecha) {
+        double stock = 0;
+
+        // Recorrer todos los movimientos del insumo hasta la fecha indicada
+        for (DetalleMovimientoInsumo detalle : insumo.getMovimientos()) {
+            java.time.LocalDate fechaMovimiento = detalle.getMovimiento().getFecha();
+            
+            // Solo considerar movimientos ANTES O EN la fecha del ensamble
+            if (fechaMovimiento.isBefore(fecha) || fechaMovimiento.isEqual(fecha)) {
+                TipoMovimiento tipo = detalle.getMovimiento().getTipoMovimiento();
+                
+                if (tipo == TipoMovimiento.ENTRADA) {
+                    stock += detalle.getCantidad();
+                } else if (tipo == TipoMovimiento.SALIDA) {
+                    stock -= detalle.getCantidad();
+                }
+            }
+        }
+
+        return stock;
     }
 
     private void validarCrearInsumoCompuestoDTO(CrearInsumoCompuestoDTO dto) {

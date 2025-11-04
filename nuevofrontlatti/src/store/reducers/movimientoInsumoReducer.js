@@ -33,7 +33,7 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     // Crear movimiento
     .addCase(createMovimientoInsumo.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí para que la página no se actualice
     })
     .addCase(createMovimientoInsumo.fulfilled, (state, action) => {
       state.loading = false;
@@ -42,7 +42,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(createMovimientoInsumo.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el modal lo maneja localmente
+      // state.error = action.payload || action.error.message;
     })
 
     // Fetch movimientos
@@ -62,7 +63,7 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     // Eliminar movimiento
     .addCase(deleteMovimientoInsumo.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí
     })
     .addCase(deleteMovimientoInsumo.fulfilled, (state, action) => {
       state.loading = false;
@@ -70,7 +71,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(deleteMovimientoInsumo.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el componente lo maneja localmente
+      // state.error = action.payload || action.error.message;
     })
 
     // Validar edición - NO cambiar el estado global para evitar re-renders
@@ -91,7 +93,7 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     // Actualizar movimiento
     .addCase(updateMovimientoInsumo.pending, (state) => {
       state.loading = true;
-      state.error = null;
+      // ✅ NO limpiar el error aquí
     })
     .addCase(updateMovimientoInsumo.fulfilled, (state, action) => {
       state.loading = false;
@@ -100,7 +102,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
     })
     .addCase(updateMovimientoInsumo.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload || action.error.message;
+      // ✅ NO guardar el error en el estado global - el componente lo maneja localmente
+      // state.error = action.payload || action.error.message;
     });
 });
 

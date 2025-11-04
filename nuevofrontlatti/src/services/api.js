@@ -88,10 +88,8 @@ api.interceptors.response.use(
       switch (response.status) {
         case 400:
           // Bad Request - Validación fallida
-          const validationErrors = response.data?.errors || response.data?.message;
-          if (validationErrors) {
-            toast.error(Array.isArray(validationErrors) ? validationErrors.join(', ') : validationErrors);
-          }
+          // ✅ NO mostrar toast, dejar que el modal lo maneje
+          console.warn('⚠️ Error 400 (Bad Request):', response.data?.error || response.data?.message);
           break;
           
         case 401:
@@ -121,24 +119,15 @@ api.interceptors.response.use(
           break;
           
         case 404:
-          // Not Found
-          toast.error('Recurso no encontrado.');
+          // Not Found - Solo mostrar toast para recursos críticos
+          // Para otros casos, dejar que el componente lo maneje
+          console.warn('⚠️ Error 404 (Not Found):', response.config?.url);
           break;
           
         case 422:
           // Unprocessable Entity - Errores de validación
-          const errors = response.data?.errors;
-          if (errors && typeof errors === 'object') {
-            Object.values(errors).forEach(error => {
-              if (Array.isArray(error)) {
-                error.forEach(msg => toast.error(msg));
-              } else {
-                toast.error(error);
-              }
-            });
-          } else {
-            toast.error(response.data?.message || 'Error de validación');
-          }
+          // ✅ NO mostrar toast, dejar que el modal lo maneje
+          console.warn('⚠️ Error 422 (Validation Error):', response.data);
           break;
           
         case 429:
@@ -150,20 +139,20 @@ api.interceptors.response.use(
         case 502:
         case 503:
         case 504:
-          // Errores del servidor
-          toast.error('Error del servidor. Por favor, intenta más tarde.');
+          // Errores del servidor - NO mostrar toast, dejar que el modal lo maneje
+          console.error('❌ Error del servidor:', response.status, response.data);
           break;
           
         default:
-          // Otros errores
-          toast.error(response.data?.message || 'Error inesperado');
+          // Otros errores - Solo log, no toast
+          console.warn('⚠️ Error HTTP:', response.status, response.data);
       }
     } else if (request) {
       // La petición fue hecha pero no se recibió respuesta
       toast.error('No se pudo conectar con el servidor. Verifica tu conexión.');
     } else {
       // Error al configurar la petición
-      toast.error('Error al procesar la petición.');
+      console.error('❌ Error al configurar petición:', message);
     }
     
     return Promise.reject(error);

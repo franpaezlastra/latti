@@ -11,7 +11,18 @@ const ModalForm = ({
   backdropBlur = true,
   closeOnBackdropClick = true
 }) => {
-  if (!isOpen) return null;
+  // 🔥 Debug: Log cuando cambia el estado de isOpen
+  React.useEffect(() => {
+    console.log(`🔥 ModalForm "${title}" - isOpen changed to:`, isOpen);
+  }, [isOpen, title]);
+
+  if (!isOpen) {
+    console.log(`🔥 ModalForm "${title}" - NOT rendering (isOpen is false)`);
+    return null;
+  }
+
+  console.log(`🔥 ModalForm "${title}" - RENDERING`);
+
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget && closeOnBackdropClick) {

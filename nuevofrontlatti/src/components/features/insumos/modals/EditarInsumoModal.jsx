@@ -33,11 +33,22 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
   // Cargar datos del insumo cuando se abre el modal
   useEffect(() => {
     if (isOpen && insumo) {
+      console.log('📝 Cargando datos del insumo en el modal:', insumo);
+      
+      // Usar valores originales si existen (vienen de la tabla formateada)
+      const unidadMedida = insumo.unidadMedidaOriginal || insumo.unidadMedida || '';
+      const stockMinimo = insumo.stockMinimoOriginal !== undefined ? insumo.stockMinimoOriginal : (insumo.stockMinimo !== undefined ? insumo.stockMinimo : 0);
+      
+      console.log('  - Nombre:', insumo.nombre);
+      console.log('  - Unidad de Medida (original):', unidadMedida);
+      console.log('  - Stock Mínimo (original):', stockMinimo);
+      console.log('  - Tipo:', insumo.tipo, '/ Tipo Original:', insumo.tipoOriginal);
+      
       setFormData({
         nombre: insumo.nombre || '',
-        unidadMedida: insumo.unidadMedida || '',
+        unidadMedida: unidadMedida,
         tipo: insumo.tipoOriginal || insumo.tipo || 'BASE',
-        stockMinimo: insumo.stockMinimo || 0
+        stockMinimo: stockMinimo
       });
       setError(false);
       setTextoError('');
@@ -119,8 +130,10 @@ const EditarInsumoModal = ({ isOpen, onClose, insumo, onSubmit }) => {
         }
         handleClose();
       } else {
-        // Extraer el error del backend
-        const errorMessage = result.payload?.error || "Error al actualizar insumo";
+        // El payload ya es el mensaje de error (string)
+        const errorMessage = result.payload || result.error?.message || "Error al actualizar insumo";
+        
+        console.log('❌ Error capturado:', errorMessage);
         
         // Detectar si el insumo está en uso
         if (errorMessage.includes("en uso") || errorMessage.includes("Solo puedes modificar")) {

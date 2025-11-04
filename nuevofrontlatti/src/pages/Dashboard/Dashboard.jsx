@@ -84,7 +84,12 @@ const Dashboard = () => {
 
     const totalProductos = productosList.length;
     const totalInsumos = insumosList.length;
-    const stockBajo = insumosList.filter(insumo => (insumo.stockActual || 0) < 10).length;
+    // ✅ Calcular stock bajo comparando con stockMinimo (NUEVO)
+    const stockBajo = insumosList.filter(insumo => {
+      const stockActual = insumo.stockActual || 0;
+      const stockMinimo = insumo.stockMinimo || 0;
+      return stockActual <= stockMinimo;
+    }).length;
     const { totalVentas, ingresosTotales } = calcularEstadisticasVentas();
 
     return {
@@ -345,19 +350,24 @@ const Dashboard = () => {
 
     // Formatear datos para la tabla
     const datosFormateados = insumosOrdenados.map(insumo => {
-      const stockBajo = (insumo.stockActual || 0) < 10;
+      // ✅ Comparar con stockMinimo en lugar de valor hardcodeado
+      const stockActual = insumo.stockActual || 0;
+      const stockMinimo = insumo.stockMinimo || 0;
+      const stockBajo = stockActual <= stockMinimo;
       const unidadAbreviatura = getAbreviaturaByValue(insumo.unidadMedida) || 'unidades';
       
       return {
         ...insumo,
-        cantidad: `${formatNumber(insumo.stockActual || 0)} ${unidadAbreviatura}`,
+        cantidad: `${formatNumber(stockActual)} ${unidadAbreviatura}`,
         precioUnitario: formatPrice(insumo.precioDeCompra || 0),
         totalInvertido: formatPrice(insumo.totalInvertido || 0),
         estado: (
-          <span className={`px-2 py-1 text-xs rounded-full ${
-            stockBajo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+          <span className={`px-2 py-1 text-xs font-semibold rounded-full border ${
+            stockBajo 
+              ? 'bg-red-100 text-red-700 border-red-200' 
+              : 'bg-green-100 text-green-700 border-green-200'
           }`}>
-            {stockBajo ? 'Stock Bajo' : 'Stock OK'}
+            {stockBajo ? '⚠️ Stock Bajo' : '✓ Stock OK'}
           </span>
         )
       };

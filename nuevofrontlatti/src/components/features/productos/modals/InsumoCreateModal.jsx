@@ -15,7 +15,8 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     unidadMedida: '',
-    tipo: 'BASE'
+    tipo: 'BASE',
+    stockMinimo: 0
   });
   const [error, setError] = useState(false);
   const [textoError, setTextoError] = useState('');
@@ -132,6 +133,7 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
     const insumoData = {
       nombre: capitalizarPrimeraLetra(formData.nombre.trim()),
       unidadMedida: formData.unidadMedida.trim(),
+      stockMinimo: parseFloat(formData.stockMinimo) || 0,
       tipo: formData.tipo,
       ...(formData.tipo === 'COMPUESTO' && { receta })
     };
@@ -155,7 +157,8 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
       setFormData({
         nombre: '',
         unidadMedida: '',
-        tipo: 'BASE'
+        tipo: 'BASE',
+        stockMinimo: 0
       });
       setReceta([]);
       
@@ -176,7 +179,7 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
   };
 
   const handleClose = () => {
-    setFormData({ nombre: '', unidadMedida: '', tipo: 'BASE' });
+    setFormData({ nombre: '', unidadMedida: '', tipo: 'BASE', stockMinimo: 0 });
     setReceta([]);
     setError(false);
     setTextoError('');
@@ -188,7 +191,7 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
   // Si el modal se cierra, limpiar el estado
   useEffect(() => {
     if (!isOpen) {
-      setFormData({ nombre: '', unidadMedida: '', tipo: 'BASE' });
+      setFormData({ nombre: '', unidadMedida: '', tipo: 'BASE', stockMinimo: 0 });
       setReceta([]);
       setError(false);
       setTextoError('');
@@ -300,6 +303,26 @@ const InsumoCreateModal = ({ isOpen, onClose, onSubmit, onRefresh }) => {
         </select>
         <p className="text-xs text-gray-500">
           Seleccione la unidad de medida estandarizada para este insumo
+        </p>
+      </div>
+
+      {/* Stock Mínimo */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Stock Mínimo *
+        </label>
+        <Input
+          type="number"
+          value={formData.stockMinimo}
+          onChange={(e) => handleInputChange('stockMinimo', e.target.value)}
+          placeholder="Ej: 10"
+          min="0"
+          step="0.01"
+          disabled={isSubmitting}
+          required
+        />
+        <p className="text-xs text-gray-500">
+          Cuando el stock sea igual o menor a este valor, se mostrará una alerta de stock bajo
         </p>
       </div>
 
