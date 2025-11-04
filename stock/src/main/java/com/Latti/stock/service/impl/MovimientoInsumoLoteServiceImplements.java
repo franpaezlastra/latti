@@ -424,12 +424,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             movimiento.setDescripcion(dto.descripcion());
             movimiento.setTipoMovimiento(dto.tipoMovimiento());
 
-            // ✅ Remove old details using orphan removal
-            // Limpiar la lista activará orphanRemoval=true automáticamente
-            movimiento.getDetalles().clear();
-
-            // Crear nuevos detalles desde el DTO
+            // Crear nueva lista de detalles desde el DTO
+            List<DetalleMovimientoInsumo> nuevosDetalles = new ArrayList<>();
             List<Long> insumosParaRecalcular = new ArrayList<>();
+            
             for (DetalleMovimientoInsumoDTO detalleDto : dto.detalles()) {
                 Insumo insumo = insumoRepository.findById(detalleDto.insumoId())
                         .orElseThrow(() -> new IllegalArgumentException("Insumo no encontrado"));
@@ -451,16 +449,20 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
                 insumoRepository.save(insumo);
 
-                // Crear y agregar nuevo detalle
+                // Crear nuevo detalle
                 DetalleMovimientoInsumo nuevoDetalle = new DetalleMovimientoInsumo(detalleDto.cantidad());
                 nuevoDetalle.setInsumo(insumo);
+                nuevoDetalle.setMovimiento(movimiento); // Establecer la relación bidireccional
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     nuevoDetalle.setPrecioTotal(detalleDto.precio());
                 }
-                movimiento.addDetalle(nuevoDetalle);
+                nuevosDetalles.add(nuevoDetalle);
             }
 
-            // Guardar movimiento actualizado con flush para asegurar eliminación de orphaned details
+            // ✅ Reemplazar toda la lista usando setDetalles (orphanRemoval eliminará los antiguos)
+            movimiento.setDetalles(nuevosDetalles);
+
+            // Guardar movimiento actualizado
             MovimientoInsumoLote movimientoActualizado = movimientoRepository.saveAndFlush(movimiento);
 
             // Recalcular precios de inversión de productos
