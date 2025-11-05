@@ -265,15 +265,27 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         // Lista para recalcular productos después de eliminar
         Set<Long> insumosParaRecalcular = new HashSet<>();
 
+        // ✅ NUEVO: Verificar si es un movimiento de ENTRADA de ensamble
+        boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(id) && 
+                                             movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
+
         // Revertir cambios en cada insumo
         for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
             Insumo insumo = detalle.getInsumo();
             
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                 // Para entrada: restar cantidad del stock
-                if (insumo.getStockActual() < detalle.getCantidad()) {
-                    throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
+                // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
+                // NO verificar stock porque ese stock fue creado por este mismo movimiento
+                boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                
+                // Solo verificar stock si NO es un insumo compuesto de un movimiento de ensamble
+                if (!esInsumoCompuestoEnsamble) {
+                    if (insumo.getStockActual() < detalle.getCantidad()) {
+                        throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
+                    }
                 }
+                
                 insumo.setStockActual(insumo.getStockActual() - detalle.getCantidad());
                 
                 // Agregar a la lista para recalcular después de eliminar el movimiento
@@ -556,15 +568,27 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
 
             // Validación 1: Verificar stock suficiente para revertir (solo para ENTRADA)
+            // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, NO verificar stock del insumo compuesto
+            // porque ese stock fue creado por este mismo movimiento
+            boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(movimientoId) && 
+                                                 movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
+            
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                 for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                     Insumo insumo = detalle.getInsumo();
                     
-                    // Verificar si hay stock suficiente para revertir
-                    if (insumo.getStockActual() < detalle.getCantidad()) {
-                        detallesValidacion.add("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + 
-                                insumo.getNombre() + ". Stock actual: " + insumo.getStockActual() + 
-                                ", cantidad a revertir: " + detalle.getCantidad());
+                    // Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
+                    // NO verificar stock porque ese stock fue creado por este mismo movimiento
+                    boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                    
+                    // Solo verificar stock si NO es un insumo compuesto de un movimiento de ensamble
+                    if (!esInsumoCompuestoEnsamble) {
+                        // Verificar si hay stock suficiente para revertir
+                        if (insumo.getStockActual() < detalle.getCantidad()) {
+                            detallesValidacion.add("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + 
+                                    insumo.getNombre() + ". Stock actual: " + insumo.getStockActual() + 
+                                    ", cantidad a revertir: " + detalle.getCantidad());
+                        }
                     }
                 }
             }
