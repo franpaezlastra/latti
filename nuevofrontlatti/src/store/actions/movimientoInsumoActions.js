@@ -99,6 +99,23 @@ export const validarEdicionMovimiento = createAsyncThunk(
   }
 );
 
+// ✅ NUEVO: Validar si se puede eliminar un movimiento
+export const validarEliminacionMovimiento = createAsyncThunk(
+  'movimientosInsumo/validarEliminacion',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${BASE_URL}/${id}/validar-eliminacion`);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al validar eliminación";
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 // Actualizar movimiento de insumo
 export const updateMovimientoInsumo = createAsyncThunk(
   'movimientosInsumo/update',

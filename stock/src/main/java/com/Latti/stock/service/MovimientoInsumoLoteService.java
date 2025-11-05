@@ -17,6 +17,9 @@ public interface MovimientoInsumoLoteService {
     ValidacionEdicionDTO validarEdicionMovimiento(Long movimientoId);
     MovimientoInsumoLote editarMovimientoInsumo(EditarMovimientoDeInsumoDTO dto);
     
+    // ✅ NUEVO: Método para validar si se puede eliminar un movimiento
+    ValidacionEdicionDTO validarEliminacionMovimiento(Long movimientoId);
+    
     // ✅ NUEVO: Métodos para insumos compuestos
     void crearMovimientoEntrada(Long insumoId, double cantidad, double precioTotal, java.time.LocalDate fecha, String descripcion);
     void crearMovimientoSalida(Long insumoId, double cantidad, java.time.LocalDate fecha, String descripcion);

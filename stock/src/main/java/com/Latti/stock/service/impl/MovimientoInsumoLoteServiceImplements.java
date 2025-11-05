@@ -245,9 +245,16 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     }
                     
                     // Ahora eliminar los movimientos de salida relacionados
+                    // ✅ CORREGIDO: Eliminar primero los detalles, luego el movimiento
                     for (MovimientoInsumoLote movimientoSalida : movimientosSalidaAEliminar) {
                         System.out.println("  🗑️ Eliminando movimiento de salida relacionado ID: " + movimientoSalida.getId());
-                        movimientoRepository.delete(movimientoSalida);
+                        
+                        // Primero eliminar los detalles del movimiento
+                        detalleMovimientoInsumoRepository.deleteByMovimientoId(movimientoSalida.getId());
+                        detalleMovimientoInsumoRepository.flush();
+                        
+                        // Luego eliminar el movimiento
+                        movimientoRepository.deleteById(movimientoSalida.getId());
                     }
                     
                     System.out.println("✅ Movimientos relacionados eliminados: " + movimientosSalidaAEliminar.size());
@@ -280,8 +287,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             insumoRepository.save(insumo);
         }
         
-        // Eliminar el movimiento PRIMERO
-        movimientoRepository.delete(movimiento);
+        // ✅ CORREGIDO: Eliminar primero los detalles, luego el movimiento
+        detalleMovimientoInsumoRepository.deleteByMovimientoId(id);
+        detalleMovimientoInsumoRepository.flush();
+        
+        // Eliminar el movimiento
+        movimientoRepository.deleteById(id);
 
         // AHORA recalcular precio de compra para movimientos de entrada
         for (Long insumoId : insumosParaRecalcular) {
@@ -492,6 +503,94 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
 
         } catch (Exception e) {
             return new ValidacionEdicionDTO(false, "Error al validar edición: " + e.getMessage(), 
+                List.of("Error interno: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Valida si un movimiento de insumo puede ser eliminado
+     * Implementa las reglas de negocio para eliminación segura
+     */
+    @Override
+    public ValidacionEdicionDTO validarEliminacionMovimiento(Long movimientoId) {
+        List<String> detallesValidacion = new ArrayList<>();
+        
+        try {
+            MovimientoInsumoLote movimiento = movimientoRepository.findById(movimientoId)
+                    .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+
+            // ✅ Validación especial para movimientos de ensamble
+            if (esMovimientoDeEnsamble(movimientoId)) {
+                // Obtener el ensambleId del movimiento
+                String ensambleId = movimiento.getDetalles().stream()
+                        .filter(d -> d.getEnsambleId() != null && !d.getEnsambleId().trim().isEmpty())
+                        .map(DetalleMovimientoInsumo::getEnsambleId)
+                        .findFirst()
+                        .orElse(null);
+                
+                if (ensambleId != null) {
+                    // Si es un movimiento de SALIDA con ensambleId (insumo simple usado en ensamble)
+                    // NO se puede eliminar directamente (debe eliminarse desde el movimiento de entrada del ensamble)
+                    if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                        detallesValidacion.add("Este movimiento es parte de un ensamble. " +
+                                "Para eliminarlo, debes eliminar el movimiento de ensamble del insumo compuesto relacionado.");
+                    } 
+                    // Si es un movimiento de ENTRADA con ensambleId (insumo compuesto ensamblado)
+                    // Permitir eliminar SOLO si no se ha usado para crear productos
+                    else if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                        // Verificar si el insumo compuesto se usó para crear productos DESPUÉS de este movimiento
+                        for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                            Insumo insumoCompuesto = detalle.getInsumo();
+                            
+                            // Verificar si es un insumo compuesto
+                            if (insumoCompuesto != null && insumoCompuesto.esCompuesto()) {
+                                boolean seUsoEnProduccion = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                                if (seUsoEnProduccion) {
+                                    detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                            "No se puede eliminar porque afectaría el historial de producción.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Validación 1: Verificar stock suficiente para revertir (solo para ENTRADA)
+            if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                    Insumo insumo = detalle.getInsumo();
+                    
+                    // Verificar si hay stock suficiente para revertir
+                    if (insumo.getStockActual() < detalle.getCantidad()) {
+                        detallesValidacion.add("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + 
+                                insumo.getNombre() + ". Stock actual: " + insumo.getStockActual() + 
+                                ", cantidad a revertir: " + detalle.getCantidad());
+                    }
+                }
+            }
+
+            // Validación 2: El insumo NO se ha usado en producción de productos DESPUÉS de este movimiento
+            for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                Insumo insumo = detalle.getInsumo();
+                
+                // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
+                boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                    
+                if (hayProduccionPosterior) {
+                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                        "' ha sido usado en la producción de productos después de este movimiento");
+                }
+            }
+
+            boolean puedeEliminar = detallesValidacion.isEmpty();
+            String razon = puedeEliminar ? 
+                "El movimiento puede ser eliminado sin problemas" : 
+                "El movimiento no puede ser eliminado por las siguientes razones:";
+
+            return new ValidacionEdicionDTO(puedeEliminar, razon, detallesValidacion);
+
+        } catch (Exception e) {
+            return new ValidacionEdicionDTO(false, "Error al validar eliminación: " + e.getMessage(), 
                 List.of("Error interno: " + e.getMessage()));
         }
     }

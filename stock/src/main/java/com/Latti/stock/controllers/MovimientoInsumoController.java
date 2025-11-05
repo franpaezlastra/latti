@@ -68,6 +68,16 @@ public class MovimientoInsumoController {
         }
     }
 
+    @GetMapping("/{id}/validar-eliminacion")
+    public ResponseEntity<ValidacionEdicionDTO> validarEliminacion(@PathVariable Long id) {
+        try {
+            ValidacionEdicionDTO validacion = movimientoInsumoLoteService.validarEliminacionMovimiento(id);
+            return ResponseEntity.ok(validacion);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(new ValidacionEdicionDTO(false, "Error al validar eliminación: " + e.getMessage(), List.of()));
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> editarMovimiento(@PathVariable Long id, @RequestBody EditarMovimientoDeInsumoDTO dto) {
         try {

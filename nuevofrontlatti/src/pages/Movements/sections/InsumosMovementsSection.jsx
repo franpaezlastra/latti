@@ -5,7 +5,7 @@ import { formatQuantity, formatPrice } from "../../../utils/formatters";
 import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
 import DetallesMovimientoModal from '../../../components/features/movements/modals/DetallesMovimientoModal';
 import { useDispatch } from "react-redux";
-import { validarEdicionMovimiento } from "../../../store/actions/movimientoInsumoActions";
+import { validarEdicionMovimiento, validarEliminacionMovimiento } from "../../../store/actions/movimientoInsumoActions";
 
 const InsumosMovementsSection = ({
   movimientos = [],
@@ -32,8 +32,14 @@ const InsumosMovementsSection = ({
   // Estado para almacenar las validaciones de edición de cada movimiento
   const [validacionesEdicion, setValidacionesEdicion] = useState({});
   const [validacionesCargando, setValidacionesCargando] = useState(true); // Indica si se están cargando las validaciones
+  
+  // ✅ NUEVO: Estado para almacenar las validaciones de eliminación de cada movimiento
+  const [validacionesEliminacion, setValidacionesEliminacion] = useState({});
+  const [validacionesEliminacionCargando, setValidacionesEliminacionCargando] = useState(true);
+  
   const idsMovimientosPrevios = useRef('[]'); // Inicializar como string vacío
   const validandoEdicionesRef = useRef(false);
+  const validandoEliminacionesRef = useRef(false); // ✅ NUEVO: Ref para validaciones de eliminación
 
   // Configuración de filtros para FilterPanel
   const filterConfig = [
@@ -202,6 +208,50 @@ const InsumosMovementsSection = ({
     // (se maneja en el estado cuando se completan las promesas)
   }, [movimientos, dispatch]); // Removido validacionesEdicion de dependencias para evitar loops
 
+  // ✅ NUEVO: Validar eliminación de todos los movimientos cuando se cargan
+  useEffect(() => {
+    // Extraer IDs de movimientos de forma estable
+    const idsActuales = movimientos?.map(m => m.id).filter(id => id != null).sort((a, b) => a - b) || [];
+    const idsStringActuales = JSON.stringify(idsActuales);
+    
+    // Comparar string de IDs actuales con los previos (usar la misma referencia que edición)
+    const idsHanCambiado = idsStringActuales !== idsMovimientosPrevios.current;
+    
+    // Solo validar si hay movimientos, los IDs han cambiado, y no estamos validando actualmente
+    // ✅ Validar eliminación al mismo tiempo que edición (usar la misma condición de cambio de IDs)
+    if (idsActuales.length > 0 && idsHanCambiado && !validandoEliminacionesRef.current) {
+      // Marcar que estamos validando INMEDIATAMENTE
+      validandoEliminacionesRef.current = true;
+      setValidacionesEliminacionCargando(true);
+      
+      // Validar eliminación de todos los movimientos en paralelo
+      const validacionesPromesas = idsActuales.map(async (id) => {
+        try {
+          const resultado = await dispatch(validarEliminacionMovimiento(id)).unwrap();
+          return { id, puedeEliminar: resultado.puedeEditar }; // ✅ Usa el mismo DTO ValidacionEdicionDTO
+        } catch (error) {
+          // Si hay error, asumir que no se puede eliminar por seguridad
+          return { id, puedeEliminar: false };
+        }
+      });
+      
+      Promise.all(validacionesPromesas).then((resultados) => {
+        const validacionesMap = {};
+        resultados.forEach(({ id, puedeEliminar }) => {
+          validacionesMap[id] = puedeEliminar;
+        });
+        setValidacionesEliminacion(validacionesMap);
+        setValidacionesEliminacionCargando(false);
+        validandoEliminacionesRef.current = false;
+      }).catch((error) => {
+        setValidacionesEliminacionCargando(false);
+        validandoEliminacionesRef.current = false;
+      });
+    } else if (idsActuales.length === 0) {
+      setValidacionesEliminacionCargando(false);
+    }
+  }, [movimientos, dispatch]); // ✅ Usar la misma dependencia que edición
+
   // Función para verificar si un movimiento puede ser editado
   const puedeEditarMovimiento = useMemo(() => {
     return (movimiento) => {
@@ -236,6 +286,30 @@ const InsumosMovementsSection = ({
     };
   }, [validacionesEdicion, validacionesCargando]);
 
+  // ✅ NUEVO: Función para verificar si un movimiento puede ser eliminado
+  const puedeEliminarMovimiento = useMemo(() => {
+    return (movimiento) => {
+      // Si las validaciones aún se están cargando, deshabilitar temporalmente
+      if (validacionesEliminacionCargando && !validacionesEliminacion.hasOwnProperty(movimiento.id)) {
+        return true; // Disabled mientras se carga
+      }
+      
+      // Si ya tenemos la validación, usarla
+      if (validacionesEliminacion.hasOwnProperty(movimiento.id)) {
+        return !validacionesEliminacion[movimiento.id]; // true si NO puede eliminar (disabled)
+      }
+      
+      // Si las validaciones ya se completaron pero no tenemos esta validación,
+      // por seguridad, deshabilitar hasta que se valide
+      if (!validacionesEliminacionCargando) {
+        return true; // Disabled por seguridad si no tenemos la validación
+      }
+      
+      // Por defecto, mientras se cargan, deshabilitar
+      return true;
+    };
+  }, [validacionesEliminacion, validacionesEliminacionCargando]);
+
   // Acciones de la tabla
   const acciones = [
     {
@@ -256,7 +330,7 @@ const InsumosMovementsSection = ({
       icon: <FaTrash />,
       onClick: (mov) => onEliminar({ ...mov, tipo: 'Insumo' }),
       variant: 'ghost',
-      disabled: (mov) => puedeEditarMovimiento(mov)
+      disabled: (mov) => puedeEliminarMovimiento(mov) // ✅ Usar validación específica de eliminación
     }
   ];
 
