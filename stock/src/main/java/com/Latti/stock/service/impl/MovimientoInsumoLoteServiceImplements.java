@@ -548,19 +548,33 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                                 "Para eliminarlo, debes eliminar el movimiento de ensamble del insumo compuesto relacionado.");
                     } 
                     // Si es un movimiento de ENTRADA con ensambleId (insumo compuesto ensamblado)
-                    // Permitir eliminar SOLO si no se ha usado para crear productos
+                    // ✅ CORREGIDO: Permitir eliminar por defecto, solo bloquear si realmente se usó en producción
+                    // No bloquear solo por tener salidas posteriores (podrían ser ajustes, roturas, etc.)
                     else if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
-                        // Verificar si el insumo compuesto se usó para crear productos DESPUÉS de este movimiento
+                        // Verificar si el insumo compuesto se usó REALMENTE en producción de productos
+                        // (no solo si tiene salidas posteriores, que podrían ser por otras razones)
                         for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                             Insumo insumoCompuesto = detalle.getInsumo();
                             
                             // Verificar si es un insumo compuesto
                             if (insumoCompuesto != null && insumoCompuesto.esCompuesto()) {
-                                boolean seUsoEnProduccion = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
-                                if (seUsoEnProduccion) {
-                                    detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
-                                            "No se puede eliminar porque afectaría el historial de producción.");
+                                // ✅ Verificar si se usó en recetas de productos (más preciso que solo salidas)
+                                // Para insumos compuestos, verificar si están en alguna receta de producto
+                                boolean seUsoEnReceta = productoRepository.findAll().stream()
+                                        .anyMatch(producto -> producto.getReceta() != null && 
+                                                producto.getReceta().getDetalles().stream()
+                                                        .anyMatch(d -> d.getInsumo().getId().equals(insumoCompuesto.getId())));
+                                
+                                if (seUsoEnReceta) {
+                                    // Si está en una receta, verificar si hay producción posterior
+                                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                                    
+                                    if (hayProduccionPosterior) {
+                                        detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                                "No se puede eliminar porque afectaría el historial de producción.");
+                                    }
                                 }
+                                // Si NO está en ninguna receta, puede eliminarse sin problemas
                             }
                         }
                     }
@@ -594,15 +608,24 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
 
             // Validación 2: El insumo NO se ha usado en producción de productos DESPUÉS de este movimiento
+            // ⚠️ EXCEPCIÓN: Para movimientos de ENTRADA de ensamble, esta validación ya se hizo arriba
+            // específicamente para el insumo compuesto, así que NO aplicarla de nuevo aquí
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
-                // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
-                boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
-                    
-                if (hayProduccionPosterior) {
-                    detallesValidacion.add("El insumo '" + insumo.getNombre() + 
-                        "' ha sido usado en la producción de productos después de este movimiento");
+                // Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
+                // NO verificar de nuevo porque ya se validó arriba
+                boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                
+                // Solo verificar si NO es un insumo compuesto de un movimiento de ensamble
+                if (!esInsumoCompuestoEnsamble) {
+                    // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
+                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                        
+                    if (hayProduccionPosterior) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                            "' ha sido usado en la producción de productos después de este movimiento");
+                    }
                 }
             }
 
