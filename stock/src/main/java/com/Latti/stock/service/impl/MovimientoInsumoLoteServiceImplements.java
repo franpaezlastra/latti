@@ -262,12 +262,24 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     for (MovimientoInsumoLote movimientoSalida : movimientosSalidaAEliminar) {
                         System.out.println("  🗑️ Eliminando movimiento de salida relacionado ID: " + movimientoSalida.getId());
                         
-                        // Primero eliminar los detalles del movimiento
-                        detalleMovimientoInsumoRepository.deleteByMovimientoId(movimientoSalida.getId());
-                        detalleMovimientoInsumoRepository.flush();
-                        
-                        // Luego eliminar el movimiento
-                        movimientoRepository.deleteById(movimientoSalida.getId());
+                        try {
+                            // Primero eliminar los detalles del movimiento
+                            detalleMovimientoInsumoRepository.deleteByMovimientoId(movimientoSalida.getId());
+                            detalleMovimientoInsumoRepository.flush();
+                            
+                            // ✅ IMPORTANTE: Limpiar la colección de detalles para evitar problemas con Hibernate
+                            movimientoSalida.getDetalles().clear();
+                            
+                            // Luego eliminar el movimiento usando delete() en lugar de deleteById()
+                            movimientoRepository.delete(movimientoSalida);
+                            movimientoRepository.flush();
+                            
+                            System.out.println("    ✅ Movimiento de salida relacionado eliminado correctamente");
+                        } catch (Exception e) {
+                            System.err.println("    ❌ Error al eliminar movimiento de salida relacionado: " + e.getMessage());
+                            e.printStackTrace();
+                            throw new RuntimeException("Error al eliminar movimiento de salida relacionado: " + e.getMessage(), e);
+                        }
                     }
                     
                     System.out.println("✅ Movimientos relacionados eliminados: " + movimientosSalidaAEliminar.size());
@@ -319,7 +331,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         try {
             detalleMovimientoInsumoRepository.deleteByMovimientoId(id);
             detalleMovimientoInsumoRepository.flush();
-            System.out.println("  ✅ Detalles eliminados correctamente");
+            
+            // ✅ IMPORTANTE: Limpiar la colección de detalles del objeto MovimientoInsumoLote
+            // para evitar que Hibernate intente sincronizar entidades ya eliminadas
+            movimiento.getDetalles().clear();
+            
+            System.out.println("  ✅ Detalles eliminados correctamente y colección limpiada");
         } catch (Exception e) {
             System.err.println("  ❌ Error al eliminar detalles: " + e.getMessage());
             e.printStackTrace();
@@ -329,7 +346,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         // Eliminar el movimiento
         System.out.println("🗑️ Eliminando movimiento ID: " + id);
         try {
-            movimientoRepository.deleteById(id);
+            // ✅ IMPORTANTE: Usar delete() en lugar de deleteById() para que Hibernate
+            // maneje correctamente la entidad que ya está en el contexto de persistencia
+            movimientoRepository.delete(movimiento);
+            movimientoRepository.flush();
             System.out.println("  ✅ Movimiento eliminado correctamente");
         } catch (Exception e) {
             System.err.println("  ❌ Error al eliminar movimiento: " + e.getMessage());
