@@ -46,15 +46,28 @@ public class MovimientoInsumoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarMovimiento(@PathVariable Long id) {
         try {
+            System.out.println("🗑️ === BACKEND: INICIO DE ELIMINACIÓN ===");
+            System.out.println("📦 ID del movimiento a eliminar: " + id);
+            
             MovimientoInsumoLote eliminado = movimientoInsumoLoteService.eliminarMovimientoInsumo(id);
+            
+            System.out.println("✅ Movimiento eliminado exitosamente: " + eliminado.getId());
+            
             return ResponseEntity.ok(Map.of(
                     "mensaje", "Movimiento de insumo eliminado correctamente",
                     "id", eliminado.getId()
             ));
         } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación al eliminar: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al eliminar el movimiento de insumo"));
+            System.err.println("💥 Error inesperado al eliminar el movimiento de insumo:");
+            System.err.println("💥 Mensaje: " + e.getMessage());
+            System.err.println("💥 Tipo: " + e.getClass().getName());
+            System.err.println("💥 Stack trace completo:");
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al eliminar el movimiento de insumo: " + e.getMessage()));
         }
     }
 

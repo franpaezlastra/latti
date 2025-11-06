@@ -132,9 +132,9 @@ const authReducer = createReducer(initialState, (builder) => {
       // Solo limpiar si el error es de autenticación (401, 403)
       // Para otros errores (red, timeout), mantener la sesión local
       if (action.payload && (action.payload.includes('expirado') || action.payload.includes('inválido'))) {
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }

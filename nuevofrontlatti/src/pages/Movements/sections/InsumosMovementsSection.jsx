@@ -159,7 +159,7 @@ const InsumosMovementsSection = ({
     setMostrarDetalles(true);
   };
 
-  // Validar edición de todos los movimientos cuando se cargan
+  // ✅ Validar edición Y eliminación de todos los movimientos cuando se cargan
   useEffect(() => {
     // Extraer IDs de movimientos de forma estable
     const idsActuales = movimientos?.map(m => m.id).filter(id => id != null).sort((a, b) => a - b) || [];
@@ -169,94 +169,79 @@ const InsumosMovementsSection = ({
     const idsHanCambiado = idsStringActuales !== idsMovimientosPrevios.current;
     
     // Solo validar si hay movimientos, los IDs han cambiado, y no estamos validando actualmente
-    if (idsActuales.length > 0 && idsHanCambiado && !validandoEdicionesRef.current) {
+    if (idsActuales.length > 0 && idsHanCambiado && !validandoEdicionesRef.current && !validandoEliminacionesRef.current) {
       // Actualizar referencia de string de IDs previos INMEDIATAMENTE para prevenir ejecuciones múltiples
       idsMovimientosPrevios.current = idsStringActuales;
       
       // Marcar que estamos validando INMEDIATAMENTE
       validandoEdicionesRef.current = true;
-      setValidacionesCargando(true); // Indicar que se están cargando validaciones
+      validandoEliminacionesRef.current = true;
+      setValidacionesCargando(true);
+      setValidacionesEliminacionCargando(true);
       
-      // Validar todos los movimientos en paralelo SIN delay
-      const validacionesPromesas = idsActuales.map(async (id) => {
+      console.log('🔄 Iniciando validaciones de edición y eliminación para', idsActuales.length, 'movimientos...');
+      
+      // ✅ Validar EDICIÓN de todos los movimientos en paralelo
+      const validacionesEdicionPromesas = idsActuales.map(async (id) => {
         try {
           const resultado = await dispatch(validarEdicionMovimiento(id)).unwrap();
           return { id, puedeEditar: resultado.puedeEditar };
         } catch (error) {
-          // Si hay error, asumir que no se puede editar por seguridad
+          console.error(`❌ Error validando edición para movimiento ${id}:`, error);
           return { id, puedeEditar: false };
         }
       });
       
-      Promise.all(validacionesPromesas).then((resultados) => {
-        const validacionesMap = {};
-        resultados.forEach(({ id, puedeEditar }) => {
-          validacionesMap[id] = puedeEditar;
-          console.log(`✅ Validación edición - Movimiento ID ${id}: puedeEditar = ${puedeEditar}`);
-        });
-        console.log('📋 Validaciones de edición completadas:', validacionesMap);
-        setValidacionesEdicion(validacionesMap);
-        setValidacionesCargando(false); // Indicar que las validaciones se completaron
-        validandoEdicionesRef.current = false;
-      }).catch((error) => {
-        console.error('❌ Error en validaciones de edición:', error);
-        setValidacionesCargando(false);
-        validandoEdicionesRef.current = false;
-      });
-    } else if (idsActuales.length === 0) {
-      // Si no hay movimientos, las validaciones están completas
-      setValidacionesCargando(false);
-    }
-    // Si los IDs no han cambiado y no estamos validando, las validaciones ya están completas
-    // (se maneja en el estado cuando se completan las promesas)
-  }, [movimientos, dispatch]); // Removido validacionesEdicion de dependencias para evitar loops
-
-  // ✅ NUEVO: Validar eliminación de todos los movimientos cuando se cargan
-  useEffect(() => {
-    // Extraer IDs de movimientos de forma estable
-    const idsActuales = movimientos?.map(m => m.id).filter(id => id != null).sort((a, b) => a - b) || [];
-    const idsStringActuales = JSON.stringify(idsActuales);
-    
-    // Comparar string de IDs actuales con los previos (usar la misma referencia que edición)
-    const idsHanCambiado = idsStringActuales !== idsMovimientosPrevios.current;
-    
-    // Solo validar si hay movimientos, los IDs han cambiado, y no estamos validando actualmente
-    // ✅ Validar eliminación al mismo tiempo que edición (usar la misma condición de cambio de IDs)
-    if (idsActuales.length > 0 && idsHanCambiado && !validandoEliminacionesRef.current) {
-      // Marcar que estamos validando INMEDIATAMENTE
-      validandoEliminacionesRef.current = true;
-      setValidacionesEliminacionCargando(true);
-      
-      // Validar eliminación de todos los movimientos en paralelo
-      const validacionesPromesas = idsActuales.map(async (id) => {
+      // ✅ Validar ELIMINACIÓN de todos los movimientos en paralelo
+      const validacionesEliminacionPromesas = idsActuales.map(async (id) => {
         try {
           const resultado = await dispatch(validarEliminacionMovimiento(id)).unwrap();
           return { id, puedeEliminar: resultado.puedeEditar }; // ✅ Usa el mismo DTO ValidacionEdicionDTO
         } catch (error) {
-          // Si hay error, asumir que no se puede eliminar por seguridad
+          console.error(`❌ Error validando eliminación para movimiento ${id}:`, error);
           return { id, puedeEliminar: false };
         }
       });
       
-      Promise.all(validacionesPromesas).then((resultados) => {
-        const validacionesMap = {};
-        resultados.forEach(({ id, puedeEliminar }) => {
-          validacionesMap[id] = puedeEliminar;
+      // Ejecutar ambas validaciones en paralelo
+      Promise.all([
+        Promise.all(validacionesEdicionPromesas),
+        Promise.all(validacionesEliminacionPromesas)
+      ]).then(([resultadosEdicion, resultadosEliminacion]) => {
+        // Procesar resultados de edición
+        const validacionesEdicionMap = {};
+        resultadosEdicion.forEach(({ id, puedeEditar }) => {
+          validacionesEdicionMap[id] = puedeEditar;
+          console.log(`✅ Validación edición - Movimiento ID ${id}: puedeEditar = ${puedeEditar}`);
+        });
+        console.log('📋 Validaciones de edición completadas:', validacionesEdicionMap);
+        setValidacionesEdicion(validacionesEdicionMap);
+        validandoEdicionesRef.current = false;
+        setValidacionesCargando(false);
+        
+        // Procesar resultados de eliminación
+        const validacionesEliminacionMap = {};
+        resultadosEliminacion.forEach(({ id, puedeEliminar }) => {
+          validacionesEliminacionMap[id] = puedeEliminar;
           console.log(`✅ Validación eliminación - Movimiento ID ${id}: puedeEliminar = ${puedeEliminar}`);
         });
-        console.log('📋 Validaciones de eliminación completadas:', validacionesMap);
-        setValidacionesEliminacion(validacionesMap);
-        setValidacionesEliminacionCargando(false);
+        console.log('📋 Validaciones de eliminación completadas:', validacionesEliminacionMap);
+        setValidacionesEliminacion(validacionesEliminacionMap);
         validandoEliminacionesRef.current = false;
+        setValidacionesEliminacionCargando(false);
       }).catch((error) => {
-        console.error('❌ Error en validaciones de eliminación:', error);
-        setValidacionesEliminacionCargando(false);
+        console.error('❌ Error en validaciones:', error);
+        validandoEdicionesRef.current = false;
         validandoEliminacionesRef.current = false;
+        setValidacionesCargando(false);
+        setValidacionesEliminacionCargando(false);
       });
     } else if (idsActuales.length === 0) {
+      // Si no hay movimientos, las validaciones están completas
+      setValidacionesCargando(false);
       setValidacionesEliminacionCargando(false);
     }
-  }, [movimientos, dispatch]); // ✅ Usar la misma dependencia que edición
+  }, [movimientos, dispatch]);
 
   // Función para verificar si un movimiento puede ser editado
   const puedeEditarMovimiento = useMemo(() => {

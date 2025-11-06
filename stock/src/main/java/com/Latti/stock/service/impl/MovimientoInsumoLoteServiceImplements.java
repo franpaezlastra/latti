@@ -176,8 +176,21 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
     @Override
     @Transactional
     public MovimientoInsumoLote eliminarMovimientoInsumo(Long id) {
-        MovimientoInsumoLote movimiento = movimientoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+        try {
+            System.out.println("🗑️ === SERVICIO: INICIO DE ELIMINACIÓN ===");
+            System.out.println("📦 ID del movimiento: " + id);
+            
+            MovimientoInsumoLote movimiento = movimientoRepository.findById(id)
+                    .orElseThrow(() -> {
+                        System.err.println("❌ Movimiento no encontrado con ID: " + id);
+                        return new IllegalArgumentException("Movimiento no encontrado");
+                    });
+            
+            System.out.println("✅ Movimiento encontrado:");
+            System.out.println("  - Tipo: " + movimiento.getTipoMovimiento());
+            System.out.println("  - Fecha: " + movimiento.getFecha());
+            System.out.println("  - Descripción: " + movimiento.getDescripcion());
+            System.out.println("  - Cantidad de detalles: " + movimiento.getDetalles().size());
 
         // ✅ NUEVA VALIDACIÓN: Verificar si es parte de un ensamble
         if (esMovimientoDeEnsamble(id)) {
@@ -300,11 +313,29 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         }
         
         // ✅ CORREGIDO: Eliminar primero los detalles, luego el movimiento
-        detalleMovimientoInsumoRepository.deleteByMovimientoId(id);
-        detalleMovimientoInsumoRepository.flush();
+        System.out.println("🗑️ Eliminando detalles del movimiento ID: " + id);
+        System.out.println("  - Cantidad de detalles antes de eliminar: " + movimiento.getDetalles().size());
+        
+        try {
+            detalleMovimientoInsumoRepository.deleteByMovimientoId(id);
+            detalleMovimientoInsumoRepository.flush();
+            System.out.println("  ✅ Detalles eliminados correctamente");
+        } catch (Exception e) {
+            System.err.println("  ❌ Error al eliminar detalles: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al eliminar los detalles del movimiento: " + e.getMessage(), e);
+        }
         
         // Eliminar el movimiento
-        movimientoRepository.deleteById(id);
+        System.out.println("🗑️ Eliminando movimiento ID: " + id);
+        try {
+            movimientoRepository.deleteById(id);
+            System.out.println("  ✅ Movimiento eliminado correctamente");
+        } catch (Exception e) {
+            System.err.println("  ❌ Error al eliminar movimiento: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al eliminar el movimiento: " + e.getMessage(), e);
+        }
 
         // AHORA recalcular precio de compra para movimientos de entrada
         for (Long insumoId : insumosParaRecalcular) {
@@ -320,7 +351,21 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             recalcularPrecioInversionProductos(insumoId);
         }
 
+        System.out.println("✅ === SERVICIO: ELIMINACIÓN COMPLETADA ===");
         return movimiento;
+        
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación en eliminarMovimientoInsumo: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        } catch (Exception e) {
+            System.err.println("💥 Error inesperado en eliminarMovimientoInsumo:");
+            System.err.println("💥 Mensaje: " + e.getMessage());
+            System.err.println("💥 Tipo: " + e.getClass().getName());
+            System.err.println("💥 Stack trace completo:");
+            e.printStackTrace();
+            throw new RuntimeException("Error al eliminar el movimiento de insumo: " + e.getMessage(), e);
+        }
     }
 
     /**
