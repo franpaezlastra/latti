@@ -438,15 +438,22 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
 
             // Condición 2: El insumo NO se ha usado en producción de productos DESPUÉS de este movimiento
+            // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, esta validación se hace en la Condición 4
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
-                // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
-                boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
-                    
+                // Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
+                // NO verificar aquí porque se valida en la Condición 4 específicamente
+                boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
+                
+                if (!esInsumoCompuestoEnsamble) {
+                    // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
+                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                        
                     if (hayProduccionPosterior) {
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                         "' ha sido usado en la producción de productos después de este movimiento");
+                    }
                 }
             }
 
@@ -467,6 +474,28 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 if (!salidasPosteriores.isEmpty() && !esInsumoCompuestoEnsamble) {
                     detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                         "' tiene " + salidasPosteriores.size() + " salida(s) posterior(es)");
+                }
+            }
+
+            // ✅ NUEVA CONDICIÓN 3.5: Verificar si un movimiento de ENTRADA normal fue usado en un ensamble
+            // Si es un movimiento de ENTRADA normal (no de ensamble), verificar si sus insumos fueron usados en ensambles
+            if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA && !esMovimientoEnsambleEntrada) {
+                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                    Insumo insumo = detalle.getInsumo();
+                    
+                    // Buscar movimientos de SALIDA con ensambleId (parte de un ensamble) que usaron este insumo
+                    // DESPUÉS de la fecha del movimiento de entrada
+                    List<DetalleMovimientoInsumo> salidasEnsamble = insumo.getMovimientos().stream()
+                            .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()) &&
+                                       m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                       m.getEnsambleId() != null && !m.getEnsambleId().trim().isEmpty())
+                            .collect(Collectors.toList());
+                    
+                    if (!salidasEnsamble.isEmpty()) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                            "' fue usado en un ensamble después de este movimiento. " +
+                            "No se puede editar porque afectaría el historial de ensambles.");
+                    }
                 }
             }
 
@@ -625,6 +654,28 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     if (hayProduccionPosterior) {
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                             "' ha sido usado en la producción de productos después de este movimiento");
+                    }
+                }
+            }
+
+            // ✅ NUEVA VALIDACIÓN 2.5: Verificar si un movimiento de ENTRADA normal fue usado en un ensamble
+            // Si es un movimiento de ENTRADA normal (no de ensamble), verificar si sus insumos fueron usados en ensambles
+            if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA && !esMovimientoEnsambleEntrada) {
+                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                    Insumo insumo = detalle.getInsumo();
+                    
+                    // Buscar movimientos de SALIDA con ensambleId (parte de un ensamble) que usaron este insumo
+                    // DESPUÉS de la fecha del movimiento de entrada
+                    List<DetalleMovimientoInsumo> salidasEnsamble = insumo.getMovimientos().stream()
+                            .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()) &&
+                                       m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                       m.getEnsambleId() != null && !m.getEnsambleId().trim().isEmpty())
+                            .collect(Collectors.toList());
+                    
+                    if (!salidasEnsamble.isEmpty()) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                            "' fue usado en un ensamble después de este movimiento. " +
+                            "No se puede eliminar porque afectaría el historial de ensambles.");
                     }
                 }
             }
@@ -987,19 +1038,35 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
      * Funciona tanto para insumos simples (usados en recetas) como para insumos compuestos (usados directamente)
      */
     private boolean verificarUsoEnProduccionPosterior(Insumo insumo, LocalDate fechaMovimiento) {
-        // Si es un insumo compuesto, verificar si se usó directamente en producción
+        // Si es un insumo compuesto, verificar si está en una receta de producto Y hay producción posterior
         if (insumo.esCompuesto()) {
-            // Verificar si hay movimientos de salida de este insumo compuesto después de la fecha
-            // que indiquen que se usó para crear productos
-            List<DetalleMovimientoInsumo> salidasPosteriores = insumo.getMovimientos().stream()
-                    .filter(d -> d.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA &&
-                               d.getMovimiento().getFecha().isAfter(fechaMovimiento))
-                    .collect(Collectors.toList());
+            // ✅ CORREGIDO: Verificar si el insumo compuesto está en alguna receta de producto
+            List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
+                    .filter(producto -> producto.getReceta() != null && 
+                            producto.getReceta().getDetalles().stream()
+                                    .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                    .toList();
+
+            // Si el insumo compuesto NO está en ninguna receta, no se puede usar para crear productos
+            if (productosQueUsanInsumo.isEmpty()) {
+                return false; // No se puede usar para crear productos porque no está en ninguna receta
+            }
+
+            // Si está en una receta, verificar si hay producción posterior
+            for (Producto producto : productosQueUsanInsumo) {
+                boolean tieneProduccionPosterior = producto.getMovimientos().stream()
+                        .anyMatch(detalleMovimiento -> {
+                            MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
+                            return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
+                                   movimientoProducto.getFecha().isAfter(fechaMovimiento);
+                        });
+                
+                if (tieneProduccionPosterior) {
+                    return true; // El insumo compuesto se usó en producción después del movimiento
+                }
+            }
             
-            // Si hay salidas posteriores, es probable que se haya usado
-            // Pero también verificamos si hay movimientos de productos que usen este insumo compuesto
-            // (aunque esto es menos común, ya que los productos normalmente usan insumos simples)
-            return !salidasPosteriores.isEmpty();
+            return false; // Está en una receta pero no hay producción posterior
         }
         
         // Para insumos simples, verificar si se usaron en recetas de productos
