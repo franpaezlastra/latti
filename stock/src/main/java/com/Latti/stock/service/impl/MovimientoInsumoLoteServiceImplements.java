@@ -557,8 +557,15 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         List<String> detallesValidacion = new ArrayList<>();
         
         try {
+            System.out.println("🔍 ========== VALIDANDO ELIMINACIÓN DE MOVIMIENTO ID: " + movimientoId + " ==========");
             MovimientoInsumoLote movimiento = movimientoRepository.findById(movimientoId)
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
+            
+            System.out.println("📋 Movimiento encontrado:");
+            System.out.println("  - Tipo: " + movimiento.getTipoMovimiento());
+            System.out.println("  - Fecha: " + movimiento.getFecha());
+            System.out.println("  - Descripción: " + movimiento.getDescripcion());
+            System.out.println("  - Es ensamble: " + esMovimientoDeEnsamble(movimientoId));
 
             // ✅ Validación especial para movimientos de ensamble
             if (esMovimientoDeEnsamble(movimientoId)) {
@@ -616,6 +623,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(movimientoId) && 
                                                  movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
             
+            System.out.println("🔍 Validación 1: Verificando stock suficiente para revertir...");
+            
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                 for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                     Insumo insumo = detalle.getInsumo();
@@ -624,14 +633,24 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     // NO verificar stock porque ese stock fue creado por este mismo movimiento
                     boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
                     
+                    System.out.println("  📦 Insumo: " + insumo.getNombre());
+                    System.out.println("    - Stock actual: " + insumo.getStockActual());
+                    System.out.println("    - Cantidad a revertir: " + detalle.getCantidad());
+                    System.out.println("    - Es insumo compuesto de ensamble: " + esInsumoCompuestoEnsamble);
+                    
                     // Solo verificar stock si NO es un insumo compuesto de un movimiento de ensamble
                     if (!esInsumoCompuestoEnsamble) {
                         // Verificar si hay stock suficiente para revertir
                         if (insumo.getStockActual() < detalle.getCantidad()) {
+                            System.out.println("    ❌ BLOQUEADO: Stock insuficiente para revertir");
                             detallesValidacion.add("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + 
                                     insumo.getNombre() + ". Stock actual: " + insumo.getStockActual() + 
                                     ", cantidad a revertir: " + detalle.getCantidad());
+                        } else {
+                            System.out.println("    ✅ Stock suficiente para revertir");
                         }
+                    } else {
+                        System.out.println("    ⏭️ Saltando validación de stock (es insumo compuesto de ensamble)");
                     }
                 }
             }
@@ -639,6 +658,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             // Validación 2: El insumo NO se ha usado en producción de productos DESPUÉS de este movimiento
             // ⚠️ EXCEPCIÓN: Para movimientos de ENTRADA de ensamble, esta validación ya se hizo arriba
             // específicamente para el insumo compuesto, así que NO aplicarla de nuevo aquí
+            System.out.println("🔍 Validación 2: Verificando uso en producción de productos...");
+            
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                 Insumo insumo = detalle.getInsumo();
                 
@@ -646,36 +667,68 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 // NO verificar de nuevo porque ya se validó arriba
                 boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
                 
+                System.out.println("  📦 Insumo: " + insumo.getNombre());
+                System.out.println("    - Es insumo compuesto de ensamble: " + esInsumoCompuestoEnsamble);
+                
                 // Solo verificar si NO es un insumo compuesto de un movimiento de ensamble
                 if (!esInsumoCompuestoEnsamble) {
                     // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
                     boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                    
+                    System.out.println("    - Hay producción posterior: " + hayProduccionPosterior);
                         
                     if (hayProduccionPosterior) {
+                        System.out.println("    ❌ BLOQUEADO: El insumo fue usado en producción de productos");
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                             "' ha sido usado en la producción de productos después de este movimiento");
+                    } else {
+                        System.out.println("    ✅ El insumo NO fue usado en producción de productos");
                     }
+                } else {
+                    System.out.println("    ⏭️ Saltando validación (es insumo compuesto de ensamble, ya validado arriba)");
                 }
             }
 
             // ✅ NUEVA VALIDACIÓN 2.5: Verificar si un movimiento de ENTRADA normal fue usado en un ensamble
             // Si es un movimiento de ENTRADA normal (no de ensamble), verificar si sus insumos fueron usados en ensambles
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA && !esMovimientoEnsambleEntrada) {
+                System.out.println("🔍 Validando eliminación de movimiento ENTRADA normal ID: " + movimientoId);
+                System.out.println("📅 Fecha del movimiento: " + movimiento.getFecha());
+                
                 for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
                     Insumo insumo = detalle.getInsumo();
                     
+                    System.out.println("  📦 Verificando insumo: " + insumo.getNombre() + " (ID: " + insumo.getId() + ")");
+                    
                     // Buscar movimientos de SALIDA con ensambleId (parte de un ensamble) que usaron este insumo
-                    // DESPUÉS de la fecha del movimiento de entrada
+                    // DESPUÉS de la fecha del movimiento de entrada (o en la misma fecha)
                     List<DetalleMovimientoInsumo> salidasEnsamble = insumo.getMovimientos().stream()
-                            .filter(m -> m.getMovimiento().getFecha().isAfter(movimiento.getFecha()) &&
-                                       m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA &&
-                                       m.getEnsambleId() != null && !m.getEnsambleId().trim().isEmpty())
+                            .filter(m -> {
+                                boolean fechaPosterior = m.getMovimiento().getFecha().isAfter(movimiento.getFecha()) ||
+                                                        m.getMovimiento().getFecha().isEqual(movimiento.getFecha());
+                                boolean esSalida = m.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA;
+                                boolean tieneEnsambleId = m.getEnsambleId() != null && !m.getEnsambleId().trim().isEmpty();
+                                
+                                if (fechaPosterior && esSalida && tieneEnsambleId) {
+                                    System.out.println("    ⚠️ Encontrado movimiento de SALIDA de ensamble:");
+                                    System.out.println("      - Fecha: " + m.getMovimiento().getFecha());
+                                    System.out.println("      - Cantidad: " + m.getCantidad());
+                                    System.out.println("      - EnsambleId: " + m.getEnsambleId());
+                                }
+                                
+                                return fechaPosterior && esSalida && tieneEnsambleId;
+                            })
                             .collect(Collectors.toList());
                     
                     if (!salidasEnsamble.isEmpty()) {
+                        System.out.println("    ❌ BLOQUEADO: El insumo '" + insumo.getNombre() + 
+                            "' fue usado en " + salidasEnsamble.size() + " ensamble(s) después de este movimiento");
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
                             "' fue usado en un ensamble después de este movimiento. " +
                             "No se puede eliminar porque afectaría el historial de ensambles.");
+                    } else {
+                        System.out.println("    ✅ El insumo '" + insumo.getNombre() + 
+                            "' NO fue usado en ningún ensamble después de este movimiento");
                     }
                 }
             }
@@ -684,6 +737,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             String razon = puedeEliminar ? 
                 "El movimiento puede ser eliminado sin problemas" : 
                 "El movimiento no puede ser eliminado por las siguientes razones:";
+
+            System.out.println("📊 Resultado de validación:");
+            System.out.println("  - Puede eliminar: " + puedeEliminar);
+            System.out.println("  - Razón: " + razon);
+            System.out.println("  - Detalles de validación: " + detallesValidacion);
+            System.out.println("🔍 ========== FIN DE VALIDACIÓN ==========");
 
             return new ValidacionEdicionDTO(puedeEliminar, razon, detallesValidacion);
 

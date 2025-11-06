@@ -192,11 +192,14 @@ const InsumosMovementsSection = ({
         const validacionesMap = {};
         resultados.forEach(({ id, puedeEditar }) => {
           validacionesMap[id] = puedeEditar;
+          console.log(`✅ Validación edición - Movimiento ID ${id}: puedeEditar = ${puedeEditar}`);
         });
+        console.log('📋 Validaciones de edición completadas:', validacionesMap);
         setValidacionesEdicion(validacionesMap);
         setValidacionesCargando(false); // Indicar que las validaciones se completaron
         validandoEdicionesRef.current = false;
       }).catch((error) => {
+        console.error('❌ Error en validaciones de edición:', error);
         setValidacionesCargando(false);
         validandoEdicionesRef.current = false;
       });
@@ -239,11 +242,14 @@ const InsumosMovementsSection = ({
         const validacionesMap = {};
         resultados.forEach(({ id, puedeEliminar }) => {
           validacionesMap[id] = puedeEliminar;
+          console.log(`✅ Validación eliminación - Movimiento ID ${id}: puedeEliminar = ${puedeEliminar}`);
         });
+        console.log('📋 Validaciones de eliminación completadas:', validacionesMap);
         setValidacionesEliminacion(validacionesMap);
         setValidacionesEliminacionCargando(false);
         validandoEliminacionesRef.current = false;
       }).catch((error) => {
+        console.error('❌ Error en validaciones de eliminación:', error);
         setValidacionesEliminacionCargando(false);
         validandoEliminacionesRef.current = false;
       });
@@ -261,23 +267,19 @@ const InsumosMovementsSection = ({
         return true; // Disabled mientras se carga
       }
       
-      // Si ya tenemos la validación, usarla
+      // Si ya tenemos la validación, usarla (el backend ya valida correctamente)
       if (validacionesEdicion.hasOwnProperty(movimiento.id)) {
-        return !validacionesEdicion[movimiento.id]; // true si NO puede editar (disabled)
-      }
-      
-      // Si aún no se ha validado después de que se completaron las validaciones,
-      // verificar si es un movimiento de ensamble como fallback
-      const esEnsamble = movimiento.insumos?.some(insumo => insumo.ensambleId && insumo.ensambleId.trim() !== '') || false;
-      
-      // También verificar si el movimiento tiene la propiedad esEnsamble
-      if (movimiento.esEnsamble || esEnsamble) {
-        return true; // Disabled si es ensamble
+        const puedeEditar = validacionesEdicion[movimiento.id];
+        const disabled = !puedeEditar;
+        console.log(`🔍 Verificando edición - Movimiento ID ${movimiento.id}: puedeEditar = ${puedeEditar}, disabled = ${disabled}`);
+        // true si NO puede editar (disabled), false si puede editar (enabled)
+        return disabled;
       }
       
       // Si las validaciones ya se completaron pero no tenemos esta validación,
       // por seguridad, deshabilitar hasta que se valide
       if (!validacionesCargando) {
+        console.warn(`⚠️ No se encontró validación para movimiento ID ${movimiento.id}, deshabilitando por seguridad`);
         return true; // Disabled por seguridad si no tenemos la validación
       }
       
@@ -296,12 +298,17 @@ const InsumosMovementsSection = ({
       
       // Si ya tenemos la validación, usarla
       if (validacionesEliminacion.hasOwnProperty(movimiento.id)) {
-        return !validacionesEliminacion[movimiento.id]; // true si NO puede eliminar (disabled)
+        const puedeEliminar = validacionesEliminacion[movimiento.id];
+        const disabled = !puedeEliminar;
+        console.log(`🔍 Verificando eliminación - Movimiento ID ${movimiento.id}: puedeEliminar = ${puedeEliminar}, disabled = ${disabled}`);
+        // true si NO puede eliminar (disabled), false si puede eliminar (enabled)
+        return disabled;
       }
       
       // Si las validaciones ya se completaron pero no tenemos esta validación,
       // por seguridad, deshabilitar hasta que se valide
       if (!validacionesEliminacionCargando) {
+        console.warn(`⚠️ No se encontró validación de eliminación para movimiento ID ${movimiento.id}, deshabilitando por seguridad`);
         return true; // Disabled por seguridad si no tenemos la validación
       }
       
@@ -448,7 +455,7 @@ const InsumosMovementsSection = ({
                 </div>
                 <div>
                   <span className="font-medium">⚠️ Nota:</span>
-                  <span className="ml-1">Los movimientos de ensamble no se pueden editar o eliminar individualmente</span>
+                  <span className="ml-1">Los movimientos de ensamble ENTRADA pueden editarse/eliminarse si no fueron usados para crear productos. Los movimientos de ensamble SALIDA no pueden editarse/eliminarse directamente.</span>
                 </div>
               </div>
             </div>
