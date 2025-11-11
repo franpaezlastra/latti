@@ -1,4 +1,4 @@
-package com.Latti.stock.service.impl;
+    package com.Latti.stock.service.impl;
 
 import com.Latti.stock.dtos.CrearMovimientoDeInsumoDTO;
 import com.Latti.stock.dtos.DetalleMovimientoInsumoDTO;
@@ -245,6 +245,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                             Insumo insumoSimple = detalleRelacionado.getInsumo();
                             // Revertir el stock (devolver lo que se había quitado)
                             insumoSimple.setStockActual(insumoSimple.getStockActual() + detalleRelacionado.getCantidad());
+
+                            // Remover el detalle de la colección del insumo para mantener la consistencia con orphanRemoval
+                            if (insumoSimple.getMovimientos() != null) {
+                                insumoSimple.getMovimientos().remove(detalleRelacionado);
+                            }
+
                             insumoRepository.save(insumoSimple);
                             System.out.println("  ✅ Revertido stock de " + insumoSimple.getNombre() + ": +" + detalleRelacionado.getCantidad());
                             
@@ -263,18 +269,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                         System.out.println("  🗑️ Eliminando movimiento de salida relacionado ID: " + movimientoSalida.getId());
                         
                         try {
-                            // Primero eliminar los detalles del movimiento
-                            detalleMovimientoInsumoRepository.deleteByMovimientoId(movimientoSalida.getId());
-                            detalleMovimientoInsumoRepository.flush();
-                            
-                            // ✅ IMPORTANTE: Limpiar la colección de detalles para evitar problemas con Hibernate
-                            movimientoSalida.getDetalles().clear();
-                            
-                            // Luego eliminar el movimiento usando delete() en lugar de deleteById()
+                            // ✅ SIMPLIFICADO: Eliminar el movimiento directamente
+                            // JPA con cascade eliminará automáticamente los detalles
                             movimientoRepository.delete(movimientoSalida);
                             movimientoRepository.flush();
                             
-                            System.out.println("    ✅ Movimiento de salida relacionado eliminado correctamente");
+                            System.out.println("    ✅ Movimiento de salida relacionado eliminado correctamente (cascade)");
                         } catch (Exception e) {
                             System.err.println("    ❌ Error al eliminar movimiento de salida relacionado: " + e.getMessage());
                             e.printStackTrace();
@@ -294,7 +294,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(id) && 
                                              movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
 
-        // Revertir cambios en cada insumo
+        // Revertir cambios en cada insumo ANTES de eliminar
+        System.out.println("🔄 Revirtiendo cambios en insumos...");
         for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
             Insumo insumo = detalle.getInsumo();
             
@@ -322,35 +323,22 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             }
             
             insumoRepository.save(insumo);
+            System.out.println("  ✅ Stock revertido para " + insumo.getNombre());
         }
         
-        // ✅ CORREGIDO: Eliminar primero los detalles, luego el movimiento
-        System.out.println("🗑️ Eliminando detalles del movimiento ID: " + id);
-        System.out.println("  - Cantidad de detalles antes de eliminar: " + movimiento.getDetalles().size());
-        
-        try {
-            detalleMovimientoInsumoRepository.deleteByMovimientoId(id);
-            detalleMovimientoInsumoRepository.flush();
-            
-            // ✅ IMPORTANTE: Limpiar la colección de detalles del objeto MovimientoInsumoLote
-            // para evitar que Hibernate intente sincronizar entidades ya eliminadas
-            movimiento.getDetalles().clear();
-            
-            System.out.println("  ✅ Detalles eliminados correctamente y colección limpiada");
-        } catch (Exception e) {
-            System.err.println("  ❌ Error al eliminar detalles: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Error al eliminar los detalles del movimiento: " + e.getMessage(), e);
-        }
-        
-        // Eliminar el movimiento
+        // ✅ SIMPLIFICADO: Eliminar el movimiento directamente
+        // JPA con cascade=CascadeType.ALL y orphanRemoval=true eliminará automáticamente los detalles
         System.out.println("🗑️ Eliminando movimiento ID: " + id);
+        System.out.println("  - Cantidad de detalles: " + movimiento.getDetalles().size());
+        System.out.println("  - JPA eliminará automáticamente los detalles relacionados (cascade)");
+        
         try {
             // ✅ IMPORTANTE: Usar delete() en lugar de deleteById() para que Hibernate
             // maneje correctamente la entidad que ya está en el contexto de persistencia
+            // El cascade se encargará de eliminar los detalles automáticamente
             movimientoRepository.delete(movimiento);
             movimientoRepository.flush();
-            System.out.println("  ✅ Movimiento eliminado correctamente");
+            System.out.println("  ✅ Movimiento y detalles eliminados correctamente (cascade)");
         } catch (Exception e) {
             System.err.println("  ❌ Error al eliminar movimiento: " + e.getMessage());
             e.printStackTrace();
