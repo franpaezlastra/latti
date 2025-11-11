@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaTrash, FaBox, FaCalendarAlt, FaTag, FaDollarSign } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { createMovimientoProducto, createVentaPorLotes } from '../../../../store/actions/movimientoProductoActions';
@@ -32,22 +32,11 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
   const [textoError, setTextoError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Referencia para trackear si el modal acaba de abrirse
-  const wasOpenRef = React.useRef(false);
+  const wasOpenRef = useRef(false);
 
-  // Limpiar formulario SOLO cuando el modal pasa de cerrado a abierto
+  // Restablecer formulario solo cuando el modal pasa de cerrado a abierto
   useEffect(() => {
-    const wasOpen = wasOpenRef.current;
-    
-    if (isOpen && !wasOpen) {
-      // ✅ El modal acaba de abrirse - limpiar formulario
-      console.log('🔄 Modal abriendo - limpiando formulario');
-      
-      // Cargar productos si están vacíos
-      if (!productos || productos.length === 0) {
-        dispatch(loadProductos());
-      }
-      
+    if (isOpen && !wasOpenRef.current) {
       setFormData({
         tipoMovimiento: '',
         fecha: '',
@@ -58,9 +47,12 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
       setUsarLotes(false);
       setError(false);
       setTextoError('');
+
+      if (!productos || productos.length === 0) {
+        dispatch(loadProductos());
+      }
     }
-    
-    // Actualizar la referencia
+
     wasOpenRef.current = isOpen;
   }, [isOpen, productos, dispatch]);
 

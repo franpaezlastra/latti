@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaHammer, FaCalendarAlt, FaInfoCircle, FaBox, FaCog } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadInsumos } from '../../../../store/actions/insumoActions';
@@ -29,16 +29,17 @@ const MovimientoInsumoCompuestoModal = ({ isOpen, onClose, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filtrar solo insumos compuestos
-  const insumosCompuestos = insumos.filter(insumo => insumo.tipo === 'COMPUESTO');
+  const insumosCompuestos = (insumos || []).filter(insumo => insumo.tipo === 'COMPUESTO');
 
-  // Limpiar formulario cuando se abre/cierra el modal
+  const wasOpenRef = useRef(false);
+
+  // Reiniciar formulario solo cuando pasa de cerrado a abierto
   useEffect(() => {
-    if (isOpen) {
-      // Cargar insumos si están vacíos
+    if (isOpen && !wasOpenRef.current) {
       if (!insumos || insumos.length === 0) {
         dispatch(loadInsumos());
       }
-      
+
       const hoy = new Date().toISOString().split('T')[0];
       setFormData({
         fecha: hoy,
@@ -49,7 +50,9 @@ const MovimientoInsumoCompuestoModal = ({ isOpen, onClose, onSubmit }) => {
       setError(false);
       setTextoError('');
     }
-  }, [isOpen, dispatch]);
+
+    wasOpenRef.current = isOpen;
+  }, [isOpen, insumos, dispatch]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {

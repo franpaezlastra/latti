@@ -32,7 +32,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
 
     // Crear movimiento
     .addCase(createMovimientoInsumo.pending, (state) => {
-      state.loading = true;
+      // Mantener el estado actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí para que la página no se actualice
     })
     .addCase(createMovimientoInsumo.fulfilled, (state, action) => {
@@ -62,7 +63,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
 
     // Eliminar movimiento
     .addCase(deleteMovimientoInsumo.pending, (state) => {
-      state.loading = true;
+      // Mantener el estado actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí
     })
     .addCase(deleteMovimientoInsumo.fulfilled, (state, action) => {
@@ -92,7 +94,8 @@ const movimientoInsumoReducer = createReducer(initialState, (builder) => {
 
     // Actualizar movimiento
     .addCase(updateMovimientoInsumo.pending, (state) => {
-      state.loading = true;
+      // Mantener el estado actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí
     })
     .addCase(updateMovimientoInsumo.fulfilled, (state, action) => {

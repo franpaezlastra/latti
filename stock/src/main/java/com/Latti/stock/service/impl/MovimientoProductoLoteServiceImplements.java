@@ -61,6 +61,24 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
 
                 // Validaciones específicas para SALIDA
                 if (dto.tipoMovimiento() == TipoMovimiento.SALIDA) {
+                    // Verificar que el producto haya sido producido antes o en la misma fecha
+                    LocalDate fechaPrimeraProduccion = producto.getMovimientos().stream()
+                            .filter(detalle -> detalle.getMovimiento().getTipoMovimiento() == TipoMovimiento.ENTRADA)
+                            .map(detalle -> detalle.getMovimiento().getFecha())
+                            .min(LocalDate::compareTo)
+                            .orElse(null);
+
+                    if (fechaPrimeraProduccion == null || dto.fecha().isBefore(fechaPrimeraProduccion)) {
+                        String fechaReferencia = fechaPrimeraProduccion != null
+                                ? fechaPrimeraProduccion.toString()
+                                : "ninguna fecha registrada";
+                        throw new IllegalArgumentException(
+                                "No se puede registrar la salida del producto '" + producto.getNombre() + "' en la fecha " +
+                                dto.fecha() + " porque la primera producción registrada es del " + fechaReferencia +
+                                ". Por favor, verifica las fechas de producción y venta."
+                        );
+                    }
+
                     // Validar stock disponible en la fecha del movimiento
                     double stockDisponibleEnFecha = calcularStockDisponibleEnFecha(producto, dto.fecha());
                     if (stockDisponibleEnFecha < d.cantidad()) {
@@ -259,7 +277,25 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                     throw new IllegalArgumentException("El precio de venta debe ser mayor a 0 para el producto: " + producto.getNombre());
                 }
 
-                // Validar stock disponible en el lote específico
+            // Validar que exista producción previa a la fecha de venta
+            LocalDate fechaPrimeraProduccion = producto.getMovimientos().stream()
+                    .filter(detalle -> detalle.getMovimiento().getTipoMovimiento() == TipoMovimiento.ENTRADA)
+                    .map(detalle -> detalle.getMovimiento().getFecha())
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+
+            if (fechaPrimeraProduccion == null || dto.fecha().isBefore(fechaPrimeraProduccion)) {
+                String fechaReferencia = fechaPrimeraProduccion != null
+                        ? fechaPrimeraProduccion.toString()
+                        : "ninguna fecha registrada";
+                throw new IllegalArgumentException(
+                        "No se puede registrar la venta del producto '" + producto.getNombre() + "' en la fecha " +
+                        dto.fecha() + " porque la primera producción registrada es del " + fechaReferencia +
+                        ". Por favor, verifica las fechas de producción y venta."
+                );
+            }
+
+            // Validar stock disponible en el lote específico
                 double stockDisponibleEnLote = obtenerStockDisponibleEnLote(producto, venta.lote());
                 if (stockDisponibleEnLote < venta.cantidad()) {
                     throw new IllegalArgumentException(
@@ -268,6 +304,28 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                         ", Cantidad solicitada: " + venta.cantidad()
                     );
                 }
+
+            // Validar que el lote haya sido creado en una fecha anterior o igual a la venta
+            LocalDate fechaCreacionLote = producto.getMovimientos().stream()
+                    .filter(detalle -> detalle.getMovimiento().getTipoMovimiento() == TipoMovimiento.ENTRADA)
+                    .filter(detalle -> venta.lote().equals(detalle.getLote()))
+                    .map(detalle -> detalle.getMovimiento().getFecha())
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
+
+            if (fechaCreacionLote == null) {
+                throw new IllegalArgumentException(
+                        "No se encontró la producción (lote '" + venta.lote() + "') del producto '" + producto.getNombre() +
+                        "'. Verifica que el lote exista antes de registrar la venta."
+                );
+            }
+
+            if (dto.fecha().isBefore(fechaCreacionLote)) {
+                throw new IllegalArgumentException(
+                        "No se puede vender unidades del lote '" + venta.lote() + "' del producto '" + producto.getNombre() +
+                        "' en la fecha " + dto.fecha() + " porque el lote se produjo el " + fechaCreacionLote + "."
+                );
+            }
 
                 // Actualizar stock del producto
                 producto.setStockActual(producto.getStockActual() - venta.cantidad());

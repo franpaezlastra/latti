@@ -31,7 +31,8 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
 
     // Crear movimiento
     .addCase(createMovimientoProducto.pending, (state) => {
-      state.loading = true;
+      // Mantener loading actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí para que la página no se actualice
     })
     .addCase(createMovimientoProducto.fulfilled, (state, action) => {
@@ -61,7 +62,8 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
 
     // Eliminar movimiento
     .addCase(deleteMovimientoProducto.pending, (state) => {
-      state.loading = true;
+      // Mantener loading actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí
     })
     .addCase(deleteMovimientoProducto.fulfilled, (state, action) => {
@@ -76,7 +78,8 @@ const movimientoProductoReducer = createReducer(initialState, (builder) => {
 
     // Crear venta por lotes
     .addCase(createVentaPorLotes.pending, (state) => {
-      state.loading = true;
+      // Mantener loading actual para no disparar el spinner global
+      state.loading = state.loading;
       // ✅ NO limpiar el error aquí
     })
     .addCase(createVentaPorLotes.fulfilled, (state, action) => {
