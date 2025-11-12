@@ -197,6 +197,29 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
       return;
     }
 
+    // Validar que la fecha no sea muy antigua (más de 1 año)
+    const fechaMovimiento = new Date(formData.fecha);
+    const fechaLimite = new Date();
+    fechaLimite.setFullYear(fechaLimite.getFullYear() - 1);
+    
+    if (fechaMovimiento < fechaLimite) {
+      setError(true);
+      setTextoError('La fecha no puede ser anterior a hace un año');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Validar que la fecha no sea futura (más de 1 mes)
+    const fechaMaxima = new Date();
+    fechaMaxima.setMonth(fechaMaxima.getMonth() + 1);
+    
+    if (fechaMovimiento > fechaMaxima) {
+      setError(true);
+      setTextoError('La fecha no puede ser más de un mes en el futuro');
+      setIsSubmitting(false);
+      return;
+    }
+
     if (formData.productos.length === 0) {
       setError(true);
       setTextoError('Debe agregar al menos un producto');
@@ -341,6 +364,12 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
           errorMsg = err.message;
         }
         
+        // Formatear el mensaje de error para mejor legibilidad
+        errorMsg = errorMsg
+          .replace(/\. /g, '.\n') // Agregar saltos de línea después de puntos
+          .replace(/, /g, ',\n')   // Agregar saltos de línea después de comas
+          .trim();
+        
         // ✅ Setear ambos estados juntos
         setError(true);
         setTextoError(errorMsg);
@@ -402,6 +431,12 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
         console.log('✅ Setting error from message:', err.message);
         errorMsg = err.message;
       }
+      
+      // Formatear el mensaje de error para mejor legibilidad
+      errorMsg = errorMsg
+        .replace(/\. /g, '.\n') // Agregar saltos de línea después de puntos
+        .replace(/, /g, ',\n')   // Agregar saltos de línea después de comas
+        .trim();
       
       // ✅ Setear ambos estados juntos
       setError(true);

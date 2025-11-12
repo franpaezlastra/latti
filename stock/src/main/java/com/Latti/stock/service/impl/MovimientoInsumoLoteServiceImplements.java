@@ -577,9 +577,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                             
                             // Verificar si es un insumo compuesto
                             if (insumoCompuesto != null && insumoCompuesto.esCompuesto()) {
-                                boolean seUsoEnProduccion = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                                // ✅ CORREGIDO: Verificar si hay producción en CUALQUIER fecha (no solo posterior)
+                                boolean seUsoEnProduccion = verificarSiHayProduccionConInsumo(insumoCompuesto);
                                 if (seUsoEnProduccion) {
-                                    detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                    detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos. " +
                                             "No se puede editar porque afectaría el historial de producción.");
                                 }
                             }
@@ -655,11 +656,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                                                         .anyMatch(d -> d.getInsumo().getId().equals(insumoCompuesto.getId())));
                                 
                                 if (seUsoEnReceta) {
-                                    // Si está en una receta, verificar si hay producción posterior
-                                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumoCompuesto, movimiento.getFecha());
+                                    // ✅ CORREGIDO: Verificar si hay producción en CUALQUIER fecha (no solo posterior)
+                                    // Si el insumo compuesto está en una receta y hay producción, no se puede eliminar
+                                    boolean hayProduccion = verificarSiHayProduccionConInsumo(insumoCompuesto);
                                     
-                                    if (hayProduccionPosterior) {
-                                        detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos después de este ensamble. " +
+                                    if (hayProduccion) {
+                                        detallesValidacion.add("Este insumo compuesto ya se ha usado para crear productos. " +
                                                 "No se puede eliminar porque afectaría el historial de producción.");
                                     }
                                 }
@@ -1149,6 +1151,38 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
      * Verifica si un insumo ha sido usado en producción de productos después de una fecha específica
      * Funciona tanto para insumos simples (usados en recetas) como para insumos compuestos (usados directamente)
      */
+    /**
+     * ✅ NUEVO: Verifica si hay producción de productos que usan este insumo (en cualquier fecha)
+     * Útil para bloquear eliminación/edición de movimientos cuando el insumo ya fue usado en producción
+     */
+    private boolean verificarSiHayProduccionConInsumo(Insumo insumo) {
+        // Verificar si el insumo está en alguna receta de producto
+        List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
+                .filter(producto -> producto.getReceta() != null && 
+                        producto.getReceta().getDetalles().stream()
+                                .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                .toList();
+
+        if (productosQueUsanInsumo.isEmpty()) {
+            return false; // No está en ninguna receta, no se puede usar para crear productos
+        }
+
+        // Verificar si hay al menos una producción de algún producto que use este insumo
+        for (Producto producto : productosQueUsanInsumo) {
+            boolean tieneProduccion = producto.getMovimientos().stream()
+                    .anyMatch(detalleMovimiento -> {
+                        MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
+                        return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA;
+                    });
+            
+            if (tieneProduccion) {
+                return true; // Hay producción de este producto que usa el insumo
+            }
+        }
+        
+        return false; // Está en una receta pero no hay producción
+    }
+
     private boolean verificarUsoEnProduccionPosterior(Insumo insumo, LocalDate fechaMovimiento) {
         // Si es un insumo compuesto, verificar si está en una receta de producto Y hay producción posterior
         if (insumo.esCompuesto()) {

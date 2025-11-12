@@ -13,6 +13,7 @@ import com.Latti.stock.modules.Producto;
 import com.Latti.stock.modules.TipoMovimiento;
 import com.Latti.stock.modules.InsumoReceta;
 import com.Latti.stock.modules.Insumo;
+import com.Latti.stock.modules.DetalleMovimientoInsumo;
 import com.Latti.stock.repositories.MovimientoProductoLoteRepository;
 import com.Latti.stock.repositories.ProductoRepository;
 import com.Latti.stock.repositories.InsumoRepository;
@@ -106,11 +107,16 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
 
                 // Actualizar stock según tipo
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
+                    // ✅ NUEVA VALIDACIÓN: Verificar stock histórico de insumos ANTES de producir
+                    if (producto.getReceta() != null) {
+                        validarStockHistoricoInsumosParaProduccion(producto, d.cantidad(), dto.fecha());
+                    }
+                    
                     producto.setStockActual(producto.getStockActual() + d.cantidad());
                     
                     // Para ENTRADA (producción): restar insumos de la receta
                     if (producto.getReceta() != null) {
-                        restarInsumosDeReceta(producto, d.cantidad());
+                        restarInsumosDeReceta(producto, d.cantidad(), dto.fecha());
                     }
                 } else {
                     producto.setStockActual(producto.getStockActual() - d.cantidad());
@@ -184,6 +190,119 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                         ).toList()
                 )
         ).toList();
+    }
+
+    @Override
+    @Transactional
+    public MovimientoProductoLote editarMovimientoProducto(Long id, CrearMovimientoProductoDTO dto) {
+        System.out.println("✏️ BACKEND: Intentando editar movimiento de producto con ID: " + id);
+        
+        MovimientoProductoLote movimientoOriginal = movimientoRepository.findById(id)
+                .orElseThrow(() -> {
+                    System.out.println("❌ BACKEND: Movimiento de producto con ID " + id + " no encontrado");
+                    return new IllegalArgumentException("Movimiento no encontrado");
+                });
+        
+        System.out.println("✅ BACKEND: Movimiento encontrado: " + movimientoOriginal.getId());
+        
+        // Solo permitir editar movimientos de ENTRADA (producción)
+        if (movimientoOriginal.getTipoMovimiento() != TipoMovimiento.ENTRADA) {
+            throw new IllegalArgumentException("Solo se pueden editar movimientos de entrada (producción)");
+        }
+        
+        if (dto.tipoMovimiento() != TipoMovimiento.ENTRADA) {
+            throw new IllegalArgumentException("Solo se pueden editar movimientos de entrada (producción)");
+        }
+        
+        // PASO 1: Revertir los cambios del movimiento original
+        System.out.println("🔄 Revertiendo cambios del movimiento original...");
+        
+        // Lista para restaurar insumos del movimiento original
+        List<Object[]> insumosParaRestaurar = new ArrayList<>();
+        
+        for (DetalleMovimientoProducto detalleOriginal : movimientoOriginal.getDetalles()) {
+            Producto producto = detalleOriginal.getProducto();
+            
+            // Revertir stock del producto
+            if (producto.getStockActual() < detalleOriginal.getCantidad()) {
+                throw new IllegalArgumentException("No se puede editar el movimiento. Stock insuficiente para revertir: " + producto.getNombre());
+            }
+            producto.setStockActual(producto.getStockActual() - detalleOriginal.getCantidad());
+            
+            // Guardar información para restaurar insumos
+            if (producto.getReceta() != null) {
+                for (InsumoReceta detalleReceta : producto.getReceta().getDetalles()) {
+                    Insumo insumo = detalleReceta.getInsumo();
+                    double cantidadInsumoARestaurar = detalleReceta.getCantidad() * detalleOriginal.getCantidad();
+                    insumosParaRestaurar.add(new Object[]{insumo.getId(), cantidadInsumoARestaurar});
+                }
+            }
+            
+            productoRepository.save(producto);
+        }
+        
+        // Restaurar insumos del movimiento original
+        for (Object[] insumoInfo : insumosParaRestaurar) {
+            Long insumoId = (Long) insumoInfo[0];
+            Double cantidadARestaurar = (Double) insumoInfo[1];
+            
+            Insumo insumo = insumoRepository.findById(insumoId).orElse(null);
+            if (insumo != null) {
+                insumo.setStockActual(insumo.getStockActual() + cantidadARestaurar);
+                insumoRepository.save(insumo);
+                System.out.println("  ✅ Restaurado insumo ID " + insumoId + ": +" + cantidadARestaurar);
+            }
+        }
+        
+        // PASO 2: Limpiar detalles antiguos
+        movimientoOriginal.getDetalles().clear();
+        movimientoRepository.saveAndFlush(movimientoOriginal);
+        
+        // PASO 3: Aplicar los nuevos cambios (similar a crearMovimientoProducto)
+        System.out.println("📝 Aplicando nuevos cambios...");
+        
+        movimientoOriginal.setFecha(dto.fecha());
+        movimientoOriginal.setDescripcion(dto.descripcion());
+        
+        for (DetalleMovimientoProductoDTO d : dto.detalles()) {
+            Producto producto = productoRepository.findById(d.id())
+                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + d.id()));
+
+            if (d.cantidad() <= 0) {
+                throw new IllegalArgumentException("La cantidad debe ser mayor a 0 para el producto: " + producto.getNombre());
+            }
+
+            // Validar stock histórico de insumos ANTES de producir
+            if (producto.getReceta() != null) {
+                validarStockHistoricoInsumosParaProduccion(producto, d.cantidad(), dto.fecha());
+            }
+
+            // Actualizar stock del producto
+            producto.setStockActual(producto.getStockActual() + d.cantidad());
+            
+            // Restar insumos de la receta
+            if (producto.getReceta() != null) {
+                restarInsumosDeReceta(producto, d.cantidad(), dto.fecha());
+            }
+
+            productoRepository.save(producto);
+
+            // Crear nuevo detalle
+            DetalleMovimientoProducto nuevoDetalle = new DetalleMovimientoProducto(d.cantidad(), producto);
+            nuevoDetalle.setFechaVencimiento(d.fechaVencimiento());
+            movimientoOriginal.addDetalle(nuevoDetalle);
+        }
+
+        // Guardar el movimiento actualizado
+        MovimientoProductoLote movimientoActualizado = movimientoRepository.save(movimientoOriginal);
+        
+        // Generar lotes automáticamente para movimientos de ENTRADA
+        for (DetalleMovimientoProducto detalle : movimientoActualizado.getDetalles()) {
+            String lote = "LOTE-" + movimientoActualizado.getId();
+            detalle.setLote(lote);
+        }
+        
+        return movimientoRepository.save(movimientoActualizado);
     }
 
     @Override
@@ -383,9 +502,75 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
     }
 
     /**
-     * Resta los insumos necesarios de la receta del producto
+     * ✅ NUEVO: Valida que los insumos tengan stock suficiente en la fecha del movimiento de producción
      */
-    private void restarInsumosDeReceta(Producto producto, double cantidadProducto) {
+    private void validarStockHistoricoInsumosParaProduccion(Producto producto, double cantidadProducto, LocalDate fechaProduccion) {
+        if (producto.getReceta() == null || producto.getReceta().getDetalles() == null) {
+            return; // No hay receta, no hay nada que validar
+        }
+
+        System.out.println("🕐 Validando stock histórico de insumos para producción en fecha: " + fechaProduccion);
+
+        for (InsumoReceta detalleReceta : producto.getReceta().getDetalles()) {
+            Insumo insumo = detalleReceta.getInsumo();
+            double cantidadInsumoNecesaria = detalleReceta.getCantidad() * cantidadProducto;
+
+            // Calcular el stock que tenía el insumo en la fecha del movimiento de producción
+            double stockEnFecha = calcularStockInsumoEnFecha(insumo, fechaProduccion);
+
+            System.out.println(String.format("  📦 Insumo '%s': Stock en %s = %.2f, Necesario: %.2f",
+                    insumo.getNombre(), fechaProduccion, stockEnFecha, cantidadInsumoNecesaria));
+
+            if (stockEnFecha < cantidadInsumoNecesaria) {
+                throw new IllegalArgumentException(
+                    String.format("No es posible realizar la producción en la fecha %s. " +
+                                    "El insumo '%s' no tenía suficiente stock disponible en esa fecha. " +
+                                    "Stock disponible en la fecha seleccionada: %.2f %s, cantidad necesaria: %.2f %s. " +
+                                    "Por favor, asegúrate de que los insumos hayan sido adquiridos o ensamblados antes de la fecha de producción.",
+                            fechaProduccion,
+                            insumo.getNombre(),
+                            stockEnFecha,
+                            insumo.getUnidadMedida().toString().toLowerCase(),
+                            cantidadInsumoNecesaria,
+                            insumo.getUnidadMedida().toString().toLowerCase())
+                );
+            }
+        }
+
+        System.out.println("✅ Validación de stock histórico de insumos exitosa");
+    }
+
+    /**
+     * ✅ NUEVO: Calcula el stock que tenía un insumo en una fecha específica
+     * Considera todos los movimientos hasta esa fecha (entradas y salidas)
+     */
+    private double calcularStockInsumoEnFecha(Insumo insumo, LocalDate fecha) {
+        double stock = 0.0;
+
+        // Recorrer todos los movimientos del insumo hasta la fecha indicada
+        for (DetalleMovimientoInsumo detalle : insumo.getMovimientos()) {
+            LocalDate fechaMovimiento = detalle.getMovimiento().getFecha();
+
+            // Solo considerar movimientos ANTES O EN la fecha especificada
+            if (fechaMovimiento.isBefore(fecha) || fechaMovimiento.isEqual(fecha)) {
+                TipoMovimiento tipo = detalle.getMovimiento().getTipoMovimiento();
+
+                if (tipo == TipoMovimiento.ENTRADA) {
+                    stock += detalle.getCantidad();
+                } else if (tipo == TipoMovimiento.SALIDA) {
+                    stock -= detalle.getCantidad();
+                }
+            }
+        }
+
+        return stock;
+    }
+
+    /**
+     * Resta los insumos necesarios de la receta del producto
+     * ✅ ACTUALIZADO: Ahora recibe la fecha para validaciones adicionales
+     */
+    private void restarInsumosDeReceta(Producto producto, double cantidadProducto, LocalDate fechaProduccion) {
         if (producto.getReceta() == null || producto.getReceta().getDetalles() == null) {
             return; // No hay receta, no hay nada que restar
         }
@@ -394,7 +579,7 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
             Insumo insumo = detalleReceta.getInsumo();
             double cantidadInsumoNecesaria = detalleReceta.getCantidad() * cantidadProducto;
 
-            // Validar stock suficiente del insumo
+            // Validar stock suficiente del insumo (validación adicional de seguridad)
             if (insumo.getStockActual() < cantidadInsumoNecesaria) {
                 throw new IllegalArgumentException(
                     "Stock insuficiente del insumo '" + insumo.getNombre() + 

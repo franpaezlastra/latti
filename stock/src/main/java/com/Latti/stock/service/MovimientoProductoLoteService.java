@@ -16,6 +16,8 @@ public interface MovimientoProductoLoteService {
 
     MovimientoProductoLote eliminarMovimientoProducto(Long id);
     
+    MovimientoProductoLote editarMovimientoProducto(Long id, CrearMovimientoProductoDTO dto);
+    
     MovimientoProductoLote crearVentaPorLotes(CrearVentaPorLotesDTO dto);
     
     List<StockPorLoteDTO> obtenerStockPorLotes(Long productoId);

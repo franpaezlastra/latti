@@ -29,6 +29,7 @@ import MovimientoInsumoCompuestoModal from "../../components/features/movements/
 import MovimientoProductoModal from "../../components/features/movements/modals/MovimientoProductoModal";
 import MovimientoDetallesModal from "../../components/features/movements/modals/MovimientoDetallesModal";
 import EditarMovimientoInsumoModal from "../../components/features/movements/modals/EditarMovimientoInsumoModal";
+import EditarMovimientoProductoModal from "../../components/features/movements/modals/EditarMovimientoProductoModal";
 
 // Componentes de secciones
 import InsumosMovementsSection from "./sections/InsumosMovementsSection";
@@ -69,12 +70,14 @@ const MovementsPage = () => {
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditProductoModal, setShowEditProductoModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
   const [movimientoAEditar, setMovimientoAEditar] = useState(null);
+  const [movimientoAEditarProducto, setMovimientoAEditarProducto] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   
   // Estados de error
@@ -129,6 +132,9 @@ const MovementsPage = () => {
       case 'edit':
         setShowEditModal(true);
         break;
+      case 'editProducto':
+        setShowEditProductoModal(true);
+        break;
       case 'delete':
         setShowDeleteModal(true);
         break;
@@ -159,6 +165,10 @@ const MovementsPage = () => {
         setShowEditModal(false);
         setMovimientoAEditar(null);
         break;
+      case 'editProducto':
+        setShowEditProductoModal(false);
+        setMovimientoAEditarProducto(null);
+        break;
       case 'delete':
         setShowDeleteModal(false);
         setMovimientoAEliminar(null);
@@ -181,6 +191,38 @@ const MovementsPage = () => {
     setErrorEliminacion("");
     setMostrarError(false);
     openModal('delete');
+  };
+
+  const handleEditarMovimientoProducto = (movimiento) => {
+    // Buscar el movimiento original en los movimientos cargados
+    const movimientoOriginal = movimientosProducto.find(m => m.id === movimiento.id);
+    
+    if (!movimientoOriginal) {
+      return;
+    }
+
+    // Solo permitir editar movimientos de entrada
+    if (movimientoOriginal.tipoMovimiento !== 'ENTRADA') {
+      return;
+    }
+
+    // Reconstruir el movimiento con la estructura que espera el modal
+    const fechaMovimiento = movimientoOriginal.fecha 
+      ? (movimientoOriginal.fecha instanceof Date 
+          ? movimientoOriginal.fecha 
+          : new Date(movimientoOriginal.fecha))
+      : new Date();
+    
+    const movimientoParaEditar = {
+      id: movimientoOriginal.id,
+      fecha: fechaMovimiento,
+      descripcion: movimientoOriginal.descripcion || '',
+      tipoMovimiento: movimientoOriginal.tipoMovimiento,
+      detalles: movimientoOriginal.detalles || []
+    };
+
+    setMovimientoAEditarProducto(movimientoParaEditar);
+    openModal('editProducto');
   };
 
   const handleEditarMovimiento = async (movimiento) => {
@@ -323,6 +365,7 @@ const MovementsPage = () => {
             movimientos={movimientosProducto || []}
             productos={productos || []}
             onVerDetalles={handleVerDetalles}
+            onEditar={handleEditarMovimientoProducto}
             onEliminar={handleEliminarMovimiento}
             onNuevoProducto={() => openModal('producto')}
           />
@@ -393,6 +436,19 @@ const MovementsPage = () => {
         onSuccess={() => {
           // El modal ya recarga los movimientos internamente, pero por si acaso lo hacemos aquí también
           dispatch(loadMovimientosInsumo());
+        }}
+      />
+
+      <EditarMovimientoProductoModal
+        isOpen={showEditProductoModal}
+        onClose={() => {
+          closeModal('editProducto');
+          dispatch(loadMovimientosProducto());
+        }}
+        movimiento={movimientoAEditarProducto}
+        onSuccess={() => {
+          closeModal('editProducto');
+          dispatch(loadMovimientosProducto());
         }}
       />
 

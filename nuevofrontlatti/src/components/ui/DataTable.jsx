@@ -97,6 +97,15 @@ const DataTable = ({
                               return null;
                             }
                             
+                            // Verificar si la acción debe mostrarse
+                            const shouldShow = action.show && typeof action.show === 'function' 
+                              ? action.show(row) 
+                              : true;
+                            
+                            if (!shouldShow) {
+                              return null;
+                            }
+                            
                             const isDisabled = action.disabled && typeof action.disabled === 'function' ? action.disabled(row) : false;
                             
                             // Estilos base según el tipo de acción

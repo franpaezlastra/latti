@@ -39,7 +39,7 @@ const MovimientoInsumoCompuestoModal = ({ isOpen, onClose, onSubmit }) => {
       if (!insumos || insumos.length === 0) {
         dispatch(loadInsumos());
       }
-
+      
       const hoy = new Date().toISOString().split('T')[0];
       setFormData({
         fecha: hoy,

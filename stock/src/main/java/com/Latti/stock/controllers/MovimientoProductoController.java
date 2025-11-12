@@ -40,6 +40,21 @@ public class MovimientoProductoController {
         return ResponseEntity.ok(movimientos);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> editarMovimiento(@PathVariable Long id, @RequestBody CrearMovimientoProductoDTO dto) {
+        try {
+            MovimientoProductoLote actualizado = movimientoProductoLoteService.editarMovimientoProducto(id, dto);
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Movimiento de producto editado correctamente",
+                    "id", actualizado.getId()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error inesperado al editar el movimiento de producto"));
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarMovimiento(@PathVariable Long id) {
         try {

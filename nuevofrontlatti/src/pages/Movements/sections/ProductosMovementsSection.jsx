@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaPlus, FaEye, FaTrash, FaCog, FaFilter, FaSearch } from "react-icons/fa";
+import { FaPlus, FaEye, FaTrash, FaEdit, FaCog, FaFilter, FaSearch } from "react-icons/fa";
 import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
 import { formatQuantity, formatPrice } from "../../../utils/formatters";
 
@@ -7,6 +7,7 @@ const ProductosMovementsSection = ({
   movimientos = [],
   productos = [],
   onVerDetalles,
+  onEditar,
   onEliminar,
   onNuevoProducto
 }) => {
@@ -147,6 +148,18 @@ const ProductosMovementsSection = ({
       icon: <FaEye />,
       onClick: (mov) => onVerDetalles({ ...mov, tipo: 'Producto' }),
       variant: 'ghost'
+    },
+    {
+      label: 'Editar',
+      icon: <FaEdit />,
+      onClick: (mov) => onEditar({ ...mov, tipo: 'Producto' }),
+      variant: 'ghost',
+      // Solo mostrar editar para movimientos de entrada
+      show: (mov) => {
+        // Verificar el tipo de movimiento original antes de formatear
+        const movOriginal = movimientos.find(m => m.id === mov.id);
+        return movOriginal?.tipoMovimiento === 'ENTRADA';
+      }
     },
     {
       label: 'Eliminar',

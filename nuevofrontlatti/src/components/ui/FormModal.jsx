@@ -49,9 +49,11 @@ const FormModal = ({
 
           {/* Errores - arriba de los botones */}
           {error && errorMessage && (
-            <p className="mt-4 mb-2 text-sm font-medium text-red-600">
-              {errorMessage}
-            </p>
+            <div className="mt-4 mb-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm font-medium text-red-800 break-words whitespace-pre-wrap">
+                {errorMessage}
+              </p>
+            </div>
           )}
         </div>
 

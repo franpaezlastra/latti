@@ -54,6 +54,30 @@ export const fetchMovimientosProducto = createAsyncThunk(
   }
 );
 
+export const updateMovimientoProducto = createAsyncThunk(
+  'movimientosProducto/updateMovimientoProducto',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`${BASE_URL}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error editando movimiento de producto:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al editar el movimiento de producto";
+      
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 export const deleteMovimientoProducto = createAsyncThunk(
   'movimientosProducto/deleteMovimientoProducto',
   async (id, { rejectWithValue }) => {
