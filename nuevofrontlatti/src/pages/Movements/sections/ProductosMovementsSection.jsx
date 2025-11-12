@@ -146,13 +146,29 @@ const ProductosMovementsSection = ({
     {
       label: 'Ver detalles',
       icon: <FaEye />,
-      onClick: (mov) => onVerDetalles({ ...mov, tipo: 'Producto' }),
+      onClick: (mov) => {
+        // ✅ CRÍTICO: Obtener el movimiento original sin formatear para preservar los detalles
+        const movOriginal = movimientos.find(m => m.id === mov.id);
+        if (movOriginal) {
+          onVerDetalles({ ...movOriginal, tipo: 'Producto' });
+        } else {
+          onVerDetalles({ ...mov, tipo: 'Producto' });
+        }
+      },
       variant: 'ghost'
     },
     {
       label: 'Editar',
       icon: <FaEdit />,
-      onClick: (mov) => onEditar({ ...mov, tipo: 'Producto' }),
+      onClick: (mov) => {
+        // ✅ CRÍTICO: Obtener el movimiento original sin formatear
+        const movOriginal = movimientos.find(m => m.id === mov.id);
+        if (movOriginal) {
+          onEditar({ ...movOriginal, tipo: 'Producto' });
+        } else {
+          onEditar({ ...mov, tipo: 'Producto' });
+        }
+      },
       variant: 'ghost',
       // Solo mostrar editar para movimientos de entrada
       show: (mov) => {
@@ -164,7 +180,15 @@ const ProductosMovementsSection = ({
     {
       label: 'Eliminar',
       icon: <FaTrash />,
-      onClick: (mov) => onEliminar({ ...mov, tipo: 'Producto' }),
+      onClick: (mov) => {
+        // ✅ CRÍTICO: Obtener el movimiento original sin formatear
+        const movOriginal = movimientos.find(m => m.id === mov.id);
+        if (movOriginal) {
+          onEliminar({ ...movOriginal, tipo: 'Producto' });
+        } else {
+          onEliminar({ ...mov, tipo: 'Producto' });
+        }
+      },
       variant: 'ghost'
     }
   ];

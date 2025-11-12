@@ -32,9 +32,13 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
   const detallesConsolidados = new Map();
   
   detalles.forEach(detalle => {
+    // ✅ CRÍTICO: Para productos, el id del detalle es el id del producto
+    // El backend devuelve ResponseDetalleMovimientoProductoDTO con id = producto.getId()
     const id = detalle.id || detalle.insumoId || detalle.productoId || 
                detalle.insumo?.id || detalle.producto?.id;
-    const nombre = detalle.nombre || detalle.insumo?.nombre || detalle.producto?.nombre || 'Sin nombre';
+    // ✅ CRÍTICO: El backend devuelve 'nombre' directamente en ResponseDetalleMovimientoProductoDTO
+    const nombre = detalle.nombre || detalle.nombreProducto || 
+                   detalle.insumo?.nombre || detalle.producto?.nombre || 'Sin nombre';
     
     if (id) {
       const clave = String(id);

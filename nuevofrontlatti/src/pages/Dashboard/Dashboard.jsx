@@ -116,10 +116,10 @@ const Dashboard = () => {
       // Agrupar por lotes
       const lotesProducto = movimientosProducto.reduce((acc, movimiento) => {
         if (movimiento.tipoMovimiento === 'ENTRADA') {
-          // Buscar el detalle del movimiento que tenga lote
-          const detalleConLote = movimiento.detalles?.find(det => det.lote);
+          // ✅ CRÍTICO: Procesar TODOS los detalles con lote, no solo el primero
+          const detallesConLote = movimiento.detalles?.filter(det => det.lote && det.id === producto.id) || [];
           
-          if (detalleConLote) {
+          detallesConLote.forEach(detalleConLote => {
             const lote = acc.find(l => l.numeroLote === detalleConLote.lote);
             if (lote) {
               lote.cantidadInicial += detalleConLote.cantidad || 0;
@@ -137,17 +137,21 @@ const Dashboard = () => {
                 fechaVencimiento: detalleConLote.fechaVencimiento
               });
             }
-          }
+          });
         } else if (movimiento.tipoMovimiento === 'SALIDA') {
-          // Buscar el detalle del movimiento que tenga lote
-          const detalleConLote = movimiento.detalles?.find(det => det.lote);
+          // ✅ CRÍTICO: Procesar TODOS los detalles con lote, no solo el primero
+          const detallesConLote = movimiento.detalles?.filter(det => det.lote && det.id === producto.id) || [];
           
-          if (detalleConLote) {
+          detallesConLote.forEach(detalleConLote => {
             const lote = acc.find(l => l.numeroLote === detalleConLote.lote);
             if (lote) {
               lote.cantidadActual -= detalleConLote.cantidad || 0;
+            } else {
+              // Si el lote no existe en el acumulador, podría ser un error de datos
+              // pero lo registramos para evitar inconsistencias
+              console.warn(`⚠️ Lote ${detalleConLote.lote} no encontrado para producto ${producto.nombre} en movimiento de salida`);
             }
-          }
+          });
         }
         return acc;
       }, []);
@@ -155,8 +159,8 @@ const Dashboard = () => {
       lotes.push(...lotesProducto);
     });
     
+    // ✅ NUEVO: Mostrar todos los lotes, incluso los que tienen stock 0
     const lotesFiltrados = lotes
-      .filter(lote => lote.cantidadActual > 0)
       .sort((a, b) => new Date(b.fechaProduccion) - new Date(a.fechaProduccion));
     
     return lotesFiltrados;
@@ -222,8 +226,16 @@ const Dashboard = () => {
 
     // Formatear datos para la tabla
     const datosFormateados = lotesPaginados.map(lote => {
-      const porcentajeStock = (lote.cantidadActual / lote.cantidadInicial) * 100;
-      const estadoStock = porcentajeStock > 50 ? 'Alto' : porcentajeStock > 20 ? 'Medio' : 'Bajo';
+      const porcentajeStock = lote.cantidadInicial > 0 
+        ? (lote.cantidadActual / lote.cantidadInicial) * 100 
+        : 0;
+      const estadoStock = lote.cantidadActual === 0 
+        ? 'Agotado' 
+        : porcentajeStock > 50 
+          ? 'Alto' 
+          : porcentajeStock > 20 
+            ? 'Medio' 
+            : 'Bajo';
       
       return {
         ...lote,
@@ -233,11 +245,16 @@ const Dashboard = () => {
           </span>
         ),
         cantidadInicial: formatNumber(lote.cantidadInicial),
-        cantidadActual: formatNumber(lote.cantidadActual),
+        cantidadActual: (
+          <span className={lote.cantidadActual === 0 ? 'text-gray-500' : ''}>
+            {formatNumber(lote.cantidadActual)}
+          </span>
+        ),
         fechaProduccion: new Date(lote.fechaProduccion).toLocaleDateString(),
         precioInversion: formatPrice(lote.precioInversion || 0),
         estado: (
           <span className={`px-2 py-1 text-xs rounded-full ${
+            estadoStock === 'Agotado' ? 'bg-gray-100 text-gray-600' :
             estadoStock === 'Alto' ? 'bg-green-100 text-green-700' :
             estadoStock === 'Medio' ? 'bg-yellow-100 text-yellow-700' :
             'bg-red-100 text-red-700'

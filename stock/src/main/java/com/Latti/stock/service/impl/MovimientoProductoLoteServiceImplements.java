@@ -477,41 +477,31 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 }
             }
         } else if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
-            // ✅ CRÍTICO: Para SALIDA, validar que el lote aún exista y sea consistente
+            // ✅ Para SALIDA: Permitir eliminación (puede ser una devolución)
+            // El stock se restaurará automáticamente al lote cuando se elimine el movimiento
+            // porque el cálculo de stock por lote es dinámico (entradas - salidas)
+            System.out.println("🔄 Eliminando movimiento de SALIDA (venta/devolución)");
+            System.out.println("  - El stock se restaurará automáticamente al lote al eliminar este movimiento");
+            
+            // ✅ OPCIONAL: Validación ligera del lote (solo si es posible sin errores)
             for (DetalleMovimientoProducto detalle : movimiento.getDetalles()) {
                 Producto producto = detalle.getProducto();
+                
+                // ✅ Validar que el producto no sea null
+                if (producto == null) {
+                    System.err.println("⚠️ ADVERTENCIA: Producto es null en detalle del movimiento " + id);
+                    continue;
+                }
+                
                 String lote = detalle.getLote();
                 
+                // Si hay un lote específico, solo loguear (no bloquear)
                 if (lote != null && !lote.trim().isEmpty()) {
-                    // Verificar que el lote aún exista (que no se haya eliminado la entrada)
-                    boolean loteExiste = producto.getMovimientos().stream()
-                            .anyMatch(detalleEntrada -> {
-                                MovimientoProductoLote mov = detalleEntrada.getMovimiento();
-                                return mov.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
-                                       lote.equals(detalleEntrada.getLote());
-                            });
-                    
-                    if (!loteExiste) {
-                        throw new IllegalArgumentException(
-                            "No se puede eliminar la salida porque el lote '" + lote + 
-                            "' del producto '" + producto.getNombre() + 
-                            "' ya no existe. Esto indica una inconsistencia en los datos."
-                        );
-                    }
-                    
-                    // Verificar que no haya salidas posteriores del mismo lote que dependan de esta
-                    // (aunque esto es menos crítico, es bueno validarlo)
-                    boolean haySalidasPosteriores = producto.getMovimientos().stream()
-                            .anyMatch(detalleSalida -> {
-                                MovimientoProductoLote mov = detalleSalida.getMovimiento();
-                                return mov.getTipoMovimiento() == TipoMovimiento.SALIDA &&
-                                       mov.getFecha().isAfter(movimiento.getFecha()) &&
-                                       lote.equals(detalleSalida.getLote()) &&
-                                       !mov.getId().equals(movimiento.getId());
-                            });
-                    
-                    // Nota: No bloqueamos si hay salidas posteriores, solo validamos que el lote exista
-                    // porque eliminar una salida anterior no debería afectar salidas posteriores
+                    System.out.println("  - Restaurando " + detalle.getCantidad() + " unidades al lote '" + lote + 
+                                     "' del producto '" + producto.getNombre() + "'");
+                } else {
+                    System.out.println("  - Restaurando " + detalle.getCantidad() + " unidades al stock general del producto '" + 
+                                     producto.getNombre() + "' (venta sin lote específico)");
                 }
             }
         }
@@ -522,6 +512,16 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
         // Revertir cambios en cada producto
         for (DetalleMovimientoProducto detalle : movimiento.getDetalles()) {
             Producto producto = detalle.getProducto();
+            
+            // ✅ NUEVO: Validar que el producto no sea null
+            if (producto == null) {
+                System.err.println("⚠️ ADVERTENCIA: Producto es null en detalle del movimiento " + id);
+                continue; // Saltar este detalle y continuar con el siguiente
+            }
+            
+            // ✅ NUEVO: Recargar el producto desde la BD para asegurar que tenemos la versión más actualizada
+            producto = productoRepository.findById(producto.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + producto.getId()));
             
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                 // Para entrada: restar cantidad del stock
@@ -534,8 +534,10 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 if (producto.getReceta() != null) {
                     for (InsumoReceta detalleReceta : producto.getReceta().getDetalles()) {
                         Insumo insumo = detalleReceta.getInsumo();
-                        double cantidadInsumoARestaurar = detalleReceta.getCantidad() * detalle.getCantidad();
-                        insumosParaRestaurar.add(new Object[]{insumo.getId(), cantidadInsumoARestaurar});
+                        if (insumo != null) {
+                            double cantidadInsumoARestaurar = detalleReceta.getCantidad() * detalle.getCantidad();
+                            insumosParaRestaurar.add(new Object[]{insumo.getId(), cantidadInsumoARestaurar});
+                        }
                     }
                 }
                 
