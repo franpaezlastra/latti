@@ -1,4 +1,4 @@
-    package com.Latti.stock.service.impl;
+package com.Latti.stock.service.impl;
 
 import com.Latti.stock.dtos.CrearMovimientoDeInsumoDTO;
 import com.Latti.stock.dtos.DetalleMovimientoInsumoDTO;
@@ -48,6 +48,9 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
     @Transactional
     public MovimientoInsumoLote crearMovimientoInsumo(CrearMovimientoDeInsumoDTO dto) {
         try {
+            // ✅ CRÍTICO: Validar fecha antes de crear el movimiento
+            validarFecha(dto.fecha(), "movimiento de insumo");
+            
             MovimientoInsumoLote movimiento = new MovimientoInsumoLote(
                     dto.fecha(),
                     dto.descripcion(),
@@ -180,7 +183,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             System.out.println("🗑️ === SERVICIO: INICIO DE ELIMINACIÓN ===");
             System.out.println("📦 ID del movimiento: " + id);
             
-            MovimientoInsumoLote movimiento = movimientoRepository.findById(id)
+        MovimientoInsumoLote movimiento = movimientoRepository.findById(id)
                     .orElseThrow(() -> {
                         System.err.println("❌ Movimiento no encontrado con ID: " + id);
                         return new IllegalArgumentException("Movimiento no encontrado");
@@ -205,7 +208,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 // Si es un movimiento de SALIDA con ensambleId (insumo simple usado en ensamble)
                 // NO se puede eliminar directamente (debe eliminarse desde el movimiento de entrada del ensamble)
                 if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
-                    throw new IllegalArgumentException(
+            throw new IllegalArgumentException(
                         "Este movimiento es parte de un ensamble. " +
                         "Para eliminarlo, debes eliminar el movimiento de ensamble del insumo compuesto relacionado."
                     );
@@ -307,9 +310,9 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 
                 // Solo verificar stock si NO es un insumo compuesto de un movimiento de ensamble
                 if (!esInsumoCompuestoEnsamble) {
-                    if (insumo.getStockActual() < detalle.getCantidad()) {
-                        throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
-                    }
+                if (insumo.getStockActual() < detalle.getCantidad()) {
+                    throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
+                }
                 }
                 
                 insumo.setStockActual(insumo.getStockActual() - detalle.getCantidad());
@@ -336,7 +339,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             // ✅ IMPORTANTE: Usar delete() en lugar de deleteById() para que Hibernate
             // maneje correctamente la entidad que ya está en el contexto de persistencia
             // El cascade se encargará de eliminar los detalles automáticamente
-            movimientoRepository.delete(movimiento);
+        movimientoRepository.delete(movimiento);
             movimientoRepository.flush();
             System.out.println("  ✅ Movimiento y detalles eliminados correctamente (cascade)");
         } catch (Exception e) {
@@ -469,7 +472,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             // ✅ NUEVO: Verificar si es un movimiento de ensamble ANTES de aplicar las validaciones generales
             boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(movimientoId) && 
                                                  movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
-            
+
             // Condición 1: No hay movimientos posteriores del mismo insumo
             // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, permitir salidas posteriores del insumo compuesto
             for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
@@ -500,12 +503,20 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
                 
                 if (!esInsumoCompuestoEnsamble) {
-                    // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
-                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
-                        
+                // Verificar si hay movimientos de productos que usen este insumo DESPUÉS o EN LA MISMA FECHA del movimiento
+                boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                    
                     if (hayProduccionPosterior) {
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
-                        "' ha sido usado en la producción de productos después de este movimiento");
+                        "' ha sido usado en la producción de productos después o en la misma fecha de este movimiento");
+                    }
+                    
+                    // ✅ CRÍTICO: Verificar si hay producción ANTES de la fecha del movimiento (inconsistencia histórica)
+                    boolean hayProduccionAnterior = verificarProduccionAnterior(insumo, movimiento.getFecha());
+                    if (hayProduccionAnterior) {
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                        "' fue usado en producción ANTES de este movimiento. Esto indica una inconsistencia histórica. " +
+                        "No se puede editar hasta corregir la inconsistencia.");
                     }
                 }
             }
@@ -672,6 +683,30 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
             }
 
+            // ✅ CRÍTICO: Validación especial para SALIDAS de insumos
+            if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
+                System.out.println("🔍 Validación especial para SALIDA de insumo...");
+                
+                // Si NO es parte de un ensamble, verificar si hay producción que dependa de esta salida
+                if (!esMovimientoDeEnsamble(movimientoId)) {
+                    for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                        Insumo insumo = detalle.getInsumo();
+                        
+                        // Verificar si hay producción DESPUÉS de la fecha de esta salida que use este insumo
+                        // Si hay producción después, significa que la salida fue necesaria para tener stock suficiente
+                        boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
+                        
+                        if (hayProduccionPosterior) {
+                            System.out.println("    ❌ BLOQUEADO: La salida fue necesaria para producción posterior");
+                            detallesValidacion.add("No se puede eliminar la salida del insumo '" + insumo.getNombre() + 
+                                "' porque hay producción de productos que usan este insumo después de esta salida. " +
+                                "Eliminar esta salida afectaría el cálculo de stock histórico.");
+                        }
+                    }
+                }
+                // Si es parte de un ensamble, la validación ya se hizo arriba
+            }
+            
             // Validación 1: Verificar stock suficiente para revertir (solo para ENTRADA)
             // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble, NO verificar stock del insumo compuesto
             // porque ese stock fue creado por este mismo movimiento
@@ -727,17 +762,27 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 
                 // Solo verificar si NO es un insumo compuesto de un movimiento de ensamble
                 if (!esInsumoCompuestoEnsamble) {
-                    // Verificar si hay movimientos de productos que usen este insumo DESPUÉS de la fecha del movimiento
+                    // Verificar si hay movimientos de productos que usen este insumo DESPUÉS o EN LA MISMA FECHA del movimiento
                     boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, movimiento.getFecha());
                     
-                    System.out.println("    - Hay producción posterior: " + hayProduccionPosterior);
+                    System.out.println("    - Hay producción posterior o en misma fecha: " + hayProduccionPosterior);
                         
                     if (hayProduccionPosterior) {
                         System.out.println("    ❌ BLOQUEADO: El insumo fue usado en producción de productos");
                         detallesValidacion.add("El insumo '" + insumo.getNombre() + 
-                            "' ha sido usado en la producción de productos después de este movimiento");
+                            "' ha sido usado en la producción de productos después o en la misma fecha de este movimiento");
                     } else {
                         System.out.println("    ✅ El insumo NO fue usado en producción de productos");
+                    }
+                    
+                    // ✅ CRÍTICO: Verificar si hay producción ANTES de la fecha del movimiento (inconsistencia histórica)
+                    boolean hayProduccionAnterior = verificarProduccionAnterior(insumo, movimiento.getFecha());
+                    System.out.println("    - Hay producción anterior: " + hayProduccionAnterior);
+                    if (hayProduccionAnterior) {
+                        System.out.println("    ❌ BLOQUEADO: Inconsistencia histórica detectada");
+                        detallesValidacion.add("El insumo '" + insumo.getNombre() + 
+                            "' fue usado en producción ANTES de este movimiento. Esto indica una inconsistencia histórica. " +
+                            "No se puede eliminar hasta corregir la inconsistencia.");
                     }
                 } else {
                     System.out.println("    ⏭️ Saltando validación (es insumo compuesto de ensamble, ya validado arriba)");
@@ -832,6 +877,53 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             MovimientoInsumoLote movimiento = movimientoRepository.findById(dto.id())
                     .orElseThrow(() -> new IllegalArgumentException("Movimiento no encontrado"));
 
+            // ✅ CRÍTICO: No se puede cambiar el tipo de movimiento
+            if (movimiento.getTipoMovimiento() != dto.tipoMovimiento()) {
+                throw new IllegalArgumentException(
+                    "No se puede cambiar el tipo de movimiento de " + movimiento.getTipoMovimiento() + 
+                    " a " + dto.tipoMovimiento() + ". El tipo de movimiento debe permanecer igual."
+                );
+            }
+
+            // ✅ CRÍTICO: Validar fecha nueva antes de continuar
+            validarFecha(dto.fecha(), "movimiento de insumo");
+            
+            // ✅ CRÍTICO: Si se cambió la fecha, revalidar contra producción
+            LocalDate fechaOriginal = movimiento.getFecha();
+            LocalDate fechaNueva = dto.fecha();
+            
+            if (!fechaOriginal.equals(fechaNueva)) {
+                System.out.println("⚠️ La fecha cambió de " + fechaOriginal + " a " + fechaNueva + ". Revalidando...");
+                
+                // Revalidar contra producción con la nueva fecha
+                for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
+                    Insumo insumo = detalle.getInsumo();
+                    
+                    // Verificar si hay producción DESPUÉS o EN LA MISMA fecha que la nueva fecha
+                    boolean hayProduccionPosterior = verificarUsoEnProduccionPosterior(insumo, fechaNueva);
+                    
+                    if (hayProduccionPosterior) {
+                        throw new IllegalArgumentException(
+                            "No se puede cambiar la fecha del movimiento a " + fechaNueva + 
+                            " porque el insumo '" + insumo.getNombre() + 
+                            "' ya fue usado en producción en esa fecha o después."
+                        );
+                    }
+                    
+                    // Verificar si hay producción ANTES de la nueva fecha (inconsistencia histórica)
+                    boolean hayProduccionAnterior = verificarProduccionAnterior(insumo, fechaNueva);
+                    if (hayProduccionAnterior) {
+                        throw new IllegalArgumentException(
+                            "No se puede cambiar la fecha del movimiento a " + fechaNueva + 
+                            " porque hay producción de productos que usan el insumo '" + insumo.getNombre() + 
+                            "' antes de esa fecha. Esto crearía una inconsistencia histórica."
+                        );
+                    }
+                }
+                
+                System.out.println("✅ Validación de fecha nueva completada exitosamente");
+            }
+
             // ✅ NUEVO: Si es un movimiento de ENTRADA con ensambleId, guardar el ensambleId y la cantidad original
             String ensambleId = null;
             double cantidadOriginal = 0.0;
@@ -860,7 +952,7 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 }
                 insumoRepository.save(insumo);
             }
-            
+
             // ✅ NUEVO: Si es un movimiento de ensamble, revertir también los movimientos de salida relacionados
             if (esMovimientoEnsamble && ensambleId != null) {
                 System.out.println("🔄 Revertiendo movimientos de salida relacionados con ensambleId: " + ensambleId);
@@ -1198,17 +1290,19 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 return false; // No se puede usar para crear productos porque no está en ninguna receta
             }
 
-            // Si está en una receta, verificar si hay producción posterior
+            // Si está en una receta, verificar si hay producción posterior O EN LA MISMA FECHA
+            // ✅ CRÍTICO: Incluir isEqual() para detectar producción en la misma fecha
             for (Producto producto : productosQueUsanInsumo) {
                 boolean tieneProduccionPosterior = producto.getMovimientos().stream()
                         .anyMatch(detalleMovimiento -> {
                             MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
                             return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
-                                   movimientoProducto.getFecha().isAfter(fechaMovimiento);
+                                   (movimientoProducto.getFecha().isAfter(fechaMovimiento) ||
+                                    movimientoProducto.getFecha().isEqual(fechaMovimiento));
                         });
                 
                 if (tieneProduccionPosterior) {
-                    return true; // El insumo compuesto se usó en producción después del movimiento
+                    return true; // El insumo compuesto se usó en producción después o en la misma fecha del movimiento
                 }
             }
             
@@ -1222,22 +1316,83 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                                 .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
                 .toList();
 
-        // Para cada producto, verificar si tiene movimientos de entrada después de la fecha del movimiento de insumo
+        // Para cada producto, verificar si tiene movimientos de entrada después O EN LA MISMA FECHA del movimiento de insumo
+        // ✅ CRÍTICO: Incluir isEqual() para detectar producción en la misma fecha
         for (Producto producto : productosQueUsanInsumo) {
             boolean tieneProduccionPosterior = producto.getMovimientos().stream()
                     .anyMatch(detalleMovimiento -> {
                         MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
                         return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
-                               movimientoProducto.getFecha().isAfter(fechaMovimiento);
+                               (movimientoProducto.getFecha().isAfter(fechaMovimiento) ||
+                                movimientoProducto.getFecha().isEqual(fechaMovimiento));
                     });
             
             if (tieneProduccionPosterior) {
-                return true; // El insumo se usó en producción después del movimiento
+                return true; // El insumo se usó en producción después o en la misma fecha del movimiento
             }
         }
         
-        return false; // No se usó en producción después del movimiento
+        return false; // No se usó en producción después o en la misma fecha del movimiento
     }
 
+    /**
+     * ✅ NUEVO: Verifica si hay producción de productos que usan este insumo ANTES de una fecha específica
+     * Detecta inconsistencias históricas donde la producción ocurrió antes de que el insumo estuviera disponible
+     */
+    private boolean verificarProduccionAnterior(Insumo insumo, LocalDate fechaMovimiento) {
+        // Verificar si el insumo está en alguna receta de producto
+        List<Producto> productosQueUsanInsumo = productoRepository.findAll().stream()
+                .filter(producto -> producto.getReceta() != null && 
+                        producto.getReceta().getDetalles().stream()
+                                .anyMatch(d -> d.getInsumo().getId().equals(insumo.getId())))
+                .toList();
+
+        if (productosQueUsanInsumo.isEmpty()) {
+            return false; // No está en ninguna receta, no puede haber producción
+        }
+
+        // Verificar si hay producción ANTES de la fecha del movimiento
+        for (Producto producto : productosQueUsanInsumo) {
+            boolean tieneProduccionAnterior = producto.getMovimientos().stream()
+                    .anyMatch(detalleMovimiento -> {
+                        MovimientoProductoLote movimientoProducto = detalleMovimiento.getMovimiento();
+                        return movimientoProducto.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
+                               movimientoProducto.getFecha().isBefore(fechaMovimiento);
+                    });
+            
+            if (tieneProduccionAnterior) {
+                return true; // Hay producción antes del movimiento - INCONSISTENCIA HISTÓRICA
+            }
+        }
+        
+        return false; // No hay producción antes del movimiento
+    }
+
+    /**
+     * ✅ NUEVO: Valida que una fecha sea razonable (no muy antigua ni muy futura)
+     */
+    private void validarFecha(LocalDate fecha, String tipoMovimiento) {
+        if (fecha == null) {
+            throw new IllegalArgumentException("La fecha no puede ser nula para " + tipoMovimiento);
+        }
+        
+        LocalDate hoy = LocalDate.now();
+        LocalDate fechaMinima = hoy.minusYears(10); // No más de 10 años atrás
+        LocalDate fechaMaxima = hoy.plusMonths(1);  // No más de 1 mes adelante
+        
+        if (fecha.isBefore(fechaMinima)) {
+            throw new IllegalArgumentException(
+                "La fecha no puede ser anterior a " + fechaMinima + 
+                ". Por favor, verifica la fecha del movimiento."
+            );
+        }
+        
+        if (fecha.isAfter(fechaMaxima)) {
+            throw new IllegalArgumentException(
+                "La fecha no puede ser posterior a " + fechaMaxima + 
+                ". Por favor, verifica la fecha del movimiento."
+            );
+        }
+    }
 
 }

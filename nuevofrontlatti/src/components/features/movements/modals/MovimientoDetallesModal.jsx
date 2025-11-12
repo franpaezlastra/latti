@@ -76,12 +76,12 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
 
               <div className="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
                 <div className={`p-2 rounded-lg ${esEntrada ? 'bg-green-100' : 'bg-red-100'}`}>
-                  {esEntrada ? (
+                {esEntrada ? (
                     <FaArrowUp className="text-green-600" size={18} />
-                  ) : (
+                ) : (
                     <FaArrowDown className="text-red-600" size={18} />
                   )}
-                </div>
+                  </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase">Tipo</p>
                   <p className={`text-base font-bold ${esEntrada ? 'text-green-700' : 'text-red-700'}`}>
@@ -93,7 +93,7 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
               <div className="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <FaList className="text-purple-600" size={18} />
-                </div>
+            </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase">
                     {esInsumo ? 'Insumos' : 'Productos'}
@@ -103,7 +103,7 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                   </p>
                 </div>
               </div>
-
+              
               <div className="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <FaTag className="text-orange-600" size={18} />
@@ -147,14 +147,14 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
               <div className="overflow-x-auto max-h-60 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200 sticky top-0">
-                    <tr>
+                  <tr>
                       <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">
                         {esInsumo ? 'Insumo' : 'Producto'}
-                      </th>
+                    </th>
                       <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
-                        Cantidad
-                      </th>
-                      {esInsumo ? (
+                      Cantidad
+                    </th>
+                    {esInsumo ? (
                         esEntrada && (
                           <>
                             <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
@@ -162,11 +162,11 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                             </th>
                             <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
                               Total
-                            </th>
+                        </th>
                           </>
-                        )
-                      ) : (
-                        <>
+                      )
+                    ) : (
+                      <>
                           {esEntrada && (
                             <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
                               Fecha Venc.
@@ -175,17 +175,17 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                           {!esEntrada && (
                             <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
                               P. Venta
-                            </th>
-                          )}
+                          </th>
+                        )}
                           {!esEntrada && (
                             <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">
                               Total
-                            </th>
-                          )}
-                        </>
-                      )}
-                    </tr>
-                  </thead>
+                          </th>
+                        )}
+                      </>
+                    )}
+                  </tr>
+                </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {detallesOrdenados.length === 0 ? (
                       <tr>
@@ -206,50 +206,50 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                               <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                                 {nombre}
-                              </div>
-                            </td>
+                        </div>
+                      </td>
                             <td className="px-4 py-3 text-sm text-gray-600 font-medium text-right">
                               {cantidadFormateada}
-                            </td>
-                            {esInsumo ? (
-                              esEntrada && (
+                      </td>
+                      {esInsumo ? (
+                          esEntrada && (
                                 <>
                                   <td className="px-4 py-3 text-sm text-gray-600 text-right">
                                     {formatPrice(detalle.precioDeCompra || (detalle.precioTotal / cantidad) || 0)}
                                   </td>
                                   <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
                                     {formatPrice(detalle.precioTotal || 0)}
-                                  </td>
+                          </td>
                                 </>
-                              )
-                            ) : (
-                              <>
-                                {esEntrada && (
+                        )
+                      ) : (
+                        <>
+                            {esEntrada && (
                                   <td className="px-4 py-3 text-sm text-gray-600 text-right">
                                     {detalle.fechaVencimiento 
                                       ? new Date(detalle.fechaVencimiento).toLocaleDateString('es-ES')
                                       : 'No especificada'
-                                    }
-                                  </td>
-                                )}
-                                {!esEntrada && (
+                              }
+                            </td>
+                          )}
+                            {!esEntrada && (
                                   <>
                                     <td className="px-4 py-3 text-sm text-gray-600 text-right">
                                       {formatPrice(detalle.precioVenta || 0)}
                                     </td>
                                     <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
                                       {formatPrice((detalle.precioVenta || 0) * cantidad)}
-                                    </td>
+                            </td>
                                   </>
-                                )}
-                              </>
-                            )}
-                          </tr>
+                          )}
+                        </>
+                      )}
+                    </tr>
                         );
                       })
                     )}
-                  </tbody>
-                </table>
+                </tbody>
+              </table>
               </div>
             </div>
           </div>
@@ -273,13 +273,13 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                   <p className="text-white text-xl font-bold">
                     {esInsumo 
                       ? formatPrice(totalGastado)
-                      : esEntrada 
+                : esEntrada
                         ? formatPrice(totalInversion)
                         : formatPrice(totalVentas)
                     }
                   </p>
                 </div>
-              </div>
+                  </div>
               {!esInsumo && !esEntrada && (
                 <div className="text-right">
                   <p className="text-white text-xs font-medium opacity-90">Ganancia</p>
@@ -290,7 +290,7 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
               )}
             </div>
           </div>
-        </div>
+            </div>
 
         {/* Botón de cerrar - fijo en la parte inferior */}
         <div className="flex justify-end pt-3 mt-2 border-t border-gray-200 bg-white">
@@ -306,4 +306,4 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
   );
 };
 
-export default MovimientoDetallesModal;
+export default MovimientoDetallesModal; 

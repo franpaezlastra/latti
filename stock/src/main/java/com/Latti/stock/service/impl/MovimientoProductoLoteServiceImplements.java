@@ -26,6 +26,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +46,9 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
     @Transactional
     public MovimientoProductoLote crearMovimientoProducto(CrearMovimientoProductoDTO dto) {
         try {
+            // ✅ CRÍTICO: Validar fecha antes de crear el movimiento
+            validarFecha(dto.fecha(), "movimiento de producto");
+            
             MovimientoProductoLote movimiento = new MovimientoProductoLote(
                     dto.fecha(),
                     dto.descripcion(),
@@ -80,15 +85,59 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                         );
                     }
 
-                    // Validar stock disponible en la fecha del movimiento
-                    double stockDisponibleEnFecha = calcularStockDisponibleEnFecha(producto, dto.fecha());
-                    if (stockDisponibleEnFecha < d.cantidad()) {
-                        throw new IllegalArgumentException(
-                            "Stock insuficiente para el producto '" + producto.getNombre() + 
-                            "' en la fecha " + dto.fecha() + 
-                            ". Stock disponible en esa fecha: " + stockDisponibleEnFecha + 
-                            ", Cantidad solicitada: " + d.cantidad()
-                        );
+                    // ✅ CRÍTICO: Si se especifica un lote, validar stock en ese lote específico
+                    if (d.lote() != null && !d.lote().trim().isEmpty()) {
+                        // Validar que el lote exista y tenga stock suficiente
+                        double stockDisponibleEnLote = obtenerStockDisponibleEnLote(producto, d.lote());
+                        if (stockDisponibleEnLote < d.cantidad()) {
+                            throw new IllegalArgumentException(
+                                "Stock insuficiente en el lote '" + d.lote() + "' para el producto '" + producto.getNombre() + 
+                                "'. Stock disponible en lote: " + stockDisponibleEnLote + 
+                                ", Cantidad solicitada: " + d.cantidad()
+                            );
+                        }
+                        
+                        // Validar fecha de creación del lote vs fecha de venta
+                        LocalDate fechaCreacionLote = producto.getMovimientos().stream()
+                                .filter(detalle -> detalle.getMovimiento().getTipoMovimiento() == TipoMovimiento.ENTRADA)
+                                .filter(detalle -> d.lote().equals(detalle.getLote()))
+                                .map(detalle -> detalle.getMovimiento().getFecha())
+                                .min(LocalDate::compareTo)
+                                .orElse(null);
+                        
+                        if (fechaCreacionLote == null) {
+                            throw new IllegalArgumentException(
+                                "No se encontró la producción (lote '" + d.lote() + "') del producto '" + producto.getNombre() +
+                                "'. Verifica que el lote exista antes de registrar la venta."
+                            );
+                        }
+                        
+                        if (dto.fecha().isBefore(fechaCreacionLote)) {
+                            throw new IllegalArgumentException(
+                                "No se puede vender unidades del lote '" + d.lote() + "' del producto '" + producto.getNombre() +
+                                "' en la fecha " + dto.fecha() + " porque el lote se produjo el " + fechaCreacionLote + "."
+                            );
+                        }
+                        
+                        // Validar que el lote no esté vencido
+                        LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, d.lote());
+                        if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
+                            throw new IllegalArgumentException(
+                                "No se puede vender unidades del lote '" + d.lote() + "' del producto '" + producto.getNombre() +
+                                "' porque el lote venció el " + fechaVencimientoLote + "."
+                            );
+                        }
+                    } else {
+                        // Si NO se especifica lote, validar stock total disponible
+                        double stockDisponibleEnFecha = calcularStockDisponibleEnFecha(producto, dto.fecha());
+                        if (stockDisponibleEnFecha < d.cantidad()) {
+                            throw new IllegalArgumentException(
+                                "Stock insuficiente para el producto '" + producto.getNombre() + 
+                                "' en la fecha " + dto.fecha() + 
+                                ". Stock disponible en esa fecha: " + stockDisponibleEnFecha + 
+                                ", Cantidad solicitada: " + d.cantidad()
+                            );
+                        }
                     }
                     
                     // Validar precio de venta positivo
@@ -137,11 +186,15 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 );
                 detalle.setFechaVencimiento(d.fechaVencimiento());
                 
-                // Generar lote automáticamente para movimientos de ENTRADA
+                // ✅ CRÍTICO: Asignar lote si se especifica (para SALIDA) o generar automáticamente (para ENTRADA)
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     // El lote se generará automáticamente cuando se guarde el movimiento
                     // y se tenga acceso al ID del movimiento
+                } else if (dto.tipoMovimiento() == TipoMovimiento.SALIDA && d.lote() != null && !d.lote().trim().isEmpty()) {
+                    // Para SALIDA, usar el lote especificado en el DTO
+                    detalle.setLote(d.lote());
                 }
+                // Si es SALIDA sin lote especificado, el lote queda null (venta genérica)
 
                 // Establecer relaciones
                 movimiento.addDetalle(detalle);
@@ -214,6 +267,48 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
             throw new IllegalArgumentException("Solo se pueden editar movimientos de entrada (producción)");
         }
         
+        // ✅ CRÍTICO: Validar que no haya movimientos de salida que usen los lotes de este movimiento
+        for (DetalleMovimientoProducto detalleOriginal : movimientoOriginal.getDetalles()) {
+            Producto producto = detalleOriginal.getProducto();
+            String loteOriginal = detalleOriginal.getLote();
+            
+            if (loteOriginal != null && !loteOriginal.trim().isEmpty()) {
+                // Verificar si hay movimientos de salida que usen este lote
+                boolean haySalidasConEsteLote = producto.getMovimientos().stream()
+                        .anyMatch(detalle -> {
+                            MovimientoProductoLote mov = detalle.getMovimiento();
+                            return mov.getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                   mov.getFecha().isAfter(movimientoOriginal.getFecha()) &&
+                                   loteOriginal.equals(detalle.getLote());
+                        });
+                
+                if (haySalidasConEsteLote) {
+                    throw new IllegalArgumentException(
+                        "No se puede editar el movimiento de entrada porque hay movimientos de salida posteriores " +
+                        "que usan el lote '" + loteOriginal + "' del producto '" + producto.getNombre() + "'. " +
+                        "Elimine primero los movimientos de salida asociados a este lote."
+                    );
+                }
+                
+                // También verificar salidas en la misma fecha (más estricto)
+                boolean haySalidasMismaFecha = producto.getMovimientos().stream()
+                        .anyMatch(detalle -> {
+                            MovimientoProductoLote mov = detalle.getMovimiento();
+                            return mov.getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                   mov.getFecha().isEqual(movimientoOriginal.getFecha()) &&
+                                   loteOriginal.equals(detalle.getLote());
+                        });
+                
+                if (haySalidasMismaFecha) {
+                    throw new IllegalArgumentException(
+                        "No se puede editar el movimiento de entrada porque hay movimientos de salida en la misma fecha " +
+                        "que usan el lote '" + loteOriginal + "' del producto '" + producto.getNombre() + "'. " +
+                        "Elimine primero los movimientos de salida asociados a este lote."
+                    );
+                }
+            }
+        }
+        
         // PASO 1: Revertir los cambios del movimiento original
         System.out.println("🔄 Revertiendo cambios del movimiento original...");
         
@@ -260,6 +355,29 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
         
         // PASO 3: Aplicar los nuevos cambios (similar a crearMovimientoProducto)
         System.out.println("📝 Aplicando nuevos cambios...");
+        
+        // ✅ CRÍTICO: Validar fecha nueva antes de continuar
+        validarFecha(dto.fecha(), "movimiento de producto");
+        
+        // ✅ CRÍTICO: Si se cambió la fecha, revalidar contra insumos históricos
+        LocalDate fechaOriginal = movimientoOriginal.getFecha();
+        LocalDate fechaNueva = dto.fecha();
+        
+        if (!fechaOriginal.equals(fechaNueva)) {
+            System.out.println("⚠️ La fecha cambió de " + fechaOriginal + " a " + fechaNueva + ". Revalidando stock histórico de insumos...");
+            
+            // Revalidar stock histórico de insumos con la nueva fecha
+            for (DetalleMovimientoProductoDTO d : dto.detalles()) {
+                Producto producto = productoRepository.findById(d.id())
+                        .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + d.id()));
+                
+                if (producto.getReceta() != null) {
+                    validarStockHistoricoInsumosParaProduccion(producto, d.cantidad(), fechaNueva);
+                }
+            }
+            
+            System.out.println("✅ Validación de fecha nueva completada exitosamente");
+        }
         
         movimientoOriginal.setFecha(dto.fecha());
         movimientoOriginal.setDescripcion(dto.descripcion());
@@ -317,6 +435,73 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 });
         
         System.out.println("✅ BACKEND: Movimiento encontrado: " + movimiento.getId() + " - " + movimiento.getDescripcion());
+
+        // ✅ CRÍTICO: Validar según el tipo de movimiento
+        if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
+            // Para ENTRADA: Validar que no haya salidas que usen los lotes
+            for (DetalleMovimientoProducto detalle : movimiento.getDetalles()) {
+                Producto producto = detalle.getProducto();
+                String lote = detalle.getLote();
+                
+                if (lote != null && !lote.trim().isEmpty()) {
+                    // Verificar si hay movimientos de salida que usen este lote
+                    boolean haySalidasConEsteLote = producto.getMovimientos().stream()
+                            .anyMatch(detalleSalida -> {
+                                MovimientoProductoLote mov = detalleSalida.getMovimiento();
+                                return mov.getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                       (mov.getFecha().isAfter(movimiento.getFecha()) ||
+                                        mov.getFecha().isEqual(movimiento.getFecha())) &&
+                                       lote.equals(detalleSalida.getLote());
+                            });
+                    
+                    if (haySalidasConEsteLote) {
+                        throw new IllegalArgumentException(
+                            "No se puede eliminar el movimiento de entrada porque hay movimientos de salida " +
+                            "que usan el lote '" + lote + "' del producto '" + producto.getNombre() + "'. " +
+                            "Elimine primero los movimientos de salida asociados a este lote."
+                        );
+                    }
+                }
+            }
+        } else if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
+            // ✅ CRÍTICO: Para SALIDA, validar que el lote aún exista y sea consistente
+            for (DetalleMovimientoProducto detalle : movimiento.getDetalles()) {
+                Producto producto = detalle.getProducto();
+                String lote = detalle.getLote();
+                
+                if (lote != null && !lote.trim().isEmpty()) {
+                    // Verificar que el lote aún exista (que no se haya eliminado la entrada)
+                    boolean loteExiste = producto.getMovimientos().stream()
+                            .anyMatch(detalleEntrada -> {
+                                MovimientoProductoLote mov = detalleEntrada.getMovimiento();
+                                return mov.getTipoMovimiento() == TipoMovimiento.ENTRADA &&
+                                       lote.equals(detalleEntrada.getLote());
+                            });
+                    
+                    if (!loteExiste) {
+                        throw new IllegalArgumentException(
+                            "No se puede eliminar la salida porque el lote '" + lote + 
+                            "' del producto '" + producto.getNombre() + 
+                            "' ya no existe. Esto indica una inconsistencia en los datos."
+                        );
+                    }
+                    
+                    // Verificar que no haya salidas posteriores del mismo lote que dependan de esta
+                    // (aunque esto es menos crítico, es bueno validarlo)
+                    boolean haySalidasPosteriores = producto.getMovimientos().stream()
+                            .anyMatch(detalleSalida -> {
+                                MovimientoProductoLote mov = detalleSalida.getMovimiento();
+                                return mov.getTipoMovimiento() == TipoMovimiento.SALIDA &&
+                                       mov.getFecha().isAfter(movimiento.getFecha()) &&
+                                       lote.equals(detalleSalida.getLote()) &&
+                                       !mov.getId().equals(movimiento.getId());
+                            });
+                    
+                    // Nota: No bloqueamos si hay salidas posteriores, solo validamos que el lote exista
+                    // porque eliminar una salida anterior no debería afectar salidas posteriores
+                }
+            }
+        }
 
         // Lista para restaurar insumos después de eliminar el movimiento
         List<Object[]> insumosParaRestaurar = new ArrayList<>();
@@ -376,6 +561,22 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
     @Transactional
     public MovimientoProductoLote crearVentaPorLotes(CrearVentaPorLotesDTO dto) {
         try {
+            // ✅ CRÍTICO: Validar fecha antes de crear la venta
+            validarFecha(dto.fecha(), "venta por lotes");
+            
+            // ✅ VALIDACIÓN: Verificar que no haya ventas duplicadas (mismo producto + mismo lote)
+            Set<String> ventasUnicas = new HashSet<>();
+            for (VentaPorLoteDTO venta : dto.ventasPorLotes()) {
+                String clave = venta.productoId() + "|" + venta.lote();
+                if (ventasUnicas.contains(clave)) {
+                    throw new IllegalArgumentException(
+                        "No se puede vender el mismo producto del mismo lote ('" + venta.lote() + 
+                        "') más de una vez en el mismo movimiento."
+                    );
+                }
+                ventasUnicas.add(clave);
+            }
+            
             MovimientoProductoLote movimiento = new MovimientoProductoLote(
                     dto.fecha(),
                     dto.descripcion(),
@@ -412,9 +613,9 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                         dto.fecha() + " porque la primera producción registrada es del " + fechaReferencia +
                         ". Por favor, verifica las fechas de producción y venta."
                 );
-            }
+                }
 
-            // Validar stock disponible en el lote específico
+                // Validar stock disponible en el lote específico
                 double stockDisponibleEnLote = obtenerStockDisponibleEnLote(producto, venta.lote());
                 if (stockDisponibleEnLote < venta.cantidad()) {
                     throw new IllegalArgumentException(
@@ -443,6 +644,15 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 throw new IllegalArgumentException(
                         "No se puede vender unidades del lote '" + venta.lote() + "' del producto '" + producto.getNombre() +
                         "' en la fecha " + dto.fecha() + " porque el lote se produjo el " + fechaCreacionLote + "."
+                    );
+                }
+
+            // ✅ VALIDACIÓN: Verificar que el lote no esté vencido
+            LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, venta.lote());
+            if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
+                throw new IllegalArgumentException(
+                    "No se puede vender unidades del lote '" + venta.lote() + "' del producto '" + producto.getNombre() +
+                    "' porque el lote venció el " + fechaVencimientoLote + "."
                 );
             }
 
@@ -661,5 +871,32 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 .filter(stock -> stock.cantidadDisponible() > 0)
                 .sorted(Comparator.comparing(StockPorLoteDTO::fechaVencimiento))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * ✅ NUEVO: Valida que una fecha sea razonable (no muy antigua ni muy futura)
+     */
+    private void validarFecha(LocalDate fecha, String tipoMovimiento) {
+        if (fecha == null) {
+            throw new IllegalArgumentException("La fecha no puede ser nula para " + tipoMovimiento);
+        }
+        
+        LocalDate hoy = LocalDate.now();
+        LocalDate fechaMinima = hoy.minusYears(10); // No más de 10 años atrás
+        LocalDate fechaMaxima = hoy.plusMonths(1);  // No más de 1 mes adelante
+        
+        if (fecha.isBefore(fechaMinima)) {
+            throw new IllegalArgumentException(
+                "La fecha no puede ser anterior a " + fechaMinima + 
+                ". Por favor, verifica la fecha del movimiento."
+            );
+        }
+        
+        if (fecha.isAfter(fechaMaxima)) {
+            throw new IllegalArgumentException(
+                "La fecha no puede ser posterior a " + fechaMaxima + 
+                ". Por favor, verifica la fecha del movimiento."
+            );
+        }
     }
 }
