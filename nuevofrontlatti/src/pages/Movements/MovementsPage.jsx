@@ -29,6 +29,7 @@ import MovimientoInsumoCompuestoModal from "../../components/features/movements/
 import MovimientoProductoModal from "../../components/features/movements/modals/MovimientoProductoModal";
 import MovimientoDetallesModal from "../../components/features/movements/modals/MovimientoDetallesModal";
 import EditarMovimientoInsumoModal from "../../components/features/movements/modals/EditarMovimientoInsumoModal";
+import EditarMovimientoEnsambleModal from "../../components/features/movements/modals/EditarMovimientoEnsambleModal";
 import EditarMovimientoProductoModal from "../../components/features/movements/modals/EditarMovimientoProductoModal";
 
 // Componentes de secciones
@@ -70,6 +71,7 @@ const MovementsPage = () => {
   const [showProductoModal, setShowProductoModal] = useState(false);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditEnsambleModal, setShowEditEnsambleModal] = useState(false);
   const [showEditProductoModal, setShowEditProductoModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -77,6 +79,7 @@ const MovementsPage = () => {
   const [movimientoSeleccionado, setMovimientoSeleccionado] = useState(null);
   const [movimientoAEliminar, setMovimientoAEliminar] = useState(null);
   const [movimientoAEditar, setMovimientoAEditar] = useState(null);
+  const [movimientoAEditarEnsamble, setMovimientoAEditarEnsamble] = useState(null);
   const [movimientoAEditarProducto, setMovimientoAEditarProducto] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   
@@ -132,6 +135,9 @@ const MovementsPage = () => {
       case 'edit':
         setShowEditModal(true);
         break;
+      case 'editEnsamble':
+        setShowEditEnsambleModal(true);
+        break;
       case 'editProducto':
         setShowEditProductoModal(true);
         break;
@@ -164,6 +170,10 @@ const MovementsPage = () => {
       case 'edit':
         setShowEditModal(false);
         setMovimientoAEditar(null);
+        break;
+      case 'editEnsamble':
+        setShowEditEnsambleModal(false);
+        setMovimientoAEditarEnsamble(null);
         break;
       case 'editProducto':
         setShowEditProductoModal(false);
@@ -234,6 +244,11 @@ const MovementsPage = () => {
       return;
     }
 
+    // ✅ NUEVO: Detectar si es un movimiento de ensamble
+    const esEnsamble = (movimientoOriginal.detalles || movimientoOriginal.insumos || []).some(detalle => 
+      detalle.ensambleId != null && detalle.ensambleId.trim() !== ''
+    );
+
     // Validar si el movimiento puede ser editado antes de abrir el modal
     try {
       const validacion = await dispatch(validarEdicionMovimiento(movimiento.id)).unwrap();
@@ -270,12 +285,19 @@ const MovementsPage = () => {
         nombreInsumo: detalle.nombreInsumo || detalle.nombre || detalle.insumo?.nombre,
         cantidad: detalle.cantidad || 0,
         precioTotal: detalle.precioTotal || detalle.precio || 0,
-        precio: detalle.precio || detalle.precioTotal || 0
+        precio: detalle.precio || detalle.precioTotal || 0,
+        ensambleId: detalle.ensambleId || null // ✅ NUEVO: Incluir ensambleId
       }))
     };
     
-    setMovimientoAEditar(movimientoParaEditar);
+    // ✅ NUEVO: Usar el modal correcto según el tipo
+    if (esEnsamble) {
+      setMovimientoAEditarEnsamble(movimientoParaEditar);
+      openModal('editEnsamble');
+    } else {
+      setMovimientoAEditar(movimientoParaEditar);
       openModal('edit');
+    }
   };
 
   const handleConfirmarEliminacion = async () => {
@@ -435,6 +457,18 @@ const MovementsPage = () => {
         movimiento={movimientoAEditar}
         onSuccess={() => {
           // El modal ya recarga los movimientos internamente, pero por si acaso lo hacemos aquí también
+          dispatch(loadMovimientosInsumo());
+        }}
+      />
+
+      <EditarMovimientoEnsambleModal
+        isOpen={showEditEnsambleModal}
+        onClose={() => {
+          closeModal('editEnsamble');
+          dispatch(loadMovimientosInsumo());
+        }}
+        movimiento={movimientoAEditarEnsamble}
+        onSuccess={() => {
           dispatch(loadMovimientosInsumo());
         }}
       />

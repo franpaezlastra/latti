@@ -17,6 +17,7 @@ import com.Latti.stock.modules.DetalleMovimientoInsumo;
 import com.Latti.stock.repositories.MovimientoProductoLoteRepository;
 import com.Latti.stock.repositories.ProductoRepository;
 import com.Latti.stock.repositories.InsumoRepository;
+import com.Latti.stock.repositories.DetalleMovimientoProductoRepository;
 import com.Latti.stock.service.MovimientoProductoLoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,9 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
 
     @Autowired
     private InsumoRepository insumoRepository;
+
+    @Autowired
+    private DetalleMovimientoProductoRepository detalleMovimientoProductoRepository;
 
     @Override
     @Transactional
@@ -350,8 +354,17 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
         }
         
         // PASO 2: Limpiar detalles antiguos
+        // ✅ CRÍTICO: Eliminar explícitamente los detalles antiguos de la BD
+        int cantidadDetallesAntiguos = movimientoOriginal.getDetalles().size();
+        System.out.println("🗑️ Eliminando " + cantidadDetallesAntiguos + " detalles antiguos del movimiento " + id + "...");
+        
+        // Vaciar la lista primero (para romper la relación en memoria)
         movimientoOriginal.getDetalles().clear();
-        movimientoRepository.saveAndFlush(movimientoOriginal);
+        
+        // Eliminar DIRECTAMENTE de la BD usando query personalizada
+        detalleMovimientoProductoRepository.deleteByMovimientoId(id);
+        detalleMovimientoProductoRepository.flush();
+        System.out.println("✅ Detalles antiguos eliminados de la BD");
         
         // PASO 3: Aplicar los nuevos cambios (similar a crearMovimientoProducto)
         System.out.println("📝 Aplicando nuevos cambios...");

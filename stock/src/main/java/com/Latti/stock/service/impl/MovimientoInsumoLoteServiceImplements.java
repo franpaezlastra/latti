@@ -1062,20 +1062,26 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                         double cantidadOriginalSalida = detalleRelacionado.getCantidad();
                         double cantidadNuevaSalida = cantidadOriginalSalida * factorProporcion;
                         
+                        // ✅ CORREGIDO: Calcular la diferencia neta correctamente
+                        // Ya se revirtió completamente en el paso anterior (+cantidadOriginalSalida)
+                        // Ahora necesitamos aplicar la nueva cantidad (-cantidadNuevaSalida)
+                        // Diferencia neta: cantidadOriginalSalida - cantidadNuevaSalida
+                        double diferenciaNeta = cantidadOriginalSalida - cantidadNuevaSalida;
+                        
                         // Actualizar la cantidad del detalle
                         detalleRelacionado.setCantidad(cantidadNuevaSalida);
                         
                         // Actualizar el stock del insumo simple
-                        // La diferencia es: (cantidadNuevaSalida - cantidadOriginalSalida)
-                        double diferencia = cantidadNuevaSalida - cantidadOriginalSalida;
-                        insumoSimple.setStockActual(insumoSimple.getStockActual() - diferencia);
+                        // Si diferenciaNeta > 0: se redujo la cantidad, entonces sumamos stock (menos salida)
+                        // Si diferenciaNeta < 0: se aumentó la cantidad, entonces restamos stock (más salida)
+                        insumoSimple.setStockActual(insumoSimple.getStockActual() + diferenciaNeta);
                         
                         detalleMovimientoInsumoRepository.save(detalleRelacionado);
                         insumoRepository.save(insumoSimple);
                         
                         System.out.println("  ✅ Actualizado movimiento de salida de " + insumoSimple.getNombre() + 
                                          ": " + cantidadOriginalSalida + " → " + cantidadNuevaSalida + 
-                                         " (diferencia: " + diferencia + ")");
+                                         " (diferencia neta aplicada: " + diferenciaNeta + ")");
                     }
                 }
             }

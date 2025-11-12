@@ -25,6 +25,34 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
   const [descripcion, setDescripcion] = useState("");
   const [tipoMovimiento, setTipoMovimiento] = useState("ENTRADA");
   const [detalles, setDetalles] = useState([]);
+  
+  // ✅ NUEVO: Detectar si es un movimiento de ensamble
+  const esMovimientoEnsamble = React.useMemo(() => {
+    if (!movimiento || !movimiento.detalles) return false;
+    // Un movimiento es de ensamble si alguno de sus detalles tiene ensambleId
+    return movimiento.detalles.some(detalle => 
+      detalle.ensambleId != null && detalle.ensambleId.trim() !== ''
+    );
+  }, [movimiento]);
+  
+  // ✅ NUEVO: Obtener el insumo compuesto del ensamble (si existe)
+  const insumoCompuestoEnsamble = React.useMemo(() => {
+    if (!esMovimientoEnsamble || !movimiento || !movimiento.detalles) return null;
+    
+    // Buscar el detalle que tenga ensambleId y sea ENTRADA (el insumo compuesto)
+    const detalleEnsamble = movimiento.detalles.find(detalle => 
+      detalle.ensambleId != null && detalle.ensambleId.trim() !== '' &&
+      movimiento.tipoMovimiento === 'ENTRADA'
+    );
+    
+    if (!detalleEnsamble) return null;
+    
+    // Buscar el insumo en la lista de insumos
+    const insumoId = detalleEnsamble.insumoId || detalleEnsamble.id || detalleEnsamble.insumo?.id;
+    if (!insumoId) return null;
+    
+    return insumos && insumos.length > 0 ? insumos.find(i => i.id === parseInt(insumoId)) : null;
+  }, [esMovimientoEnsamble, movimiento, insumos]);
 
   // Inicializar formulario cuando se abre el modal
   useEffect(() => {
@@ -384,14 +412,26 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
               </label>
               <select
                 value={tipoMovimiento}
-                onChange={(e) => setTipoMovimiento(e.target.value)}
+                onChange={(e) => {
+                  // ✅ CRÍTICO: No se puede cambiar el tipo de movimiento
+                  if (e.target.value !== movimiento.tipoMovimiento) {
+                    setError("No se puede cambiar el tipo de movimiento. El tipo debe permanecer igual.");
+                    return;
+                  }
+                  setTipoMovimiento(e.target.value);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
-                disabled={!validacion?.puedeEditar}
+                disabled={!validacion?.puedeEditar || true} // ✅ Siempre deshabilitado (no se puede cambiar)
               >
                 <option value="ENTRADA">Entrada</option>
                 <option value="SALIDA">Salida</option>
               </select>
+              {movimiento && (
+                <p className="text-xs text-gray-500 mt-1">
+                  El tipo de movimiento no puede ser modificado
+                </p>
+              )}
             </div>
             
             <div className="md:col-span-3">
@@ -411,8 +451,15 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
           {/* Detalles */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">Detalles del Movimiento</h3>
-              {validacion?.puedeEditar && (
+              <h3 className="text-lg font-medium text-gray-800">
+                Detalles del Movimiento
+                {esMovimientoEnsamble && (
+                  <span className="ml-2 text-sm font-normal text-purple-600">
+                    (Ensamble - Solo se puede editar cantidad)
+                  </span>
+                )}
+              </h3>
+              {validacion?.puedeEditar && !esMovimientoEnsamble && (
                 <Button
                   type="button"
                   onClick={handleAgregarDetalle}
@@ -435,7 +482,7 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
                       <h4 className="font-medium text-gray-700">
                         Insumo {index + 1}
                       </h4>
-                      {validacion?.puedeEditar && (
+                      {validacion?.puedeEditar && !esMovimientoEnsamble && (
                         <button
                           type="button"
                           onClick={() => handleEliminarDetalle(index)}
@@ -443,6 +490,11 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
                         >
                           <FaTimes size={14} />
                         </button>
+                      )}
+                      {esMovimientoEnsamble && (
+                        <span className="text-xs text-purple-600 font-medium">
+                          Ensamble
+                        </span>
                       )}
                     </div>
                     
@@ -456,20 +508,34 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
                           onChange={(e) => handleDetalleChange(index, "insumoId", e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
-                          disabled={!validacion?.puedeEditar || cargandoInsumos}
+                          disabled={!validacion?.puedeEditar || cargandoInsumos || esMovimientoEnsamble}
                         >
                           <option value="">
                             {cargandoInsumos ? "Cargando insumos..." : "Seleccionar insumo"}
                           </option>
                           {insumos && insumos.length > 0 ? (
-                            insumos.map((insumo) => {
-                              const tipoTexto = insumo.tipo === 'COMPUESTO' ? ' (Compuesto)' : ' (Base)';
-                              return (
-                                <option key={insumo.id} value={insumo.id}>
-                                  {insumo.nombre}{tipoTexto} ({insumo.unidadMedida})
-                                </option>
-                              );
-                            })
+                            (() => {
+                              // ✅ CRÍTICO: Si es un movimiento de ensamble, mostrar solo el insumo compuesto específico
+                              if (esMovimientoEnsamble && insumoCompuestoEnsamble) {
+                                return (
+                                  <option key={insumoCompuestoEnsamble.id} value={insumoCompuestoEnsamble.id}>
+                                    {insumoCompuestoEnsamble.nombre} (Compuesto) ({insumoCompuestoEnsamble.unidadMedida})
+                                  </option>
+                                );
+                              }
+                              
+                              // Si NO es ensamble, mostrar solo insumos BASE (como antes)
+                              return insumos
+                                .filter(i => i.tipo === 'BASE' || !i.tipo) // ✅ Solo insumos base o sin tipo (compatibilidad)
+                                .map((insumo) => {
+                                  const tipoTexto = insumo.tipo === 'COMPUESTO' ? ' (Compuesto)' : ' (Base)';
+                                  return (
+                                    <option key={insumo.id} value={insumo.id}>
+                                      {insumo.nombre}{tipoTexto} ({insumo.unidadMedida})
+                                    </option>
+                                  );
+                                });
+                            })()
                           ) : (
                             !cargandoInsumos && (
                               <option value="" disabled>

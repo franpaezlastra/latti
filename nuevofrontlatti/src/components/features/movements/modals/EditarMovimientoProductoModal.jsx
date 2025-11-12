@@ -54,15 +54,33 @@ const EditarMovimientoProductoModal = ({ isOpen, onClose, movimiento, onSuccess 
         }
 
         // Convertir detalles a formato del formulario
-        const productosFormateados = (movimiento.detalles || []).map(detalle => ({
-          productoId: String(detalle.id || detalle.productoId || detalle.producto?.id || ''),
-          cantidad: detalle.cantidad || 0,
-          fechaVencimiento: detalle.fechaVencimiento 
-            ? (typeof detalle.fechaVencimiento === 'string' 
-                ? detalle.fechaVencimiento.split('T')[0] 
-                : new Date(detalle.fechaVencimiento).toISOString().split('T')[0])
-            : ''
-        }));
+        // ✅ CRÍTICO: Consolidar detalles del mismo producto (sumar cantidades)
+        const detallesMap = new Map();
+        
+        (movimiento.detalles || []).forEach(detalle => {
+          const productoId = String(detalle.id || detalle.productoId || detalle.producto?.id || '');
+          
+          if (productoId && productoId !== 'undefined' && productoId !== '') {
+            if (detallesMap.has(productoId)) {
+              // Si ya existe, sumar la cantidad
+              const existente = detallesMap.get(productoId);
+              existente.cantidad = (existente.cantidad || 0) + (detalle.cantidad || 0);
+            } else {
+              // Si no existe, crear nuevo
+              detallesMap.set(productoId, {
+                productoId: productoId,
+                cantidad: detalle.cantidad || 0,
+                fechaVencimiento: detalle.fechaVencimiento 
+                  ? (typeof detalle.fechaVencimiento === 'string' 
+                      ? detalle.fechaVencimiento.split('T')[0] 
+                      : new Date(detalle.fechaVencimiento).toISOString().split('T')[0])
+                  : ''
+              });
+            }
+          }
+        });
+        
+        const productosFormateados = Array.from(detallesMap.values());
 
         setFormData({
           fecha: fechaFormateada,

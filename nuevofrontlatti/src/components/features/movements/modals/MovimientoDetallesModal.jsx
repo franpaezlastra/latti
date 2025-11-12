@@ -28,8 +28,36 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
   // Filtrar elementos nulos o inválidos
   detalles = detalles.filter(det => det != null);
 
+  // ✅ NUEVO: Consolidar detalles del mismo producto/insumo (sumar cantidades)
+  const detallesConsolidados = new Map();
+  
+  detalles.forEach(detalle => {
+    const id = detalle.id || detalle.insumoId || detalle.productoId || 
+               detalle.insumo?.id || detalle.producto?.id;
+    const nombre = detalle.nombre || detalle.insumo?.nombre || detalle.producto?.nombre || 'Sin nombre';
+    
+    if (id) {
+      const clave = String(id);
+      if (detallesConsolidados.has(clave)) {
+        // Si ya existe, sumar la cantidad y promediar/actualizar otros campos
+        const existente = detallesConsolidados.get(clave);
+        existente.cantidad = (existente.cantidad || 0) + (detalle.cantidad || 0);
+        // Mantener el precio más reciente o sumar según el tipo
+        if (esInsumo && esEntrada) {
+          existente.precioTotal = (existente.precioTotal || 0) + (detalle.precioTotal || 0);
+        }
+      } else {
+        // Si no existe, agregar nuevo
+        detallesConsolidados.set(clave, { ...detalle });
+      }
+    } else {
+      // Si no tiene ID, agregarlo directamente (no se puede consolidar)
+      detallesConsolidados.set(nombre + Math.random(), { ...detalle });
+    }
+  });
+
   // Ordenar detalles alfabéticamente por nombre
-  const detallesOrdenados = [...detalles].sort((a, b) => {
+  const detallesOrdenados = Array.from(detallesConsolidados.values()).sort((a, b) => {
     const nombreA = a.nombre || a.insumo?.nombre || a.producto?.nombre || "";
     const nombreB = b.nombre || b.insumo?.nombre || b.producto?.nombre || "";
     return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
@@ -109,7 +137,14 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                   <FaTag className="text-orange-600" size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Total</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">
+                    {esInsumo 
+                      ? 'Total Gastado'
+                      : esEntrada 
+                        ? 'Total Invertido'
+                        : 'Total Ventas'
+                    }
+                  </p>
                   <p className="text-base font-bold text-orange-700">
                     {esInsumo 
                       ? formatPrice(totalGastado)
