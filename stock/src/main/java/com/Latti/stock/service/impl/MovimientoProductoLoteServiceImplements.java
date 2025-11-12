@@ -519,9 +519,12 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 continue; // Saltar este detalle y continuar con el siguiente
             }
             
+            // ✅ NUEVO: Guardar el ID en una variable final para usar en la lambda
+            final Long productoId = producto.getId();
+            
             // ✅ NUEVO: Recargar el producto desde la BD para asegurar que tenemos la versión más actualizada
-            producto = productoRepository.findById(producto.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + producto.getId()));
+            producto = productoRepository.findById(productoId)
+                    .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado: " + productoId));
             
             if (movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA) {
                 // Para entrada: restar cantidad del stock
