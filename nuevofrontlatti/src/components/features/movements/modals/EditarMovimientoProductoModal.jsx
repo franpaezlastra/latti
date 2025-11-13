@@ -8,6 +8,7 @@ import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
 import Input from '../../../ui/Input';
 import NumberInput from '../../../ui/NumberInput';
+import { formatDateToLocalString } from '../../../../utils/formatters';
 
 const EditarMovimientoProductoModal = ({ isOpen, onClose, movimiento, onSuccess }) => {
   const dispatch = useDispatch();
@@ -38,19 +39,10 @@ const EditarMovimientoProductoModal = ({ isOpen, onClose, movimiento, onSuccess 
 
       // Cargar datos del movimiento
       if (movimiento) {
-        // Formatear fecha
+        // ✅ CORREGIDO: Formatear fecha usando hora local para evitar problemas de zona horaria
         let fechaFormateada = '';
         if (movimiento.fecha) {
-          if (movimiento.fecha instanceof Date) {
-            fechaFormateada = movimiento.fecha.toISOString().split('T')[0];
-          } else if (typeof movimiento.fecha === 'string') {
-            const fechaDate = new Date(movimiento.fecha);
-            if (!isNaN(fechaDate.getTime())) {
-              fechaFormateada = fechaDate.toISOString().split('T')[0];
-            } else {
-              fechaFormateada = movimiento.fecha.split('T')[0];
-            }
-          }
+          fechaFormateada = formatDateToLocalString(movimiento.fecha);
         }
 
         // Convertir detalles a formato del formulario
@@ -71,9 +63,7 @@ const EditarMovimientoProductoModal = ({ isOpen, onClose, movimiento, onSuccess 
                 productoId: productoId,
                 cantidad: detalle.cantidad || 0,
                 fechaVencimiento: detalle.fechaVencimiento 
-                  ? (typeof detalle.fechaVencimiento === 'string' 
-                      ? detalle.fechaVencimiento.split('T')[0] 
-                      : new Date(detalle.fechaVencimiento).toISOString().split('T')[0])
+                  ? formatDateToLocalString(detalle.fechaVencimiento)
                   : ''
               });
             }

@@ -15,7 +15,7 @@ import { fetchInsumos } from '../../store/slices/insumoSlice.js';
 import { loadMovimientosProducto } from '../../store/actions/movimientoProductoActions.js';
 import { loadMovimientosInsumo } from '../../store/actions/movimientoInsumoActions.js';
 import { Tabla } from '../../components/ui';
-import { formatPrice, formatNumber } from '../../utils/formatters.js';
+import { formatPrice, formatNumber, formatDateToDisplay, parseLocalDateString } from '../../utils/formatters.js';
 import { getAbreviaturaByValue } from '../../constants/unidadesMedida.js';
 import ProductosProximosVencer from '../../components/dashboard/ProductosProximosVencer.jsx';
 import TablaPerdidas from '../../components/dashboard/TablaPerdidas.jsx';
@@ -108,13 +108,13 @@ const Dashboard = () => {
   // Calcular estadísticas de ventas
   const calcularEstadisticasVentas = () => {
     const ventas = movimientosProductosList.filter(mov => mov.tipoMovimiento === 'SALIDA');
-    const totalVentas = ventas.length;
-    const ingresosTotales = ventas.reduce((total, venta) => {
-      // Calcular el total de ventas sumando los detalles
-      const totalVenta = venta.detalles?.reduce((sum, det) => {
-        return sum + ((det.precioVenta || 0) * (det.cantidad || 0));
-      }, 0) || 0;
-      return total + totalVenta;
+    
+    // ✅ CORREGIDO: Expandir detalles para contar correctamente
+    const ventasExpandidas = ventas.flatMap(venta => venta.detalles || []);
+    const totalVentas = ventasExpandidas.length; // Número de productos vendidos (no movimientos)
+    
+    const ingresosTotales = ventasExpandidas.reduce((total, detalle) => {
+      return total + ((detalle.precioVenta || 0) * (detalle.cantidad || 0));
     }, 0);
     
     return { totalVentas, ingresosTotales };
@@ -295,7 +295,7 @@ const Dashboard = () => {
             {formatNumber(lote.cantidadActual)}
           </span>
         ),
-        fechaProduccion: new Date(lote.fechaProduccion).toLocaleDateString(),
+        fechaProduccion: formatDateToDisplay(lote.fechaProduccion),
         precioInversion: formatPrice(lote.precioInversion || 0),
         estado: (
           <span className={`px-2 py-1 text-xs rounded-full ${
@@ -365,9 +365,29 @@ const Dashboard = () => {
 
   // Componente para la tabla de ventas
   const TablaVentas = () => {
-    const ventas = movimientosProductosList
-      .filter(mov => mov.tipoMovimiento === 'SALIDA') // Cambiar de 'VENTA' a 'SALIDA'
-      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    // ✅ CORREGIDO: Obtener todas las ventas (movimientos SALIDA) y expandir sus detalles
+    const ventasExpandidas = movimientosProductosList
+      .filter(mov => mov.tipoMovimiento === 'SALIDA')
+      .flatMap(movimiento => {
+        // Expandir cada movimiento en múltiples filas (una por detalle)
+        return (movimiento.detalles || []).map(detalle => ({
+          movimientoId: movimiento.id,
+          fecha: movimiento.fecha,
+          descripcion: movimiento.descripcion || '',
+          producto: detalle.nombre || 'N/A',
+          cantidad: detalle.cantidad || 0,
+          precioUnitario: detalle.precioVenta || 0,
+          total: (detalle.precioVenta || 0) * (detalle.cantidad || 0),
+          lote: detalle.lote || '',
+          fechaVencimiento: detalle.fechaVencimiento
+        }));
+      })
+      .sort((a, b) => {
+        // Ordenar por fecha (más reciente primero)
+        const fechaA = parseLocalDateString(a.fecha) || new Date(0);
+        const fechaB = parseLocalDateString(b.fecha) || new Date(0);
+        return fechaB - fechaA;
+      });
 
     const columnas = [
       { key: 'fecha', label: 'Fecha', sortable: true },
@@ -378,13 +398,13 @@ const Dashboard = () => {
     ];
 
     // Formatear datos para la tabla
-    const datosFormateados = ventas.map(venta => ({
+    const datosFormateados = ventasExpandidas.map(venta => ({
       ...venta,
-      fecha: new Date(venta.fecha).toLocaleDateString(),
-      producto: venta.producto?.nombre || 'N/A',
-      cantidad: formatNumber(venta.cantidad || 0),
-      precioUnitario: formatPrice(venta.precioVenta || 0),
-      total: formatPrice((venta.precioVenta || 0) * (venta.cantidad || 0))
+      fecha: formatDateToDisplay(venta.fecha),
+      producto: venta.producto,
+      cantidad: formatNumber(venta.cantidad),
+      precioUnitario: formatPrice(venta.precioUnitario),
+      total: formatPrice(venta.total)
     }));
 
     return (

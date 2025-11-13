@@ -6,6 +6,7 @@ import NumberInput from '../../../ui/NumberInput';
 import RecetaInsumoDisplay from '../components/RecetaInsumoDisplay';
 import api from '../../../../services/api';
 import { API_ENDPOINTS } from '../../../../constants/api';
+import { getTodayLocalString } from '../../../../utils/formatters';
 
 const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -20,10 +21,9 @@ const EnsamblarInsumoCompuestoModal = ({ isOpen, onClose, insumoCompuesto, onSub
   // Establecer fecha actual por defecto
   useEffect(() => {
     if (isOpen) {
-      const hoy = new Date().toISOString().split('T')[0];
       setFormData(prev => ({
         ...prev,
-        fecha: hoy,
+        fecha: getTodayLocalString(),
         descripcion: `Ensamble de ${insumoCompuesto?.nombre || ''}`
       }));
     }

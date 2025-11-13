@@ -12,6 +12,7 @@ import Input from "../../../ui/Input";
 import LoadingSpinner from "../../../ui/LoadingSpinner";
 import NumberInput from "../../../ui/NumberInput";
 import RecetaInsumoDisplay from "../../insumos/components/RecetaInsumoDisplay";
+import { formatDateToLocalString } from '../../../../utils/formatters';
 
 const EditarMovimientoEnsambleModal = ({ isOpen, onClose, movimiento, onSuccess }) => {
   const dispatch = useDispatch();
@@ -33,19 +34,10 @@ const EditarMovimientoEnsambleModal = ({ isOpen, onClose, movimiento, onSuccess 
   // Inicializar formulario cuando se abre el modal
   useEffect(() => {
     if (isOpen && movimiento) {
-      // Manejar la fecha
+      // ✅ CORREGIDO: Manejar la fecha usando hora local para evitar problemas de zona horaria
       let fechaFormateada = '';
       if (movimiento.fecha) {
-        if (movimiento.fecha instanceof Date) {
-          fechaFormateada = movimiento.fecha.toISOString().split('T')[0];
-        } else if (typeof movimiento.fecha === 'string') {
-          const fechaDate = new Date(movimiento.fecha);
-          if (!isNaN(fechaDate.getTime())) {
-            fechaFormateada = fechaDate.toISOString().split('T')[0];
-          } else {
-            fechaFormateada = movimiento.fecha.split('T')[0];
-          }
-        }
+        fechaFormateada = formatDateToLocalString(movimiento.fecha);
       }
       
       setFecha(fechaFormateada);
@@ -127,12 +119,10 @@ const EditarMovimientoEnsambleModal = ({ isOpen, onClose, movimiento, onSuccess 
       let fechaFormateada = fecha;
       if (fecha) {
         if (fecha instanceof Date) {
-          fechaFormateada = fecha.toISOString().split('T')[0];
+          // ✅ CORREGIDO: Usar formatDateToLocalString para evitar problemas de zona horaria
+          fechaFormateada = formatDateToLocalString(fecha);
         } else if (typeof fecha === 'string') {
-          const fechaDate = new Date(fecha);
-          if (!isNaN(fechaDate.getTime())) {
-            fechaFormateada = fechaDate.toISOString().split('T')[0];
-          }
+          fechaFormateada = formatDateToLocalString(fecha);
         }
       }
 

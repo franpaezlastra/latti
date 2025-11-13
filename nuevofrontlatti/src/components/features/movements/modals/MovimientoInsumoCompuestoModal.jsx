@@ -9,6 +9,7 @@ import NumberInput from '../../../ui/NumberInput';
 import RecetaInsumoDisplay from '../../insumos/components/RecetaInsumoDisplay';
 import api from '../../../../services/api';
 import { API_ENDPOINTS } from '../../../../constants/api';
+import { getTodayLocalString } from '../../../../utils/formatters';
 
 const MovimientoInsumoCompuestoModal = ({ isOpen, onClose, onSubmit }) => {
   const dispatch = useDispatch();
@@ -40,9 +41,8 @@ const MovimientoInsumoCompuestoModal = ({ isOpen, onClose, onSubmit }) => {
         dispatch(loadInsumos());
       }
       
-      const hoy = new Date().toISOString().split('T')[0];
       setFormData({
-        fecha: hoy,
+        fecha: getTodayLocalString(),
         descripcion: '',
         insumoCompuestoId: '',
         cantidad: ''

@@ -14,6 +14,10 @@ public class DetalleMovimientoProducto {
     private LocalDate fechaVencimiento;
 
     private String lote;
+    
+    // ✅ NUEVO: Precio de venta usado en este movimiento específico
+    // Permite mantener historial de precios por venta
+    private Double precioVenta;
 
     @ManyToOne
     @JoinColumn(name = "producto_id")
@@ -73,5 +77,14 @@ public class DetalleMovimientoProducto {
 
     public void setMovimiento(MovimientoProductoLote movimiento) {
         this.movimiento = movimiento;
+    }
+    
+    // ✅ NUEVO: Getters y setters para precioVenta
+    public Double getPrecioVenta() {
+        return precioVenta;
+    }
+    
+    public void setPrecioVenta(Double precioVenta) {
+        this.precioVenta = precioVenta;
     }
 }

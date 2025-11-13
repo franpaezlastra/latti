@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaBox, FaCalendar, FaList, FaTag, FaWeight, FaArrowDown, FaArrowUp } from 'react-icons/fa';
 import { Modal } from '../../../ui';
-import { formatPrice } from '../../../../utils/formatters';
+import { formatPrice, formatDateToDisplay } from '../../../../utils/formatters';
 
 const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
   if (!movimiento || !isOpen) return null;
@@ -78,9 +78,9 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
   const totalGastado = esInsumo ? detallesOrdenados.reduce((sum, det) => 
     sum + (det.precioTotal || 0), 0) : 0;
 
-  // Formatear fecha
+  // ✅ CORREGIDO: Formatear fecha usando función que evita problemas de zona horaria
   const fechaFormateada = movimiento.fecha 
-    ? (typeof movimiento.fecha === 'string' ? movimiento.fecha : new Date(movimiento.fecha).toLocaleDateString('es-ES'))
+    ? formatDateToDisplay(movimiento.fecha)
     : 'Sin fecha';
 
   return (
@@ -266,7 +266,7 @@ const MovimientoDetallesModal = ({ isOpen, onClose, movimiento }) => {
                             {esEntrada && (
                                   <td className="px-4 py-3 text-sm text-gray-600 text-right">
                                     {detalle.fechaVencimiento 
-                                      ? new Date(detalle.fechaVencimiento).toLocaleDateString('es-ES')
+                                      ? formatDateToDisplay(detalle.fechaVencimiento)
                                       : 'No especificada'
                               }
                             </td>

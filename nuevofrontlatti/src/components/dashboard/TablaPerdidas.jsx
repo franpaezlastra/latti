@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2, Calendar, Package, DollarSign, TrendingDown } from 'lucide-react';
-import { formatPrice, formatNumber } from '../../utils/formatters';
+import { formatPrice, formatNumber, formatDateToDisplay } from '../../utils/formatters';
 import Tabla from '../ui/Tabla';
 
 const TablaPerdidas = ({ perdidas, isLoading }) => {
@@ -59,7 +59,7 @@ const TablaPerdidas = ({ perdidas, isLoading }) => {
     fecha: (
       <span className="flex items-center gap-1 text-sm text-gray-700">
         <Calendar className="h-3 w-3" />
-        {new Date(perdida.fecha).toLocaleDateString('es-ES')}
+        {formatDateToDisplay(perdida.fecha)}
       </span>
     ),
     producto: (

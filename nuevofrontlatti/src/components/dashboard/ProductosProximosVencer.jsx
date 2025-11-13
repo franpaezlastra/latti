@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AlertTriangle, Clock, Package, DollarSign, ArrowUpDown, Trash2, ShoppingCart } from 'lucide-react';
-import { formatPrice, formatNumber } from '../../utils/formatters';
+import { formatPrice, formatNumber, getTodayLocalString, formatDateToDisplay } from '../../utils/formatters';
 import { useDispatch } from 'react-redux';
 import { createVentaPorLotes } from '../../store/actions/movimientoProductoActions';
 import { useGlobalUpdate } from '../../hooks/useGlobalUpdate';
@@ -102,7 +102,7 @@ const ProductosProximosVencer = ({ productos, onCrearVenta, onRecargarDatos }) =
     try {
       // Crear venta por lotes con precio $0 para el lote específico
       const ventaData = {
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: getTodayLocalString(),
         descripcion: `DESCARTO - Producto vencido (${productoADescartar.nombreProducto}, Lote: ${productoADescartar.lote})`,
         ventasPorLotes: [{
           productoId: productoADescartar.productoId,
@@ -375,7 +375,7 @@ const ProductoVencimientoCard = ({ producto, onCrearVenta, onDescartar, esVencid
           </span>
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            Vence: {new Date(producto.fechaVencimiento).toLocaleDateString('es-ES')}
+            Vence: {formatDateToDisplay(producto.fechaVencimiento)}
           </span>
         </div>
       </div>

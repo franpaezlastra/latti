@@ -199,6 +199,12 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 );
                 detalle.setFechaVencimiento(d.fechaVencimiento());
                 
+                // ✅ CORREGIDO: Guardar precio de venta en el detalle SOLO si es SALIDA
+                // Esto preserva el historial de precios por movimiento
+                if (dto.tipoMovimiento() == TipoMovimiento.SALIDA) {
+                    detalle.setPrecioVenta(d.precioVenta());
+                }
+                
                 // ✅ CRÍTICO: Asignar lote si se especifica (para SALIDA) o generar automáticamente (para ENTRADA)
                 if (dto.tipoMovimiento() == TipoMovimiento.ENTRADA) {
                     // El lote se generará automáticamente cuando se guarde el movimiento
@@ -249,7 +255,9 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                                         det.getProducto().getNombre(),
                                         det.getCantidad(),
                                         det.getProducto().getPrecioInversion(),
-                                        det.getProducto().getPrecioVenta(),
+                                        // ✅ CORREGIDO: Usar precio del detalle si existe (historial preservado),
+                                        // sino usar precio del producto (para movimientos antiguos o ENTRADA)
+                                        det.getPrecioVenta() != null ? det.getPrecioVenta() : det.getProducto().getPrecioVenta(),
                                         det.getFechaVencimiento(),
                                         det.getLote()
                                 )
@@ -701,6 +709,8 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                 );
                 detalle.setLote(venta.lote()); // Usar el lote específico
                 detalle.setFechaVencimiento(obtenerFechaVencimientoLote(producto, venta.lote()));
+                // ✅ CORREGIDO: Guardar precio de venta en el detalle para preservar historial
+                detalle.setPrecioVenta(venta.precioVenta());
 
                 movimiento.addDetalle(detalle);
             }

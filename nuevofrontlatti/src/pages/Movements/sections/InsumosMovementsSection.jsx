@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { FaPlus, FaEye, FaTrash, FaEdit, FaBox, FaCog, FaFilter, FaSearch } from "react-icons/fa";
 import { DataTable, Button, Card, Badge, FilterPanel } from "../../../components/ui";
-import { formatQuantity, formatPrice } from "../../../utils/formatters";
+import { formatQuantity, formatPrice, formatDateToDisplay, parseLocalDateString } from "../../../utils/formatters";
 import { getAbreviaturaByValue } from "../../../constants/unidadesMedida";
 import DetallesMovimientoModal from '../../../components/features/movements/modals/DetallesMovimientoModal';
 import { useDispatch } from "react-redux";
@@ -86,11 +86,12 @@ const InsumosMovementsSection = ({
     const cumpleTipo = !filtros.tipoMovimiento || 
       movimiento.tipoMovimiento === filtros.tipoMovimiento;
 
+    // ✅ CORREGIDO: Usar parseLocalDateString para evitar problemas de zona horaria en comparaciones
     const cumpleFechaDesde = !filtros.fechaDesde || 
-      new Date(movimiento.fecha) >= new Date(filtros.fechaDesde);
+      (parseLocalDateString(movimiento.fecha) || new Date(0)) >= (parseLocalDateString(filtros.fechaDesde) || new Date(0));
 
     const cumpleFechaHasta = !filtros.fechaHasta || 
-      new Date(movimiento.fecha) <= new Date(filtros.fechaHasta);
+      (parseLocalDateString(movimiento.fecha) || new Date(0)) <= (parseLocalDateString(filtros.fechaHasta) || new Date(0));
 
     return cumpleBusqueda && cumpleTipo && cumpleFechaDesde && cumpleFechaHasta;
   });
@@ -98,9 +99,10 @@ const InsumosMovementsSection = ({
   // Formatear datos para la tabla
   const formatearMovimientos = (movimientos) => {
     // Ordenar movimientos por fecha (más reciente primero) como criterio principal
+    // ✅ CORREGIDO: Usar parseLocalDateString para evitar problemas de zona horaria en ordenamiento
     const movimientosOrdenados = [...movimientos].sort((a, b) => {
-      const fechaA = new Date(a.fecha);
-      const fechaB = new Date(b.fecha);
+      const fechaA = parseLocalDateString(a.fecha) || new Date(0);
+      const fechaB = parseLocalDateString(b.fecha) || new Date(0);
       
       // Ordenar por fecha de forma descendente (más reciente primero)
       const diferenciaFecha = fechaB - fechaA;
@@ -119,7 +121,7 @@ const InsumosMovementsSection = ({
       
       return {
         id: movimiento.id,
-        fecha: new Date(movimiento.fecha).toLocaleDateString('es-ES'),
+        fecha: formatDateToDisplay(movimiento.fecha),
         tipoMovimiento: movimiento.tipoMovimiento === 'ENTRADA' ? '✅ Entrada' : '❌ Salida',
         tipoEnsamble: esEnsamble ? '🔨 Ensamble' : '📦 Normal',
         descripcion: movimiento.descripcion || 'Sin descripción',

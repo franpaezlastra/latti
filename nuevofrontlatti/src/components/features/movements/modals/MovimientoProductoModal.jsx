@@ -8,6 +8,7 @@ import FormModal from '../../../ui/FormModal';
 import Button from '../../../ui/Button';
 import Input from '../../../ui/Input';
 import NumberInput from '../../../ui/NumberInput';
+import { getTodayLocalString, formatDateToLocalString, formatDateToDisplay } from '../../../../utils/formatters';
 
 const MovimientoProductoModal = ({ isOpen, onClose, onSubmit, productoPreSeleccionado, lotePreSeleccionado }) => {
   const dispatch = useDispatch();
@@ -41,7 +42,7 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit, productoPreSelecci
       if (productoPreSeleccionado) {
         setFormData({
           tipoMovimiento: 'SALIDA',
-          fecha: new Date().toISOString().split('T')[0],
+          fecha: getTodayLocalString(),
           descripcion: '',
           productos: [{ 
             productoId: String(productoPreSeleccionado), 
@@ -799,7 +800,7 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit, productoPreSelecci
                                     Disponible: {lote.cantidadDisponible}
                                     {lote.fechaVencimiento && (
                                       <span className="ml-2">
-                                        | Vence: {new Date(lote.fechaVencimiento).toLocaleDateString('es-ES')}
+                                        | Vence: {formatDateToDisplay(lote.fechaVencimiento)}
                                       </span>
                                     )}
                                   </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Package, AlertTriangle, DollarSign } from 'lucide-react';
-import { formatPrice, formatNumber } from '../../utils/formatters.js';
+import { formatPrice, formatNumber, formatDateToDisplay } from '../../utils/formatters.js';
 
 const LotesSection = ({ productos, movimientosProductos }) => {
   // Agrupar productos por lotes
@@ -78,7 +78,7 @@ const LotesSection = ({ productos, movimientosProductos }) => {
                           Lote: {lote.numeroLote}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Producción: {new Date(lote.fechaProduccion).toLocaleDateString()}
+                          Producción: {formatDateToDisplay(lote.fechaProduccion)}
                         </p>
                       </div>
                     </div>

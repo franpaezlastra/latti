@@ -10,6 +10,7 @@ import {
 import Button from "../../../ui/Button";
 import Input from "../../../ui/Input";
 import LoadingSpinner from "../../../ui/LoadingSpinner";
+import { formatDateToLocalString } from '../../../../utils/formatters';
 
 const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess }) => {
   const dispatch = useDispatch();
@@ -60,18 +61,8 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       // Manejar la fecha (puede venir como Date, string o LocalDate)
       let fechaFormateada = '';
       if (movimiento.fecha) {
-        if (movimiento.fecha instanceof Date) {
-          fechaFormateada = movimiento.fecha.toISOString().split('T')[0];
-        } else if (typeof movimiento.fecha === 'string') {
-          // Si viene como string, intentar parsearla
-          const fechaDate = new Date(movimiento.fecha);
-          if (!isNaN(fechaDate.getTime())) {
-            fechaFormateada = fechaDate.toISOString().split('T')[0];
-          } else {
-            // Si ya está en formato YYYY-MM-DD, usarla directamente
-            fechaFormateada = movimiento.fecha.split('T')[0];
-          }
-        }
+        // ✅ CORREGIDO: Usar formatDateToLocalString para evitar problemas de zona horaria
+        fechaFormateada = formatDateToLocalString(movimiento.fecha);
       }
       
       setFecha(fechaFormateada);
@@ -224,13 +215,10 @@ const EditarMovimientoInsumoModal = ({ isOpen, onClose, movimiento, onSuccess })
       if (fecha) {
         // Si es un objeto Date, convertir a ISO string
         if (fecha instanceof Date) {
-          fechaFormateada = fecha.toISOString().split('T')[0];
+          fechaFormateada = formatDateToLocalString(fecha);
         } else if (typeof fecha === 'string') {
-          // Si ya es string, asegurar que esté en formato YYYY-MM-DD
-          const fechaDate = new Date(fecha);
-          if (!isNaN(fechaDate.getTime())) {
-            fechaFormateada = fechaDate.toISOString().split('T')[0];
-          }
+          // ✅ CORREGIDO: Usar formatDateToLocalString para evitar problemas de zona horaria
+          fechaFormateada = formatDateToLocalString(fecha);
         }
       }
 
