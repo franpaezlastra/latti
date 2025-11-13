@@ -9,7 +9,7 @@ import Button from '../../../ui/Button';
 import Input from '../../../ui/Input';
 import NumberInput from '../../../ui/NumberInput';
 
-const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
+const MovimientoProductoModal = ({ isOpen, onClose, onSubmit, productoPreSeleccionado, lotePreSeleccionado }) => {
   const dispatch = useDispatch();
   const productos = useSelector((state) => state.productos.productos);
   const stockPorLotes = useSelector((state) => state.productos.stockPorLotes);
@@ -37,14 +37,43 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
   // Restablecer formulario solo cuando el modal pasa de cerrado a abierto
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
-      setFormData({
-        tipoMovimiento: '',
-        fecha: '',
-        descripcion: '',
-        productos: [{ productoId: '', cantidad: '', precioVenta: '', fechaVencimiento: '' }]
-      });
-      setProductoLotes({});
-      setUsarLotes(false);
+      // Si hay producto pre-seleccionado, configurar el formulario
+      if (productoPreSeleccionado) {
+        setFormData({
+          tipoMovimiento: 'SALIDA',
+          fecha: new Date().toISOString().split('T')[0],
+          descripcion: '',
+          productos: [{ 
+            productoId: String(productoPreSeleccionado), 
+            cantidad: '', 
+            precioVenta: '', 
+            fechaVencimiento: '' 
+          }]
+        });
+        
+        // Cargar lotes del producto pre-seleccionado
+        dispatch(loadStockPorLotes(productoPreSeleccionado));
+        
+        // Si hay lote pre-seleccionado, activar lotes y seleccionarlo
+        if (lotePreSeleccionado) {
+          setUsarLotes(true);
+          // Esperar un momento para que los lotes se carguen antes de establecer el valor
+          setTimeout(() => {
+            setProductoLotes({
+              0: { [lotePreSeleccionado]: '' }
+            });
+          }, 100);
+        }
+      } else {
+        setFormData({
+          tipoMovimiento: '',
+          fecha: '',
+          descripcion: '',
+          productos: [{ productoId: '', cantidad: '', precioVenta: '', fechaVencimiento: '' }]
+        });
+        setProductoLotes({});
+        setUsarLotes(false);
+      }
       setError(false);
       setTextoError('');
 
@@ -54,7 +83,7 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
     }
 
     wasOpenRef.current = isOpen;
-  }, [isOpen, productos, dispatch]);
+  }, [isOpen, productos, dispatch, productoPreSeleccionado, lotePreSeleccionado]);
 
   // Limpiar errores cuando el usuario cambia los inputs
   const handleInputChange = (field, value) => {
@@ -174,6 +203,27 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
     }
     
     return stockPorLotes.filter(lote => lote.cantidadDisponible > 0);
+  };
+
+  // Función para calcular días hasta vencimiento
+  const calcularDiasHastaVencimiento = (fechaVencimiento) => {
+    if (!fechaVencimiento) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const vencimiento = new Date(fechaVencimiento);
+    vencimiento.setHours(0, 0, 0, 0);
+    const diffTime = vencimiento - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Función para obtener badge de alerta de vencimiento
+  const getAlertaVencimiento = (dias) => {
+    if (dias === null) return null;
+    if (dias < 0) return { color: 'bg-gray-100 text-gray-700 border-gray-300', texto: '⚠️ Vencido', icon: '⚠️' };
+    if (dias <= 2) return { color: 'bg-red-100 text-red-700 border-red-300', texto: `🔴 Vence en ${dias} día${dias !== 1 ? 's' : ''}`, icon: '🔴' };
+    if (dias <= 5) return { color: 'bg-yellow-100 text-yellow-700 border-yellow-300', texto: `🟡 Vence en ${dias} días`, icon: '🟡' };
+    return { color: 'bg-green-100 text-green-700 border-green-300', texto: `🟢 Vence en ${dias} días`, icon: '🟢' };
   };
 
   const handleSubmit = async (e) => {
@@ -721,30 +771,49 @@ const MovimientoProductoModal = ({ isOpen, onClose, onSubmit }) => {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {getLotesDisponibles(producto.productoId).map((lote) => (
-                          <div key={lote.lote} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-700">
-                                Lote: {lote.lote}
+                        {getLotesDisponibles(producto.productoId)
+                          .sort((a, b) => {
+                            // Ordenar por fecha de vencimiento (más antiguos primero - FIFO)
+                            if (!a.fechaVencimiento) return 1;
+                            if (!b.fechaVencimiento) return -1;
+                            return new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento);
+                          })
+                          .map((lote) => {
+                            const dias = calcularDiasHastaVencimiento(lote.fechaVencimiento);
+                            const alerta = dias !== null ? getAlertaVencimiento(dias) : null;
+                            
+                            return (
+                              <div key={lote.lote} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="text-sm font-medium text-gray-700">
+                                      Lote: {lote.lote}
+                                    </div>
+                                    {alerta && (
+                                      <span className={`px-2 py-0.5 text-xs rounded-full border ${alerta.color}`}>
+                                        {alerta.texto}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Disponible: {lote.cantidadDisponible}
+                                    {lote.fechaVencimiento && (
+                                      <span className="ml-2">
+                                        | Vence: {new Date(lote.fechaVencimiento).toLocaleDateString('es-ES')}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <NumberInput
+                                  placeholder="0"
+                                  value={productoLotes[index]?.[lote.lote] || ''}
+                                  onChange={(value) => handleLoteChange(index, lote.lote, value)}
+                                  disabled={isSubmitting}
+                                  className="w-24 px-2 py-1 text-xs"
+                                />
                               </div>
-                              <div className="text-xs text-gray-500">
-                                Disponible: {lote.cantidadDisponible}
-                                {lote.fechaVencimiento && (
-                                  <span className="ml-2">
-                                    | Vence: {new Date(lote.fechaVencimiento).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <NumberInput
-                              placeholder="0"
-                              value={productoLotes[index]?.[lote.lote] || ''}
-                              onChange={(value) => handleLoteChange(index, lote.lote, value)}
-                              disabled={isSubmitting}
-                              className="w-24 px-2 py-1 text-xs"
-                            />
-                          </div>
-                        ))}
+                            );
+                          })}
                       </div>
                     )}
                     

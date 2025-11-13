@@ -89,4 +89,49 @@ export const loadStockPorLotes = createAsyncThunk(
       );
     }
   }
+);
+
+// Obtener productos próximos a vencer
+export const loadProductosProximosVencer = createAsyncThunk(
+  "productos/loadProductosProximosVencer",
+  async (diasAnticipacion = 7, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${BASE_URL}/proximos-vencer?diasAnticipacion=${diasAnticipacion}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || "Error al cargar productos próximos a vencer"
+      );
+    }
+  }
+);
+
+// Obtener productos vencidos
+export const loadProductosVencidos = createAsyncThunk(
+  "productos/loadProductosVencidos",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${BASE_URL}/vencidos`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || "Error al cargar productos vencidos"
+      );
+    }
+  }
+);
+
+// Obtener pérdidas (productos descartados)
+export const loadPerdidas = createAsyncThunk(
+  "productos/loadPerdidas",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`${BASE_URL}/perdidas`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || "Error al cargar pérdidas"
+      );
+    }
+  }
 ); 

@@ -239,14 +239,18 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                     List<DetalleMovimientoInsumo> movimientosRelacionados = detalleMovimientoInsumoRepository.findByEnsambleId(ensambleId);
                     System.out.println("📋 Movimientos relacionados encontrados: " + movimientosRelacionados.size());
                     
-                    // Primero revertir stocks de los movimientos de SALIDA relacionados (insumos simples)
+                    // ✅ CORREGIDO: Primero revertir stocks de los movimientos de SALIDA relacionados (insumos simples)
+                    // IMPORTANTE: Solo revertir el stock, NO eliminar los movimientos aquí
+                    // Los movimientos se eliminarán después cuando se elimine el movimiento principal con cascade
                     List<MovimientoInsumoLote> movimientosSalidaAEliminar = new ArrayList<>();
                     
                     for (DetalleMovimientoInsumo detalleRelacionado : movimientosRelacionados) {
                         // Solo procesar los movimientos de SALIDA (insumos simples usados en el ensamble)
                         if (detalleRelacionado.getMovimiento().getTipoMovimiento() == TipoMovimiento.SALIDA) {
                             Insumo insumoSimple = detalleRelacionado.getInsumo();
-                            // Revertir el stock (devolver lo que se había quitado)
+                            
+                            // ✅ IMPORTANTE: Revertir el stock UNA SOLA VEZ aquí
+                            // No volver a revertir en el loop posterior del movimiento principal
                             insumoSimple.setStockActual(insumoSimple.getStockActual() + detalleRelacionado.getCantidad());
 
                             // Remover el detalle de la colección del insumo para mantener la consistencia con orphanRemoval
@@ -265,6 +269,10 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                             }
                         }
                     }
+                    
+                    // ✅ IMPORTANTE: Marcar que ya se revirtieron los stocks de insumos simples
+                    // para evitar doble reversión en el loop posterior
+                    boolean stocksYaRevertidos = true;
                     
                     // Ahora eliminar los movimientos de salida relacionados
                     // ✅ CORREGIDO: Eliminar primero los detalles, luego el movimiento
@@ -297,6 +305,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
         boolean esMovimientoEnsambleEntrada = esMovimientoDeEnsamble(id) && 
                                              movimiento.getTipoMovimiento() == TipoMovimiento.ENTRADA;
 
+        // ✅ CORREGIDO: Si es un movimiento de ensamble, los stocks de insumos simples ya fueron revertidos arriba
+        // Solo revertir el stock del insumo compuesto principal
         // Revertir cambios en cada insumo ANTES de eliminar
         System.out.println("🔄 Revirtiendo cambios en insumos...");
         for (DetalleMovimientoInsumo detalle : movimiento.getDetalles()) {
@@ -306,13 +316,15 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 // Para entrada: restar cantidad del stock
                 // ⚠️ EXCEPCIÓN: Si es un movimiento de ENTRADA de ensamble y el insumo es compuesto,
                 // NO verificar stock porque ese stock fue creado por este mismo movimiento
+                // NOTA: Los insumos simples de un ensamble NO aparecen como detalles del movimiento principal,
+                // sino como movimientos de SALIDA separados que ya se procesaron arriba
                 boolean esInsumoCompuestoEnsamble = esMovimientoEnsambleEntrada && insumo.esCompuesto();
                 
                 // Solo verificar stock si NO es un insumo compuesto de un movimiento de ensamble
                 if (!esInsumoCompuestoEnsamble) {
-                if (insumo.getStockActual() < detalle.getCantidad()) {
-                    throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
-                }
+                    if (insumo.getStockActual() < detalle.getCantidad()) {
+                        throw new IllegalArgumentException("No se puede eliminar el movimiento. Stock insuficiente para revertir: " + insumo.getNombre());
+                    }
                 }
                 
                 insumo.setStockActual(insumo.getStockActual() - detalle.getCantidad());
@@ -322,6 +334,8 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                 
             } else if (movimiento.getTipoMovimiento() == TipoMovimiento.SALIDA) {
                 // Para salida: sumar cantidad al stock
+                // NOTA: Si es un movimiento de SALIDA de ensamble (insumo simple), debería haber sido
+                // bloqueado arriba, pero por si acaso, lo procesamos normalmente
                 insumo.setStockActual(insumo.getStockActual() + detalle.getCantidad());
             }
             
@@ -1046,6 +1060,12 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
             // ✅ NUEVO: Si es un movimiento de ensamble, actualizar proporcionalmente los movimientos de salida relacionados
             if (esMovimientoEnsamble && ensambleId != null && dto.detalles().size() > 0) {
                 double cantidadNueva = dto.detalles().get(0).cantidad();
+                
+                // ✅ CORRECCIÓN: Si la cantidad original es 0, evitar división por cero
+                if (cantidadOriginal == 0) {
+                    throw new IllegalArgumentException("No se puede editar un movimiento de ensamble con cantidad original 0");
+                }
+                
                 double factorProporcion = cantidadNueva / cantidadOriginal;
                 
                 System.out.println("🔄 Actualizando movimientos de salida relacionados:");
@@ -1062,26 +1082,21 @@ public class MovimientoInsumoLoteServiceImplements implements MovimientoInsumoLo
                         double cantidadOriginalSalida = detalleRelacionado.getCantidad();
                         double cantidadNuevaSalida = cantidadOriginalSalida * factorProporcion;
                         
-                        // ✅ CORREGIDO: Calcular la diferencia neta correctamente
-                        // Ya se revirtió completamente en el paso anterior (+cantidadOriginalSalida)
-                        // Ahora necesitamos aplicar la nueva cantidad (-cantidadNuevaSalida)
-                        // Diferencia neta: cantidadOriginalSalida - cantidadNuevaSalida
-                        double diferenciaNeta = cantidadOriginalSalida - cantidadNuevaSalida;
+                        // ✅ CORREGIDO: El stock ya fue revertido completamente en el paso anterior (+cantidadOriginalSalida)
+                        // Ahora solo necesitamos aplicar la nueva cantidad (-cantidadNuevaSalida)
+                        // El efecto neto es: +cantidadOriginalSalida - cantidadNuevaSalida
+                        // Pero como ya sumamos cantidadOriginalSalida, solo restamos cantidadNuevaSalida
+                        insumoSimple.setStockActual(insumoSimple.getStockActual() - cantidadNuevaSalida);
                         
                         // Actualizar la cantidad del detalle
                         detalleRelacionado.setCantidad(cantidadNuevaSalida);
-                        
-                        // Actualizar el stock del insumo simple
-                        // Si diferenciaNeta > 0: se redujo la cantidad, entonces sumamos stock (menos salida)
-                        // Si diferenciaNeta < 0: se aumentó la cantidad, entonces restamos stock (más salida)
-                        insumoSimple.setStockActual(insumoSimple.getStockActual() + diferenciaNeta);
                         
                         detalleMovimientoInsumoRepository.save(detalleRelacionado);
                         insumoRepository.save(insumoSimple);
                         
                         System.out.println("  ✅ Actualizado movimiento de salida de " + insumoSimple.getNombre() + 
                                          ": " + cantidadOriginalSalida + " → " + cantidadNuevaSalida + 
-                                         " (diferencia neta aplicada: " + diferenciaNeta + ")");
+                                         " (stock ajustado: -" + cantidadNuevaSalida + ")");
                     }
                 }
             }

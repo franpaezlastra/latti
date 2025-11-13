@@ -6,6 +6,9 @@ import {
   deleteProducto,
   updateProducto,
   loadStockPorLotes,
+  loadProductosProximosVencer,
+  loadProductosVencidos,
+  loadPerdidas,
 } from "../actions/productosActions.js";
 
 const initialState = {
@@ -24,6 +27,15 @@ const initialState = {
   updateError: null,
   stockPorLotesStatus: "idle",
   stockPorLotesError: null,
+  productosProximosVencer: [],
+  productosProximosVencerStatus: "idle",
+  productosProximosVencerError: null,
+  productosVencidos: [],
+  productosVencidosStatus: "idle",
+  productosVencidosError: null,
+  perdidas: [],
+  perdidasStatus: "idle",
+  perdidasError: null,
 };
 
 const productosReducer = createReducer(initialState, (builder) => {
@@ -122,6 +134,48 @@ const productosReducer = createReducer(initialState, (builder) => {
     .addCase(loadStockPorLotes.rejected, (state, action) => {
       state.stockPorLotesStatus = "failed";
       state.stockPorLotesError = action.payload;
+    })
+
+    // Productos próximos a vencer
+    .addCase(loadProductosProximosVencer.pending, (state) => {
+      state.productosProximosVencerStatus = "loading";
+      state.productosProximosVencerError = null;
+    })
+    .addCase(loadProductosProximosVencer.fulfilled, (state, action) => {
+      state.productosProximosVencerStatus = "succeeded";
+      state.productosProximosVencer = action.payload || [];
+    })
+    .addCase(loadProductosProximosVencer.rejected, (state, action) => {
+      state.productosProximosVencerStatus = "failed";
+      state.productosProximosVencerError = action.payload;
+    })
+
+    // Productos vencidos
+    .addCase(loadProductosVencidos.pending, (state) => {
+      state.productosVencidosStatus = "loading";
+      state.productosVencidosError = null;
+    })
+    .addCase(loadProductosVencidos.fulfilled, (state, action) => {
+      state.productosVencidosStatus = "succeeded";
+      state.productosVencidos = action.payload || [];
+    })
+    .addCase(loadProductosVencidos.rejected, (state, action) => {
+      state.productosVencidosStatus = "failed";
+      state.productosVencidosError = action.payload;
+    })
+
+    // Pérdidas
+    .addCase(loadPerdidas.pending, (state) => {
+      state.perdidasStatus = "loading";
+      state.perdidasError = null;
+    })
+    .addCase(loadPerdidas.fulfilled, (state, action) => {
+      state.perdidasStatus = "succeeded";
+      state.perdidas = action.payload || [];
+    })
+    .addCase(loadPerdidas.rejected, (state, action) => {
+      state.perdidasStatus = "failed";
+      state.perdidasError = action.payload;
     });
 });
 

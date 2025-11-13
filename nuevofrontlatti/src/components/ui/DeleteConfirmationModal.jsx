@@ -45,7 +45,7 @@ const DeleteConfirmationModal = ({
             {title}
           </h3>
           
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-600 mb-4 whitespace-pre-line">
             {message}
           </p>
           

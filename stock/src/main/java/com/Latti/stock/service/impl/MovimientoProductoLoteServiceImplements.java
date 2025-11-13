@@ -123,13 +123,17 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                             );
                         }
                         
-                        // Validar que el lote no esté vencido
-                        LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, d.lote());
-                        if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
-                            throw new IllegalArgumentException(
-                                "No se puede vender unidades del lote '" + d.lote() + "' del producto '" + producto.getNombre() +
-                                "' porque el lote venció el " + fechaVencimientoLote + "."
-                            );
+                        // Validar que el lote no esté vencido (solo si el precio de venta > 0)
+                        // Si el precio de venta es 0, es un descarte y se permite vencido
+                        if (d.precioVenta() > 0) {
+                            LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, d.lote());
+                            if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
+                                throw new IllegalArgumentException(
+                                    "No se puede vender unidades del lote '" + d.lote() + "' del producto '" + producto.getNombre() +
+                                    "' porque el lote venció el " + fechaVencimientoLote + ". " +
+                                    "Si deseas descartar este producto, usa la función de descarte."
+                                );
+                            }
                         }
                     } else {
                         // Si NO se especifica lote, validar stock total disponible
@@ -144,9 +148,14 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                         }
                     }
                     
-                    // Validar precio de venta positivo
-                    if (d.precioVenta() <= 0) {
-                        throw new IllegalArgumentException("El precio de venta debe ser mayor a 0 para el producto: " + producto.getNombre());
+                    // Validar precio de venta no negativo
+                    // Si el precio es 0, debe ser un descarte (verificado por descripción "DESCARTO")
+                    if (d.precioVenta() < 0) {
+                        throw new IllegalArgumentException("El precio de venta no puede ser negativo para el producto: " + producto.getNombre());
+                    }
+                    // Si el precio es 0 y no es un descarte, advertir (pero permitir para flexibilidad)
+                    if (d.precioVenta() == 0 && (dto.descripcion() == null || !dto.descripcion().toUpperCase().contains("DESCARTO"))) {
+                        // Solo advertir, no bloquear (puede ser una venta con precio especial)
                     }
                 }
 
@@ -610,10 +619,12 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                     throw new IllegalArgumentException("La cantidad debe ser mayor a 0 para el producto: " + producto.getNombre());
                 }
 
-                // Validar precio de venta positivo
-                if (venta.precioVenta() <= 0) {
-                    throw new IllegalArgumentException("El precio de venta debe ser mayor a 0 para el producto: " + producto.getNombre());
+                // Validar precio de venta no negativo
+                // Si el precio es 0, debe ser un descarte (verificado por descripción "DESCARTO")
+                if (venta.precioVenta() < 0) {
+                    throw new IllegalArgumentException("El precio de venta no puede ser negativo para el producto: " + producto.getNombre());
                 }
+                // Si el precio es 0 y no es un descarte, permitir pero advertir (puede ser una venta con precio especial)
 
             // Validar que exista producción previa a la fecha de venta
             LocalDate fechaPrimeraProduccion = producto.getMovimientos().stream()
@@ -665,13 +676,17 @@ public class MovimientoProductoLoteServiceImplements implements MovimientoProduc
                     );
                 }
 
-            // ✅ VALIDACIÓN: Verificar que el lote no esté vencido
-            LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, venta.lote());
-            if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
-                throw new IllegalArgumentException(
-                    "No se puede vender unidades del lote '" + venta.lote() + "' del producto '" + producto.getNombre() +
-                    "' porque el lote venció el " + fechaVencimientoLote + "."
-                );
+            // ✅ VALIDACIÓN: Verificar que el lote no esté vencido (solo si el precio de venta > 0)
+            // Si el precio de venta es 0, es un descarte y se permite vencido
+            if (venta.precioVenta() > 0) {
+                LocalDate fechaVencimientoLote = obtenerFechaVencimientoLote(producto, venta.lote());
+                if (fechaVencimientoLote != null && fechaVencimientoLote.isBefore(LocalDate.now())) {
+                    throw new IllegalArgumentException(
+                        "No se puede vender unidades del lote '" + venta.lote() + "' del producto '" + producto.getNombre() +
+                        "' porque el lote venció el " + fechaVencimientoLote + ". " +
+                        "Si deseas descartar este producto, usa la función de descarte."
+                    );
+                }
             }
 
                 // Actualizar stock del producto

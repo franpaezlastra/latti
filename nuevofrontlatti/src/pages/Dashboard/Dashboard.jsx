@@ -7,25 +7,39 @@ import {
   AlertTriangle,
   DollarSign,
   ShoppingCart,
-  BarChart3
+  BarChart3,
+  TrendingDown
 } from 'lucide-react';
-import { loadProductos } from '../../store/actions/productosActions.js';
+import { loadProductos, loadProductosProximosVencer, loadPerdidas } from '../../store/actions/productosActions.js';
 import { fetchInsumos } from '../../store/slices/insumoSlice.js';
 import { loadMovimientosProducto } from '../../store/actions/movimientoProductoActions.js';
 import { loadMovimientosInsumo } from '../../store/actions/movimientoInsumoActions.js';
 import { Tabla } from '../../components/ui';
 import { formatPrice, formatNumber } from '../../utils/formatters.js';
 import { getAbreviaturaByValue } from '../../constants/unidadesMedida.js';
+import ProductosProximosVencer from '../../components/dashboard/ProductosProximosVencer.jsx';
+import TablaPerdidas from '../../components/dashboard/TablaPerdidas.jsx';
+import MovimientoProductoModal from '../../components/features/movements/modals/MovimientoProductoModal.jsx';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
-  const [seccionActiva, setSeccionActiva] = useState('lotes'); // 'lotes', 'ventas', 'insumos'
+  const [seccionActiva, setSeccionActiva] = useState('lotes'); // 'lotes', 'ventas', 'insumos', 'vencimientos', 'perdidas'
   const [paginaActual, setPaginaActual] = useState(1);
+  const [modalVentaAbierto, setModalVentaAbierto] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  const [loteSeleccionado, setLoteSeleccionado] = useState(null);
   const lotesPorPagina = 10;
   
   // ✅ USAR LAS MISMAS ACCIONES QUE PRODUCTOSPAGE
-  const { productos, status: productosStatus } = useSelector((state) => state.productos);
+  const { 
+    productos, 
+    status: productosStatus, 
+    productosProximosVencer, 
+    perdidas, 
+    productosProximosVencerStatus, 
+    perdidasStatus 
+  } = useSelector((state) => state.productos);
   const { insumos, status: insumosStatus } = useSelector((state) => state.insumos);
   const { movimientos: movimientosProductos, loading: movimientosProductosLoading } = useSelector((state) => state.movimientosProducto);
   const { movimientos: movimientosInsumos, loading: movimientosInsumosLoading } = useSelector((state) => state.movimientosInsumo);
@@ -38,7 +52,9 @@ const Dashboard = () => {
           dispatch(loadProductos()),           // Misma acción que ProductosPage
           dispatch(fetchInsumos()),            // Misma acción que ProductosPage
           dispatch(loadMovimientosProducto()), // Misma acción que ProductosPage
-          dispatch(loadMovimientosInsumo())    // Misma acción que ProductosPage
+          dispatch(loadMovimientosInsumo()),    // Misma acción que ProductosPage
+          dispatch(loadProductosProximosVencer(7)), // Cargar productos próximos a vencer (7 días)
+          dispatch(loadPerdidas())             // Cargar pérdidas
         ]);
         setLoading(false);
       } catch (error) {
@@ -48,6 +64,35 @@ const Dashboard = () => {
     };
     loadData();
   }, [dispatch]);
+
+  // Recargar datos cuando se cierre el modal de venta
+  const handleCerrarModalVenta = () => {
+    setModalVentaAbierto(false);
+    setProductoSeleccionado(null);
+    setLoteSeleccionado(null);
+    // Recargar datos
+    dispatch(loadProductosProximosVencer(7));
+    dispatch(loadPerdidas());
+    dispatch(loadMovimientosProducto());
+    dispatch(loadProductos());
+  };
+
+  // Función para abrir modal de venta con producto pre-seleccionado
+  const handleCrearVenta = (productoId, lote) => {
+    setProductoSeleccionado(productoId);
+    setLoteSeleccionado(lote);
+    setModalVentaAbierto(true);
+  };
+
+  // Función para recargar datos de vencimientos y pérdidas
+  const handleRecargarDatos = async () => {
+    await Promise.all([
+      dispatch(loadProductosProximosVencer(7)),
+      dispatch(loadPerdidas()),
+      dispatch(loadMovimientosProducto()),
+      dispatch(loadProductos())
+    ]);
+  };
 
   // Valores por defecto para evitar errores
   const productosList = productos || [];
@@ -486,6 +531,34 @@ const Dashboard = () => {
             <TrendingUp className="inline w-4 h-4 mr-2" />
             Insumos ({formatNumber(stats.totalInsumos)})
           </button>
+          <button
+            onClick={() => {
+              setSeccionActiva('vencimientos');
+              dispatch(loadProductosProximosVencer(7));
+            }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              seccionActiva === 'vencimientos'
+                ? 'bg-orange-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <AlertTriangle className="inline w-4 h-4 mr-2" />
+            Vencimientos {productosProximosVencer && productosProximosVencer.length > 0 && `(${productosProximosVencer.length})`}
+          </button>
+          <button
+            onClick={() => {
+              setSeccionActiva('perdidas');
+              dispatch(loadPerdidas());
+            }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              seccionActiva === 'perdidas'
+                ? 'bg-red-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <TrendingDown className="inline w-4 h-4 mr-2" />
+            Pérdidas {perdidas && perdidas.length > 0 && `(${perdidas.length})`}
+          </button>
         </div>
 
         {/* Contenido de secciones */}
@@ -542,7 +615,33 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        {seccionActiva === 'vencimientos' && (
+          <ProductosProximosVencer 
+            productos={productosProximosVencer || []}
+            onCrearVenta={handleCrearVenta}
+            onRecargarDatos={handleRecargarDatos}
+          />
+        )}
+
+        {seccionActiva === 'perdidas' && (
+          <TablaPerdidas 
+            perdidas={perdidas || []}
+            isLoading={perdidasStatus === 'loading'}
+          />
+        )}
       </div>
+
+      {/* Modal de venta */}
+      {modalVentaAbierto && (
+        <MovimientoProductoModal
+          isOpen={modalVentaAbierto}
+          onClose={handleCerrarModalVenta}
+          onSubmit={handleCerrarModalVenta}
+          productoPreSeleccionado={productoSeleccionado}
+          lotePreSeleccionado={loteSeleccionado}
+        />
+      )}
     </div>
   );
 };
